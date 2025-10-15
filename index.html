@@ -93,7 +93,7 @@
         const hit = keys.find(k => normKey(k).toLowerCase() === normKey(want).toLowerCase());
         if (hit) return obj[hit];
       }
-      // fuzzy: first key that includes the wanted token
+      // fuzzy fallback
       for (const want of candidates) {
         const hit = keys.find(k => keyIncludes(k, want));
         if (hit) return obj[hit];
@@ -171,8 +171,8 @@
     const markers = L.markerClusterGroup({
       showCoverageOnHover: false,
       spiderfyOnMaxZoom: true,
-      spiderfyDistanceMultiplier: 1.2,   // slight spread so they're easy to hover
-      zoomToBoundsOnClick: false,        // we'll spiderfy on click instead
+      spiderfyDistanceMultiplier: 1.2,   // spread so they're easy to hover
+      zoomToBoundsOnClick: false,        // spiderfy on click instead
       maxClusterRadius: 55,
       iconCreateFunction: golfBallClusterIcon
     });
@@ -187,7 +187,7 @@
     const csvUrl = getParam("csv") || "";
     if (!csvUrl) { console.warn("No CSV URL provided. Pass ?csv=<public CSV URL>"); }
 
-    let ALL_ROWS = [];
+    let ALL_ROWS = [];  /* <-- declared only once */
 
     Papa.parse(csvUrl, {
       download: true,
@@ -212,7 +212,6 @@
     });
 
     function buildPopup(cleaned) {
-      // Primary fields (flexible header matching)
       const name =
         pick(cleaned, ["Name","Course","Course Name","Title","Club","course","name"]) ||
         (() => { const k = Object.keys(cleaned).find(key => keyIncludes(key, "course")); return k ? cleaned[k] : undefined; })() || "Unnamed Course";
@@ -223,23 +222,22 @@
       const rank     = pick(cleaned, ["Rank","Ranking","GD Rank","rank","ranking"]);
       const price    = pick(cleaned, ["Price","Avg Price","Green Fee","price","green_fee"]);
       const lodging  = pick(cleaned, ["Lodging","Lodging Options","On-site Lodging","Onsite Lodging","Has Lodging","lodging"]);
-      // fuzzy for practice/dining (any key containing token)
       const practice = pick(cleaned, ["Practice Facility","Practice","practice","Driving Range","Range","Putting","Putting Green"]);
       const dining   = pick(cleaned, ["Dining","Dining Options","Restaurants","Food","On-site Dining","Onsite Dining","dining"]);
       const link     = pick(cleaned, ["URL","Website","Link","url","website","link"]);
 
       const parts = [];
       parts.push(`<h3 class="popup-title">🏌️‍♂️ ${escapeHtml(name)}</h3>`);
-      if (resort)  parts.push(`<p class="popup-line">🏰 <strong>Resort:</strong> ${escapeHtml(String(resort))}</p>`);
+      if (resort)   parts.push(`<p class="popup-line">🏰 <strong>Resort:</strong> ${escapeHtml(String(resort))}</p>`);
       if (state || city) parts.push(`<p class="popup-line">📍 <strong>Location:</strong> ${escapeHtml([city, state].filter(Boolean).join(", "))}</p>`);
-      if (rank)    parts.push(`<p class="popup-line">🏆 <strong>Ranking:</strong> ${escapeHtml(String(rank))}</p>`);
-      if (price)   parts.push(`<p class="popup-line">💵 <strong>Price:</strong> ${escapeHtml(String(price))}</p>`);
-      if (lodging) parts.push(`<p class="popup-line">🛏️ <strong>Lodging:</strong> ${escapeHtml(String(lodging))}</p>`);
-      if (practice)parts.push(`<p class="popup-line">⛳️ <strong>Practice:</strong> ${escapeHtml(String(practice))}</p>`);
-      if (dining)  parts.push(`<p class="popup-line">🍽️ <strong>Dining:</strong> ${escapeHtml(String(dining))}</p>`);
-      if (link)    parts.push(`<p class="popup-link">🔗 <a href="${safeUrl(link)}" target="_blank" rel="noopener">Visit site</a></p>`);
+      if (rank)     parts.push(`<p class="popup-line">🏆 <strong>Ranking:</strong> ${escapeHtml(String(rank))}</p>`);
+      if (price)    parts.push(`<p class="popup-line">💵 <strong>Price:</strong> ${escapeHtml(String(price))}</p>`);
+      if (lodging)  parts.push(`<p class="popup-line">🛏️ <strong>Lodging:</strong> ${escapeHtml(String(lodging))}</p>`);
+      if (practice) parts.push(`<p class="popup-line">⛳️ <strong>Practice:</strong> ${escapeHtml(String(practice))}</p>`);
+      if (dining)   parts.push(`<p class="popup-line">🍽️ <strong>Dining:</strong> ${escapeHtml(String(dining))}</p>`);
+      if (link)     parts.push(`<p class="popup-link">🔗 <a href="${safeUrl(link)}" target="_blank" rel="noopener">Visit site</a></p>`);
 
-      // Fallback: show up to 4 other non-empty columns so you never get a bare popup
+      // Fallback: up to 4 other non-empty columns so we never show a bare popup
       const hiddenKeys = new Set(["lat","latitude","Lat","LAT","lng","lon","Lng","LON","longitude","Longitude","LONGITUDE"]);
       const usedVals = new Set([name,resort,city,state,rank,price,lodging,practice,dining,link].filter(Boolean));
       const extras = [];
@@ -254,8 +252,7 @@
         extras.push(`<p class="popup-line">• <strong>${escapeHtml(label)}:</strong> ${pretty}</p>`);
         if (extras.length >= 4) break;
       }
-      if (!parts.length || parts.length === 1) parts.push(...extras);
-      else if (extras.length) parts.push(...extras);
+      if (extras.length) parts.push(...extras);
 
       return parts.join("");
     }
@@ -273,8 +270,6 @@
       }
       return true;
     }
-
-    let ALL_ROWS = [];
 
     function renderMarkers() {
       markers.clearLayers();
@@ -307,7 +302,6 @@
     let t;
     searchInput.addEventListener("input", () => { clearTimeout(t); t = setTimeout(renderMarkers, 200); });
     clearBtn.addEventListener("click", () => { searchInput.value = ""; renderMarkers(); });
-
   </script>
 </body>
 </html>
