@@ -23,22 +23,6 @@
     }
     .legend-dot { width: 10px; height: 10px; border-radius: 50%; background: #16a34a; display: inline-block; margin-right: 6px; box-shadow: inset 0 0 0 1px #065f46; }
 
-    .control-panel {
-      position: absolute; z-index: 1000; top: 60px; left: 12px;
-      background: rgba(15, 23, 42, 0.95); color: #e5e7eb; backdrop-filter: blur(4px);
-      padding: 10px 12px; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.25);
-      border: 1px solid rgba(148,163,184,0.25); width: 280px;
-    }
-    .control-panel h4 { margin: 0 0 8px; font-size: 14px; font-weight: 700; letter-spacing: .2px; color: #f8fafc; }
-    .control-row { display: flex; gap: 8px; margin-bottom: 4px; }
-    .control-row input[type="text"] {
-      flex: 1; background: #0f172a; color: #e5e7eb; border: 1px solid #334155; border-radius: 8px; padding: 8px 10px; font-size: 13px; outline: none;
-    }
-    .control-row .btn {
-      white-space: nowrap; background: #ffffff; color: #0f172a; border: 1px solid #e2e8f0;
-      border-radius: 8px; padding: 8px 10px; font-size: 13px; font-weight: 700; cursor: pointer;
-    }
-
     /* Dark, compact popups */
     .leaflet-popup-content-wrapper { background: #0f172a; color: #e5e7eb; border-radius: 10px; box-shadow: 0 16px 36px rgba(0,0,0,0.35); border: 1px solid #334155; }
     .leaflet-popup-tip { background: #0f172a; border: 1px solid #334155; }
@@ -53,20 +37,16 @@
     .ga-cluster img { display: block; width: 100%; height: auto; pointer-events: none; }
 
     .leaflet-marker-icon, .leaflet-marker-shadow { image-rendering: auto; }
+    /* Button group (Reset + Hawaii) */
+    .leaflet-control .btn-simple {
+      background:#fff;border:1px solid #e5e7eb;border-radius:999px;padding:6px 10px;
+      box-shadow:0 6px 18px rgba(0,0,0,.08);cursor:pointer;font-weight:700;font-size:13px;margin:0 0 6px 0;
+    }
   </style>
 </head>
 <body>
   <div class="topbar" title="Green flags are courses. Clusters show counts.">
     <span class="legend-dot"></span> Golf Atlas — Courses Map
-  </div>
-
-  <!-- Search only -->
-  <div class="control-panel">
-    <h4>Search</h4>
-    <div class="control-row">
-      <input id="searchInput" type="text" placeholder="Search name, city, or state…" />
-      <button id="clearBtn" class="btn" title="Clear search">Clear</button>
-    </div>
   </div>
 
   <div id="map"></div>
@@ -110,24 +90,31 @@
       maxZoom: 19
     }).addTo(map);
 
-    const defaultUSBounds = L.latLngBounds([[24.5, -125], [49.5, -66.5]]);
-    const usBounds = L.latLngBounds(L.latLng(5, -170), L.latLng(72, -50));
-    map.setMaxBounds(usBounds.pad(0.05));
-    map.fitBounds(defaultUSBounds, { padding: [20, 20] });
+    // Bounds
+    const lower48Bounds = L.latLngBounds([[25.0, -125.0], [49.5, -66.5]]);      // tighter Lower 48
+    const hawaiiBounds  = L.latLngBounds([[18.5, -161.2], [22.5, -154.5]]);     // tight Hawaii view
+    const usMaxBounds   = L.latLngBounds(L.latLng(5, -170), L.latLng(72, -50)); // keep panning under control
+    map.setMaxBounds(usMaxBounds.pad(0.05));
+    map.fitBounds(lower48Bounds, { padding: [20, 20] });
 
-    // Reset View control
-    const ResetView = L.Control.extend({
+    // --- Controls: Reset (Lower 48) + Hawaii ---
+    const ControlButtons = L.Control.extend({
       onAdd: function() {
-        const btn = L.DomUtil.create('button');
-        btn.innerHTML = 'Reset View';
-        btn.style.cssText = 'background:#fff;border:1px solid #e5e7eb;border-radius:999px;padding:6px 10px;box-shadow:0 6px 18px rgba(0,0,0,.08);cursor:pointer;font-weight:700;';
-        L.DomEvent.on(btn, 'click', (e) => { L.DomEvent.stop(e); map.fitBounds(defaultUSBounds, { padding: [20,20] }); });
-        return btn;
+        const div = L.DomUtil.create('div');
+        const reset = L.DomUtil.create('button', 'btn-simple', div);
+        reset.textContent = 'Reset View';
+        const hawaii = L.DomUtil.create('button', 'btn-simple', div);
+        hawaii.textContent = 'Hawaii';
+
+        L.DomEvent.on(reset, 'click', (e) => { L.DomEvent.stop(e); map.fitBounds(lower48Bounds, { padding: [20,20] }); });
+        L.DomEvent.on(hawaii, 'click', (e) => { L.DomEvent.stop(e); map.fitBounds(hawaiiBounds, { padding: [20,20] }); });
+
+        return div;
       },
       onRemove: function() {}
     });
-    L.control.resetView = (opts) => new ResetView(opts);
-    L.control.resetView({ position: 'topleft' }).addTo(map);
+    L.control.buttons = (opts) => new ControlButtons(opts);
+    L.control.buttons({ position: 'topleft' }).addTo(map);
 
     // Popups: extra headroom so they don’t get pushed off-screen
     L.Popup.prototype.options.autoPan = true;
@@ -179,15 +166,13 @@
     map.addLayer(markers);
 
     // Spiderfy clusters on click (pop-out instead of zoom)
-    markers.on('clusterclick', function (e) {
-      e.layer.spiderfy();
-    });
+    markers.on('clusterclick', function (e) { e.layer.spiderfy(); });
 
     // ---------------- Data + Rendering ----------------
     const csvUrl = getParam("csv") || "";
     if (!csvUrl) { console.warn("No CSV URL provided. Pass ?csv=<public CSV URL>"); }
 
-    let ALL_ROWS = [];  /* <-- declared only once */
+    let ALL_ROWS = [];
 
     Papa.parse(csvUrl, {
       download: true,
@@ -236,44 +221,11 @@
       if (practice) parts.push(`<p class="popup-line">⛳️ <strong>Practice:</strong> ${escapeHtml(String(practice))}</p>`);
       if (dining)   parts.push(`<p class="popup-line">🍽️ <strong>Dining:</strong> ${escapeHtml(String(dining))}</p>`);
       if (link)     parts.push(`<p class="popup-link">🔗 <a href="${safeUrl(link)}" target="_blank" rel="noopener">Visit site</a></p>`);
-
-      // Fallback: up to 4 other non-empty columns so we never show a bare popup
-      const hiddenKeys = new Set(["lat","latitude","Lat","LAT","lng","lon","Lng","LON","longitude","Longitude","LONGITUDE"]);
-      const usedVals = new Set([name,resort,city,state,rank,price,lodging,practice,dining,link].filter(Boolean));
-      const extras = [];
-      for (const k of Object.keys(cleaned)) {
-        if (hiddenKeys.has(k)) continue;
-        const v = cleaned[k]; if (v == null) continue;
-        const val = String(v).trim(); if (!val || usedVals.has(v)) continue;
-        if (val.length > 200) continue;
-        const label = normKey(k).replace(/[_\-]+/g," ").replace(/\s+/g," ").replace(/\b\w/g, c => c.toUpperCase());
-        const maybeUrl = safeUrl(val);
-        const pretty = /^https?:\/\//i.test(maybeUrl) ? `<a href="${maybeUrl}" target="_blank" rel="noopener">${escapeHtml(val)}</a>` : escapeHtml(val);
-        extras.push(`<p class="popup-line">• <strong>${escapeHtml(label)}:</strong> ${pretty}</p>`);
-        if (extras.length >= 4) break;
-      }
-      if (extras.length) parts.push(...extras);
-
       return parts.join("");
-    }
-
-    function rowPassesFilters(cleaned, q) {
-      if (q) {
-        const needle = q.toLowerCase();
-        const hay = [
-          pick(cleaned, ["Name","Course","Course Name","Title","Club","course","name"]),
-          pick(cleaned, ["Resort","Resort Name","Resort/Property","Property","Facility","Club"]),
-          pick(cleaned, ["City","city","Town","town"]),
-          pick(cleaned, ["State","ST","state","Province","province"])
-        ].filter(Boolean).join(" ").toLowerCase();
-        if (!hay.includes(needle)) return false;
-      }
-      return true;
     }
 
     function renderMarkers() {
       markers.clearLayers();
-      const q = (document.getElementById("searchInput").value || "").trim();
 
       let added = 0; const groupBounds = [];
 
@@ -281,7 +233,6 @@
         const lat = toNumber(pick(cleaned, ["lat","Lat","LAT","latitude","Latitude","LATITUDE"]));
         const lng = toNumber(pick(cleaned, ["lng","Lon","lon","Lng","LON","longitude","Longitude","LONGITUDE"]));
         if (lat === undefined || lng === undefined) return;
-        if (!rowPassesFilters(cleaned, q)) return;
 
         const m = L.marker([lat, lng], { icon: flagIcon }).bindPopup(buildPopup(cleaned));
         markers.addLayer(m);
@@ -290,18 +241,11 @@
 
       if (added > 0) {
         try { map.fitBounds(L.latLngBounds(groupBounds).pad(0.1)); }
-        catch(e) { map.fitBounds(defaultUSBounds, { padding: [20,20] }); }
+        catch(e) { map.fitBounds(lower48Bounds, { padding: [20,20] }); }
       } else {
-        map.fitBounds(defaultUSBounds, { padding: [20,20] });
+        map.fitBounds(lower48Bounds, { padding: [20,20] });
       }
     }
-
-    // Search events
-    const searchInput = document.getElementById("searchInput");
-    const clearBtn = document.getElementById("clearBtn");
-    let t;
-    searchInput.addEventListener("input", () => { clearTimeout(t); t = setTimeout(renderMarkers, 200); });
-    clearBtn.addEventListener("click", () => { searchInput.value = ""; renderMarkers(); });
   </script>
 </body>
 </html>
