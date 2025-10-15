@@ -5,7 +5,7 @@
   <title>Golf Atlas – Courses</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Leaflet CSS/JS -->
+  <!-- Leaflet core -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -17,6 +17,17 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""
   ></script>
+
+  <!-- MarkerCluster plugin -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+  />
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
   <!-- Papa Parse (CSV) -->
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
@@ -33,7 +44,8 @@
     }
     .titlebar h1 { margin: 0; font-size: 18px; font-weight: 700; }
     .titlebar small { color: #666; }
-    /* popup polish */
+
+    /* Popup polish */
     .leaflet-popup-content { margin: 10px 14px; }
     .leaflet-popup-content-wrapper { border-radius: 12px; }
   </style>
@@ -46,19 +58,39 @@
   <div id="map"></div>
 
   <script>
-    // ---- helpers ----
+    // -------- Helpers --------
     const getParam = (k) => new URL(location.href).searchParams.get(k);
     const val = (x) => (x ?? "").toString().trim();
     const num = (x) => (typeof x === "number" ? x : Number(x));
 
-    // initialize map
+    // Map + tiles
     const map = L.map("map", { scrollWheelZoom: true });
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "&copy; OpenStreetMap contributors"
     }).addTo(map);
-    map.setView([39.5, -98.5], 4); // default USA view (shows something even if CSV fails)
+    map.setView([39.5, -98.5], 4); // default USA view so you see a map even if CSV fails
 
-    // csv url
+    // Cluster group (feel free to tweak disableClusteringAtZoom)
+    const clusters = L.markerClusterGroup({
+      showCoverageOnHover: false,
+      spiderfyOnMaxZoom: true,
+      disableClusteringAtZoom: 10
+    }).addTo(map);
+
+    // Cluster hover: if all child markers share one resort, show the resort; else show count
+    clusters.on("clustermouseover", (e) => {
+      try {
+        const children = e.layer.getAllChildMarkers();
+        const resorts = Array.from(new Set(children.map(m => m.options._resort).filter(Boolean)));
+        const text = (resorts.length === 1) ? resorts[0] : `${children.length} courses`;
+        e.layer.bindTooltip(text, { direction: "top", offset: [0, -8] }).openTooltip();
+      } catch {}
+    });
+    clusters.on("clustermouseout", (e) => {
+      if (e.layer.getTooltip()) e.layer.closeTooltip();
+    });
+
+    // CSV loading
     const csvUrl = getParam("csv");
     if (!csvUrl) {
       console.warn("No ?csv= URL provided. Add ?csv=<encoded csv url> to your page URL.");
@@ -78,14 +110,13 @@
           let plotted = 0;
 
           data.forEach((r) => {
-            // flexible column names for lat/lon
+            // Flexible lat/lon column names
             const lat = r.Latitude ?? r.latitude ?? r.lat;
             const lon = r.Longitude ?? r.longitude ?? r.lng ?? r.lon;
-
             const latN = num(lat), lonN = num(lon);
             if (!isFinite(latN) || !isFinite(lonN)) return;
 
-            // pull all your fields
+            // Pull fields from your CSV
             const name       = val(r["Course Name"] || r.name);
             const resort     = val(r["Course Resort"]);
             const city       = val(r["City"]);
@@ -106,7 +137,7 @@
             const phone      = val(r["Phone"]);
             const ranking    = val(r["Ranking (Consensus or Golf Digest Top 100)"]);
 
-            // build polished popup
+            // Popup HTML (polished)
             const courseLine = [par && `Par ${par}`, yardage && `${yardage} yds`]
               .filter(Boolean).join(" • ");
 
@@ -140,10 +171,14 @@
               </div>
             `;
 
-            const marker = L.marker([latN, lonN]).addTo(map).bindPopup(popupHtml);
-            // quick hover tooltip
+            // Create marker with resort stored for cluster tooltip logic
+            const marker = L.marker([latN, lonN], { _resort: resort })
+              .bindPopup(popupHtml);
+
+            // Hover tooltip on individual markers: show course name
             if (name) marker.bindTooltip(name, { direction: "top", offset: [0, -8] });
 
+            clusters.addLayer(marker);
             bounds.extend([latN, lonN]);
             plotted++;
           });
@@ -161,7 +196,7 @@
       });
     }
 
-    // quick debug toggle: add &debug=1 to URL
+    // Debug toggle: add &debug=1 to URL
     if (getParam("debug") === "1") console.log("Debug ON:", location.href);
   </script>
 </body>
