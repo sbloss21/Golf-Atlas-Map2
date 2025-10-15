@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Golf Atlas Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+          crossorigin=""></script>
+  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #map { height: 100vh; width: 100%; }
+    .titlebar { padding: 10px 12px; font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif; }
+  </style>
+</head>
+<body>
+  <div class="titlebar">
+    <h1 style="margin:0;">Golf Atlas – Courses</h1>
+    <small>Data source: <code>?csv=...</code> URL parameter</small>
+  </div>
+  <div id="map"></div>
+
+  <script>
+    const getParam = (k) => new URL(location.href).searchParams.get(k);
+    const map = L.map('map', { scrollWheelZoom: true });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+    map.setView([39.5,-98.5], 4); // default USA view
+
+    const csvUrl = getParam('csv');
+    if (!csvUrl) {
+      console.warn('Add ?csv=<encoded csv url> to your page URL.');
+    } else {
+      Papa.parse(csvUrl, {
+        download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
+        complete: ({data}) => {
+          const bounds = L.latLngBounds(); let count = 0;
+          data.forEach(r => {
+            const lat = r.Latitude ?? r.latitude ?? r.lat;
+            const lon = r.Longitude ?? r.longitude ?? r.lng ?? r.lon;
+            if (typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon)) {
+              const name = r['Course Name'] || 'Unknown';
+              const resort = r['Course Resort'] || '';
+              const city = r.City || '';
+              const state = r['State/Province'] || '';
+              const fee = r['Cost per Course (Green Fee Range)'] || '';
+              const lodging = r['Lodging On-Site (Yes/No)'] || '';
+              const url = r['Website URL'] || '';
+              const phone = r['Phone'] || '';
+              const pop = `
+                <div style="min-width:220px">
+                  <strong>${name}</strong>${resort ? ` <br/><em>${resort}</em>` : ''}
+                  <div>${city}${city && state ? ', ' : ''}${state}</div>
+                  ${fee ? `<div><b>Fees:</b> ${fee}</div>` : ''}
+                  ${lodging ? `<div><b>Lodging:</b> ${lodging}</div>` : ''}
+                  ${phone ? `<div><b>Phone:</b> ${phone}</div>` : ''}
+                  ${url ? `<div><a href="${url}" target="_blank" rel="noopener">Website</a></div>` : ''}
+                </div>`;
+              L.marker([lat, lon]).addTo(map).bindPopup(pop);
+              bounds.extend([lat, lon]); count++;
+            }
+          });
+          if (count) map.fitBounds(bounds.pad(0.15));
+          else console.warn('CSV loaded but no valid Latitude/Longitude found.');
+        },
+        error: (e) => { console.error('CSV load error:', e); alert('Could not load CSV. See console.'); }
+      });
+    }
+  </script>
+</body>
+</html>
