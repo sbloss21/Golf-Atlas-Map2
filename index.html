@@ -55,9 +55,7 @@
     .popup-title { font-weight: 800; font-size: 15px; margin: 0 0 4px; color: #f8fafc; }
     .popup-line { margin: 0 0 3px; color: #cbd5e1; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .popup-line strong { color: #e2e8f0; }
-    .popup-cta {
-      margin-top: 6px;
-    }
+    .popup-cta { margin-top: 6px; }
     .popup-cta a {
       display:inline-block; text-decoration:none; font-weight:800; font-size:12px;
       background:#22c55e; color:#0b1220; border:1px solid #16a34a; padding:6px 10px; border-radius:999px;
@@ -100,10 +98,21 @@
         const hit = keys.find(k => normKey(k).toLowerCase() === normKey(want).toLowerCase());
         if (hit) return obj[hit];
       }
-      // fuzzy fallback
-      for (const want of candidates) {
+      for (const want of candidates) { // fuzzy
         const hit = keys.find(k => keyIncludes(k, want));
         if (hit) return obj[hit];
+      }
+      return undefined;
+    }
+    // Find any URL-ish value across all columns
+    function pickAnyUrl(obj) {
+      const keys = Object.keys(obj);
+      for (const k of keys) {
+        const lk = normKey(k).toLowerCase();
+        if (lk.includes("url") || lk.includes("website") || lk.includes("link")) {
+          const v = String(obj[k] ?? "").trim();
+          if (v) return v;
+        }
       }
       return undefined;
     }
@@ -253,18 +262,28 @@
       const lodging  = pick(cleaned, ["Lodging","Lodging Options","On-site Lodging","Onsite Lodging","Has Lodging","lodging"]);
       const practice = pick(cleaned, ["Practice Facility","Practice","practice","Driving Range","Range","Putting","Putting Green"]);
       const dining   = pick(cleaned, ["Dining","Dining Options","Restaurants","Food","On-site Dining","Onsite Dining","dining"]);
-      const link     = pick(cleaned, ["URL","Website","Link","url","website","link"]);
+
+      // NEW: number of courses on property (flexible keys)
+      const numCourses = pick(cleaned, [
+        "# of Courses","Courses on Property","Total Courses","Number of Courses","Courses","Course Count","# Courses","Courses (Property)"
+      ]);
+
+      // Robust URL pick (scan any url/website/link column)
+      const linkRaw = pick(cleaned, ["URL","Website","Link","Course URL","Resort URL","Official Site","Official Website","Site"])
+                    || pickAnyUrl(cleaned);
+      const link = linkRaw ? safeUrl(linkRaw) : "";
 
       const parts = [];
       parts.push(`<h3 class="popup-title">🏌️‍♂️ ${escapeHtml(name)}</h3>`);
-      if (resort)   parts.push(`<p class="popup-line">🏰 <strong>Resort:</strong> ${escapeHtml(String(resort))}</p>`);
+      if (resort)     parts.push(`<p class="popup-line">🏰 <strong>Resort:</strong> ${escapeHtml(String(resort))}</p>`);
       if (state || city) parts.push(`<p class="popup-line">📍 <strong>Location:</strong> ${escapeHtml([city, state].filter(Boolean).join(", "))}</p>`);
-      if (rank)     parts.push(`<p class="popup-line">🏆 <strong>Ranking:</strong> ${escapeHtml(String(rank))}</p>`);
-      if (price)    parts.push(`<p class="popup-line">💵 <strong>Price:</strong> ${escapeHtml(String(price))}</p>`);
-      if (lodging)  parts.push(`<p class="popup-line">🛏️ <strong>Lodging:</strong> ${escapeHtml(String(lodging))}</p>`);
-      if (practice) parts.push(`<p class="popup-line">⛳️ <strong>Practice:</strong> ${escapeHtml(String(practice))}</p>`);
-      if (dining)   parts.push(`<p class="popup-line">🍽️ <strong>Dining:</strong> ${escapeHtml(String(dining))}</p>`);
-      if (link)     parts.push(`<p class="popup-cta"><a href="${safeUrl(link)}" target="_blank" rel="noopener">Visit Course Website ↗</a></p>`);
+      if (numCourses) parts.push(`<p class="popup-line">🏘️ <strong>Courses on property:</strong> ${escapeHtml(String(numCourses))}</p>`);
+      if (rank)       parts.push(`<p class="popup-line">🏆 <strong>Ranking:</strong> ${escapeHtml(String(rank))}</p>`);
+      if (price)      parts.push(`<p class="popup-line">💵 <strong>Price:</strong> ${escapeHtml(String(price))}</p>`);
+      if (lodging)    parts.push(`<p class="popup-line">🛏️ <strong>Lodging:</strong> ${escapeHtml(String(lodging))}</p>`);
+      if (practice)   parts.push(`<p class="popup-line">⛳️ <strong>Practice:</strong> ${escapeHtml(String(practice))}</p>`);
+      if (dining)     parts.push(`<p class="popup-line">🍽️ <strong>Dining:</strong> ${escapeHtml(String(dining))}</p>`);
+      if (link)       parts.push(`<p class="popup-cta"><a href="${link}" target="_blank" rel="noopener">Visit Course Website ↗</a></p>`);
       return parts.join("");
     }
 
