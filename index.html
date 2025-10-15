@@ -5,20 +5,14 @@
   <title>Golf Atlas Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Leaflet -->
+  <!-- Leaflet CSS -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""
   />
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""
-  ></script>
-
-  <!-- MarkerCluster -->
+  <!-- MarkerCluster CSS -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
@@ -27,10 +21,6 @@
     rel="stylesheet"
     href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
   />
-  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-
-  <!-- PapaParse for CSV -->
-  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
   <style>
     html, body, #map { height: 100%; margin: 0; }
@@ -107,37 +97,67 @@
   </div>
   <div id="map"></div>
 
+  <!-- Leaflet JS -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <!-- MarkerCluster JS -->
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <!-- PapaParse for CSV -->
+  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+
   <script>
-    // ----------- Helpers -----------
+    // ----------- Small helpers -----------
     function getParam(name) {
       const p = new URLSearchParams(location.search).get(name);
       return p ? decodeURIComponent(p) : null;
     }
-
-    function coalesce(obj, keys) {
-      for (const k of keys) {
-        if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== "") {
-          return obj[k];
-        }
-      }
-      return undefined;
-    }
-
     function toNumber(x) {
       if (x === undefined) return undefined;
       const n = Number(String(x).replace(/[^\d.-]/g, ""));
       return isFinite(n) ? n : undefined;
     }
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+    function safeUrl(u) {
+      const s = String(u || "").trim();
+      if (!s) return "";
+      if (/^https?:\/\//i.test(s)) return s;
+      if (/\.[a-z]{2,}$/i.test(s)) return "https://" + s.replace(/^\/+/, ""); // look like domain
+      return s;
+    }
+    function normKey(k) {
+      return String(k || "").replace(/\uFEFF/g, "").trim(); // strip BOM + trim
+    }
+    function keyIncludes(k, word) {
+      return normKey(k).toLowerCase().includes(String(word).toLowerCase());
+    }
+    function pick(obj, candidates) {
+      const keys = Object.keys(obj);
+      for (const want of candidates) {
+        if (obj.hasOwnProperty(want)) return obj[want];
+        const hit = keys.find(k => normKey(k).toLowerCase() === normKey(want).toLowerCase());
+        if (hit) return obj[hit];
+      }
+      return undefined;
+    }
+
+    // Debug flag (?debug=1 shows headers in console)
+    const DEBUG = new URLSearchParams(location.search).has("debug");
 
     // ----------- Map init -----------
-    const map = L.map('map', {
-      worldCopyJump: true,
-      preferCanvas: true
-    });
+    const map = L.map("map", { worldCopyJump: true, preferCanvas: true });
 
     // Light basemap (Carto Positron)
-    const tiles = L.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
       {
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
@@ -146,12 +166,9 @@
     ).addTo(map);
 
     // Keep view within USA + AK/HI
-    const usBounds = L.latLngBounds(
-      L.latLng(5, -170),   // SW
-      L.latLng(72, -50)    // NE
-    );
+    const usBounds = L.latLngBounds(L.latLng(5, -170), L.latLng(72, -50));
     map.setMaxBounds(usBounds.pad(0.05));
-    map.fitBounds(L.latLngBounds([ [24.5, -125], [49.5, -66.5] ]), { padding: [20,20] });
+    map.fitBounds(L.latLngBounds([[24.5, -125], [49.5, -66.5]]), { padding: [20, 20] });
 
     // ----------- Icons -----------
     // Golf flag SVG marker
@@ -201,8 +218,8 @@
                 `<circle cx="${x}" cy="${y}" r="1.4" fill="#d1d5db" opacity="${
                   (y===12||y===48)?0.35:(y===18||y===42)?0.45:(y===24||y===36)?0.55:0.6
                 }"/>`
-              ).join('')
-            ).join('')}
+              ).join("")
+            ).join("")}
             <text x="30" y="34" text-anchor="middle"
                   font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
                   font-size="20" font-weight="700" fill="#111827">${count}</text>
@@ -212,7 +229,7 @@
 
       return L.divIcon({
         html: `<div class="ga-cluster"><img src="data:image/svg+xml;charset=UTF-8,${ballSVG}" alt="${count}"/></div>`,
-        className: 'ga-cluster-wrapper',
+        className: "ga-cluster-wrapper",
         iconSize: [size, size]
       });
     }
@@ -227,9 +244,9 @@
     map.addLayer(markers);
 
     // ----------- Load CSV -----------
-    const csvUrl = getParam('csv') || '';
+    const csvUrl = getParam("csv") || "";
     if (!csvUrl) {
-      console.warn('No CSV URL provided. Pass ?csv=<public CSV URL>');
+      console.warn("No CSV URL provided. Pass ?csv=<public CSV URL>");
     }
 
     Papa.parse(csvUrl, {
@@ -237,37 +254,86 @@
       header: true,
       dynamicTyping: false,
       skipEmptyLines: true,
-      complete: function(results) {
+      transformHeader: (h) => normKey(h),
+      complete: function (results) {
         const rows = results.data || [];
+        if (DEBUG && rows.length) {
+          console.log("CSV headers:", Object.keys(rows[0]));
+        }
+
         let added = 0;
 
         rows.forEach((row) => {
-          // Try common column names (case-insensitive)
-          // Lat/Lng
-          const lat = toNumber(coalesce(row, ['lat','Lat','LAT','latitude','Latitude','LATITUDE']));
-          const lng = toNumber(coalesce(row, ['lng','Lon','lon','Lng','LON','longitude','Longitude','LONGITUDE']));
+          // Normalize per-row keys (defensive)
+          const cleaned = {};
+          Object.keys(row).forEach(k => cleaned[normKey(k)] = row[k]);
 
+          // Lat/Lng candidates
+          const lat = toNumber(
+            pick(cleaned, ["lat","Lat","LAT","latitude","Latitude","LATITUDE"])
+          );
+          const lng = toNumber(
+            pick(cleaned, ["lng","Lon","lon","Lng","LON","longitude","Longitude","LONGITUDE"])
+          );
           if (lat === undefined || lng === undefined) return; // need coordinates
 
-          // Course name & details
-          const name = coalesce(row, ['Name','Course','Course Name','Title','Club','course','name']) || 'Unnamed Course';
-          const city = coalesce(row, ['City','city','Town','town']);
-          const state = coalesce(row, ['State','state','Province','province','ST']);
-          const rank = coalesce(row, ['Rank','rank','Ranking','ranking']);
-          const price = coalesce(row, ['Price','price','Green Fee','green_fee','Avg Price']);
-          const lodging = coalesce(row, ['Lodging','lodging','On-site Lodging','Onsite Lodging','Onsite','Has Lodging']);
-          const url = coalesce(row, ['URL','Url','url','Website','website','Link','link']);
+          // Name + other nice-to-haves
+          let name =
+            pick(cleaned, ["Name","Course","Course Name","Title","Club","course","name"]) ||
+            (() => {
+              const k = Object.keys(cleaned).find(key => keyIncludes(key, "course"));
+              return k ? cleaned[k] : undefined;
+            })() ||
+            "Unnamed Course";
+
+          const city   = pick(cleaned, ["City","city","Town","town"]);
+          const state  = pick(cleaned, ["State","state","Province","province","ST"]);
+          const rank   = pick(cleaned, ["Rank","rank","Ranking","ranking"]);
+          const price  = pick(cleaned, ["Price","price","Green Fee","green_fee","Avg Price"]);
+          const lodge  = pick(cleaned, ["Lodging","lodging","On-site Lodging","Onsite Lodging","Onsite","Has Lodging"]);
+          const link   = pick(cleaned, ["URL","Url","url","Website","website","Link","link"]);
 
           // Popup HTML
           const lines = [];
           lines.push(`<h3 class="popup-title">${escapeHtml(name)}</h3>`);
-          if (city || state) lines.push(`<p class="popup-sub">${escapeHtml([city, state].filter(Boolean).join(', '))}</p>`);
-          if (rank) lines.push(`<p class="popup-line"><strong>Rank:</strong> ${escapeHtml(String(rank))}</p>`);
+          if (city || state) lines.push(`<p class="popup-sub">${escapeHtml([city, state].filter(Boolean).join(", "))}</p>`);
+          if (rank)  lines.push(`<p class="popup-line"><strong>Rank:</strong> ${escapeHtml(String(rank))}</p>`);
           if (price) lines.push(`<p class="popup-line"><strong>Price:</strong> ${escapeHtml(String(price))}</p>`);
-          if (lodging) lines.push(`<p class="popup-line"><strong>Lodging:</strong> ${escapeHtml(String(lodging))}</p>`);
-          if (url) lines.push(`<p class="popup-link"><a href="${safeUrl(url)}" target="_blank" rel="noopener">Visit site ↗</a></p>`);
+          if (lodge) lines.push(`<p class="popup-line"><strong>Lodging:</strong> ${escapeHtml(String(lodge))}</p>`);
+          if (link)  lines.push(`<p class="popup-link"><a href="${safeUrl(link)}" target="_blank" rel="noopener">Visit site ↗</a></p>`);
 
-          const m = L.marker([lat, lng], { icon: flagIcon }).bindPopup(lines.join(''));
+          // Show any other non-empty fields automatically (skip Lat/Lng + giant blobs)
+          const hiddenKeys = new Set([
+            "lat","Lat","LAT","latitude","Latitude","LATITUDE",
+            "lng","Lon","lon","Lng","LON","longitude","Longitude","LONGITUDE"
+          ]);
+          const usedValues = new Set([name, city, state, rank, price, lodge, link].filter(Boolean));
+
+          const extras = [];
+          for (const k of Object.keys(cleaned)) {
+            if (hiddenKeys.has(k)) continue;
+            const v = cleaned[k];
+            if (v === null || v === undefined) continue;
+            const val = String(v).trim();
+            if (!val || usedValues.has(v)) continue;
+            if (val.length > 300) continue; // keep tidy
+
+            // Prettify label
+            const label = normKey(k).replace(/[_\-]+/g, " ")
+              .replace(/\s+/g, " ")
+              .replace(/\b\w/g, c => c.toUpperCase());
+
+            // Linkify if it looks like a URL
+            const maybeUrl = safeUrl(val);
+            const pretty = /^https?:\/\//i.test(maybeUrl)
+              ? `<a href="${maybeUrl}" target="_blank" rel="noopener">${escapeHtml(val)}</a>`
+              : escapeHtml(val);
+
+            extras.push(`<p class="popup-line"><strong>${escapeHtml(label)}:</strong> ${pretty}</p>`);
+          }
+          if (extras.length) lines.push(...extras);
+
+          const m = L.marker([lat, lng], { icon: flagIcon }).bindPopup(lines.join(""));
           markers.addLayer(m);
           added++;
         });
@@ -275,33 +341,19 @@
         if (added > 0) {
           try {
             map.fitBounds(markers.getBounds().pad(0.1));
-          } catch(e) {
-            // fall back to default US view
-            map.fitBounds(L.latLngBounds([ [24.5, -125], [49.5, -66.5] ]), { padding: [20,20] });
+          } catch (e) {
+            map.fitBounds(L.latLngBounds([[24.5, -125], [49.5, -66.5]]), { padding: [20, 20] });
           }
         } else {
-          alert('No valid rows found in the CSV (need Latitude/Longitude columns).');
+          alert("No valid rows found in the CSV (need Latitude/Longitude columns).");
         }
       },
-      error: function(err) {
-        console.error('CSV load error:', err);
-        alert('There was a problem loading the CSV. Make sure the ?csv= link is public.');
+      error: function (err) {
+        console.error("CSV load error:", err);
+        alert("There was a problem loading the CSV. Make sure the ?csv= link is public.");
       }
     });
 
-    // ----------- Utilities -----------
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    }
-    function safeUrl(u) {
-      const s = String(u).trim();
-      if (/^https?:\/\//i.test(s)) return s;
-      return 'https://' + s.replace(/^\/+/, '');
-    }
   </script>
 </body>
 </html>
