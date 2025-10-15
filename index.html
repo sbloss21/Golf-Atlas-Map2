@@ -98,7 +98,7 @@
         const hit = keys.find(k => normKey(k).toLowerCase() === normKey(want).toLowerCase());
         if (hit) return obj[hit];
       }
-      for (const want of candidates) { // fuzzy
+      for (const want of candidates) {
         const hit = keys.find(k => keyIncludes(k, want));
         if (hit) return obj[hit];
       }
@@ -127,9 +127,9 @@
     }).addTo(map);
 
     // Bounds
-    const lower48Bounds = L.latLngBounds([[25.0, -125.0], [49.5, -66.5]]);      // tighter Lower 48
-    const hawaiiBounds  = L.latLngBounds([[18.5, -161.2], [22.5, -154.5]]);     // tight Hawaii view
-    const usMaxBounds   = L.latLngBounds(L.latLng(5, -170), L.latLng(72, -50)); // keep panning under control
+    const lower48Bounds = L.latLngBounds([[25.0, -125.0], [49.5, -66.5]]);
+    const hawaiiBounds  = L.latLngBounds([[18.5, -161.2], [22.5, -154.5]]);
+    const usMaxBounds   = L.latLngBounds(L.latLng(5, -170), L.latLng(72, -50));
     map.setMaxBounds(usMaxBounds.pad(0.05));
     map.fitBounds(lower48Bounds, { padding: [20, 20] });
 
@@ -159,7 +159,6 @@
         clear.textContent = 'Clear';
         clear.id = 'clearBtn';
 
-        // Prevent map drag/scroll when interacting
         L.DomEvent.disableClickPropagation(wrap);
         L.DomEvent.disableScrollPropagation(wrap);
         return wrap;
@@ -211,14 +210,14 @@
     const markers = L.markerClusterGroup({
       showCoverageOnHover: false,
       spiderfyOnMaxZoom: true,
-      spiderfyDistanceMultiplier: 1.2,   // spread so they're easy to hover
-      zoomToBoundsOnClick: false,        // spiderfy on click instead
+      spiderfyDistanceMultiplier: 1.2,
+      zoomToBoundsOnClick: false,
       maxClusterRadius: 55,
       iconCreateFunction: golfBallClusterIcon
     });
     map.addLayer(markers);
 
-    // Spiderfy clusters on click (pop-out instead of zoom)
+    // Spiderfy clusters on click
     markers.on('clusterclick', function (e) { e.layer.spiderfy(); });
 
     // ---------------- Data + Rendering ----------------
@@ -251,39 +250,63 @@
 
     function buildPopup(cleaned) {
       const name =
-        pick(cleaned, ["Name","Course","Course Name","Title","Club","course","name"]) ||
+        pick(cleaned, ["course_name","Name","Course","Course Name","Title","Club","course","name"]) ||
         (() => { const k = Object.keys(cleaned).find(key => keyIncludes(key, "course")); return k ? cleaned[k] : undefined; })() || "Unnamed Course";
 
-      const resort   = pick(cleaned, ["Resort","Resort Name","Resort/Property","Property","Facility","Club"]);
-      const city     = pick(cleaned, ["City","city","Town","town"]);
-      const state    = pick(cleaned, ["State","ST","state","Province","province"]);
-      const rank     = pick(cleaned, ["Rank","Ranking","GD Rank","rank","ranking"]);
-      const price    = pick(cleaned, ["Price","Avg Price","Green Fee","price","green_fee"]);
-      const lodging  = pick(cleaned, ["Lodging","Lodging Options","On-site Lodging","Onsite Lodging","Has Lodging","lodging"]);
-      const practice = pick(cleaned, ["Practice Facility","Practice","practice","Driving Range","Range","Putting","Putting Green"]);
-      const dining   = pick(cleaned, ["Dining","Dining Options","Restaurants","Food","On-site Dining","Onsite Dining","dining"]);
+      const resort   = pick(cleaned, ["resort","Resort","Resort Name","Resort/Property","Property","Facility","Club"]);
+      const city     = pick(cleaned, ["city","City","Town","town"]);
+      const state    = pick(cleaned, ["state","State","ST","Province","province"]);
 
-      // NEW: number of courses on property (flexible keys)
+      // Ranking: prefer new header, then legacy, then generic variants
+      const rank     = pick(cleaned, ["top_100_ranking","course_ranking","Rank","Ranking","GD Rank","rank","ranking"]);
+
+      // Your custom columns + common variants
       const numCourses = pick(cleaned, [
+        "#_of_courses_on_property",
+        "courses_on_site",
         "# of Courses","Courses on Property","Total Courses","Number of Courses","Courses","Course Count","# Courses","Courses (Property)"
       ]);
 
+      const price    = pick(cleaned, [
+        "cost_per_course(green_fee_range_",
+        "Cost per Course","cost_per_course","Price","Avg Price","Green Fee","price","green_fee"
+      ]);
+
+      const peak     = pick(cleaned, [
+        "peak_season/best_time_to_visit",
+        "peak season","best time to visit","Peak Season","Best Time To Visit","Peak Season / Best Time To Visit"
+      ]);
+
+      const lodgingYN = pick(cleaned, [
+        "lodging_on-site(yes_no)",
+        "Lodging on Site","Has Lodging","On-site Lodging","Onsite Lodging","lodging"
+      ]);
+
+      const lodgingDetails = pick(cleaned, [
+        "lodging_details",
+        "Lodging Details","Lodging Options","On-site Lodging Details"
+      ]);
+
+      const practice = pick(cleaned, ["Practice Facility","Practice","practice","Driving Range","Range","Putting","Putting Green"]);
+      const dining   = pick(cleaned, ["Dining","Dining Options","Restaurants","Food","On-site Dining","Onsite Dining","dining"]);
+
       // Robust URL pick (scan any url/website/link column)
-      const linkRaw = pick(cleaned, ["URL","Website","Link","Course URL","Resort URL","Official Site","Official Website","Site"])
-                    || pickAnyUrl(cleaned);
-      const link = linkRaw ? safeUrl(linkRaw) : "";
+      const linkRaw = pick(cleaned, ["URL","Website","Link","Course URL","Resort URL","Official Site","Official Website","Site"]) || pickAnyUrl(cleaned);
+      const link    = linkRaw ? safeUrl(linkRaw) : "";
 
       const parts = [];
       parts.push(`<h3 class="popup-title">🏌️‍♂️ ${escapeHtml(name)}</h3>`);
-      if (resort)     parts.push(`<p class="popup-line">🏰 <strong>Resort:</strong> ${escapeHtml(String(resort))}</p>`);
-      if (state || city) parts.push(`<p class="popup-line">📍 <strong>Location:</strong> ${escapeHtml([city, state].filter(Boolean).join(", "))}</p>`);
-      if (numCourses) parts.push(`<p class="popup-line">🏘️ <strong>Courses on property:</strong> ${escapeHtml(String(numCourses))}</p>`);
-      if (rank)       parts.push(`<p class="popup-line">🏆 <strong>Ranking:</strong> ${escapeHtml(String(rank))}</p>`);
-      if (price)      parts.push(`<p class="popup-line">💵 <strong>Price:</strong> ${escapeHtml(String(price))}</p>`);
-      if (lodging)    parts.push(`<p class="popup-line">🛏️ <strong>Lodging:</strong> ${escapeHtml(String(lodging))}</p>`);
-      if (practice)   parts.push(`<p class="popup-line">⛳️ <strong>Practice:</strong> ${escapeHtml(String(practice))}</p>`);
-      if (dining)     parts.push(`<p class="popup-line">🍽️ <strong>Dining:</strong> ${escapeHtml(String(dining))}</p>`);
-      if (link)       parts.push(`<p class="popup-cta"><a href="${link}" target="_blank" rel="noopener">Visit Course Website ↗</a></p>`);
+      if (resort)       parts.push(`<p class="popup-line">🏰 <strong>Resort:</strong> ${escapeHtml(String(resort))}</p>`);
+      if (state || city)parts.push(`<p class="popup-line">📍 <strong>Location:</strong> ${escapeHtml([city, state].filter(Boolean).join(", "))}</p>`);
+      if (numCourses)   parts.push(`<p class="popup-line">🏘️ <strong>Courses on property:</strong> ${escapeHtml(String(numCourses))}</p>`);
+      if (rank)         parts.push(`<p class="popup-line">🏆 <strong>Top 100:</strong> #${escapeHtml(String(rank))}</p>`);
+      if (price)        parts.push(`<p class="popup-line">💵 <strong>Price:</strong> ${escapeHtml(String(price))}</p>`);
+      if (peak)         parts.push(`<p class="popup-line">📅 <strong>Peak season:</strong> ${escapeHtml(String(peak))}</p>`);
+      if (lodgingYN)    parts.push(`<p class="popup-line">🛏️ <strong>Lodging on-site:</strong> ${escapeHtml(String(lodgingYN))}</p>`);
+      if (lodgingDetails) parts.push(`<p class="popup-line">🏨 <strong>Lodging details:</strong> ${escapeHtml(String(lodgingDetails))}</p>`);
+      if (practice)     parts.push(`<p class="popup-line">⛳️ <strong>Practice:</strong> ${escapeHtml(String(practice))}</p>`);
+      if (dining)       parts.push(`<p class="popup-line">🍽️ <strong>Dining:</strong> ${escapeHtml(String(dining))}</p>`);
+      if (link)         parts.push(`<p class="popup-cta"><a href="${link}" target="_blank" rel="noopener">Visit Course Website ↗</a></p>`);
       return parts.join("");
     }
 
@@ -291,10 +314,10 @@
       if (q) {
         const needle = q.toLowerCase();
         const hay = [
-          pick(cleaned, ["Name","Course","Course Name","Title","Club","course","name"]),
-          pick(cleaned, ["Resort","Resort Name","Resort/Property","Property","Facility","Club"]),
-          pick(cleaned, ["City","city","Town","town"]),
-          pick(cleaned, ["State","ST","state","Province","province"])
+          pick(cleaned, ["course_name","Name","Course","Course Name","Title","Club","course","name"]),
+          pick(cleaned, ["resort","Resort","Resort Name","Resort/Property","Property","Facility","Club"]),
+          pick(cleaned, ["city","City","Town","town"]),
+          pick(cleaned, ["state","State","ST","Province","province"])
         ].filter(Boolean).join(" ").toLowerCase();
         if (!hay.includes(needle)) return false;
       }
@@ -311,7 +334,7 @@
 
       ALL_ROWS.forEach(cleaned => {
         const lat = toNumber(pick(cleaned, ["lat","Lat","LAT","latitude","Latitude","LATITUDE"]));
-        const lng = toNumber(pick(cleaned, ["lng","Lon","lon","Lng","LON","longitude","Longitude","LONGITUDE"]));
+        const lng = toNumber(pick(cleaned, ["lng","Lon","lon","Lng","LON","longitude","Longitude","LONGITUDE","long","Long","LONG"]));
         if (lat === undefined || lng === undefined) return;
         if (!rowPassesFilters(cleaned, q)) return;
 
