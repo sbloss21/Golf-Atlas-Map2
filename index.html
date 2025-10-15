@@ -1,321 +1,307 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Golf Atlas — Interactive Map</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <title>Golf Atlas Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Leaflet & MarkerCluster -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <!-- MarkerCluster -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+  />
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
-  <!-- Papa Parse for CSV -->
+  <!-- PapaParse for CSV -->
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
-  <!-- Inter font (clean UI) -->
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-
   <style>
-    :root {
-      --bg: #0f172a; /* slate-900 */
-      --panel: #0b1220; /* deep navy */
-      --panel-2: #0d182a;
-      --text: #e5e7eb;  /* gray-200 */
-      --muted: #9ca3af; /* gray-400 */
-      --brand: #22c55e; /* emerald-500 */
-      --chip: #1f2937;  /* gray-800 */
-      --border: #1f2937;
-      --accent: #a7f3d0; /* emerald-200 */
-    }
-    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
-    #app { position: absolute; inset: 0; display: grid; grid-template-rows: auto 1fr; }
-    header {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--border);
-    }
-    header h1 { font-size: 16px; margin: 0; font-weight: 600; letter-spacing: .3px; }
-    header .pill { font-size: 12px; color: var(--accent); background: #0a1b14; border: 1px solid #123422; padding: 2px 8px; border-radius: 999px; }
-    #controls { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-    #controls input[type="text"] {
-      width: min(48vw, 620px); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
-      background: #0b1526; color: var(--text); outline: none;
-    }
-    #controls button {
-      padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
-      background: #13223a; color: var(--text); cursor: pointer;
-    }
-    #map { height: calc(100vh - 52px); }
-
-    /* Popup card */
-    .popup-card {
-      width: 320px; max-width: 86vw; background: #0a1222; border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
-      box-shadow: 0 10px 30px rgba(0,0,0,.45);
-    }
-    .popup-header {
-      display: grid; grid-template-columns: 48px 1fr; gap: 10px; align-items: center;
-      padding: 10px 12px; background: #0d182a; border-bottom: 1px solid var(--border);
-    }
-    .logo {
-      width: 48px; height: 48px; border-radius: 10px; background: #0f1f38; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--border);
-      font-weight: 700; color: var(--brand);
-    }
-    .logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .title { line-height: 1.2; }
-    .title .course { font-size: 15px; font-weight: 700; color: #e7f5ff; }
-    .title .meta { margin-top: 2px; font-size: 12px; color: var(--muted); }
-
-    .thumb { width: 100%; height: 140px; object-fit: cover; background: #0b1426; display: block; }
-    .content { padding: 10px 12px; display: grid; gap: 8px; }
-    .row { display: grid; grid-template-columns: 18px 1fr; gap: 8px; align-items: start; font-size: 13px; color: #d1d5db; }
-    .chip { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--chip); border: 1px solid var(--border); font-size: 12px; color: #cbd5e1; margin-right: 6px; }
-    .actions { display: flex; gap: 8px; padding: 10px 12px 12px; }
-    .btn { text-decoration: none; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); color: #e5e7eb; background: #11213a; font-size: 13px; display: inline-flex; gap: 6px; align-items: center; }
-    .btn.primary { background: #063519; border-color: #0a4d27; color: #d1fae5; }
-    .btn:hover { filter: brightness(1.05); }
-
-    /* Marker tooltips (hover preview) */
-    .leaflet-tooltip {
-      background: #0b1526; color: #e5e7eb; border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; box-shadow: 0 8px 20px rgba(0,0,0,.35);
+    html, body, #map { height: 100%; margin: 0; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: #f8fafc;
     }
 
-    /* Responsive fix for mobile popups */
-    .leaflet-popup-content { margin: 8px 10px; }
-    .leaflet-popup-content-wrapper { background: transparent; box-shadow: none; }
-    .leaflet-popup-tip { background: #0a1222; border: 1px solid var(--border); }
+    /* Simple header bar */
+    .topbar {
+      position: absolute;
+      z-index: 1000;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ffffff;
+      color: #065f46;
+      padding: 8px 12px;
+      border-radius: 999px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      border: 1px solid #e5e7eb;
+    }
+    .legend-dot {
+      width: 10px; height: 10px; border-radius: 50%; background: #16a34a;
+      display: inline-block; vertical-align: middle; margin-right: 6px;
+      box-shadow: inset 0 0 0 1px #065f46;
+    }
+
+    /* Popups */
+    .leaflet-popup-content-wrapper {
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+    }
+    .leaflet-popup-content {
+      margin: 10px 12px;
+    }
+    .popup-title {
+      font-weight: 700; font-size: 16px; margin: 0 0 4px;
+    }
+    .popup-sub {
+      color: #065f46; font-weight: 600; margin: 0 0 6px;
+    }
+    .popup-line { margin: 0 0 4px; color: #334155; }
+    .popup-link a {
+      text-decoration: none; color: #0f766e; font-weight: 600;
+    }
+    .popup-link a:hover { text-decoration: underline; }
+
+    /* Custom cluster */
+    .ga-cluster-wrapper {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+    .ga-cluster img {
+      display: block;
+      width: 100%;
+      height: auto;
+      pointer-events: none;
+    }
+
+    /* Leaflet default marker shadows off (cleaner look) */
+    .leaflet-marker-icon, .leaflet-marker-shadow { image-rendering: auto; }
   </style>
 </head>
 <body>
-<div id="app">
-  <header>
-    <h1>Golf Atlas Map</h1>
-    <span class="pill">CSV-powered</span>
-    <div id="controls">
-      <input id="csvInput" type="text" placeholder="Paste a published-to-web CSV URL (or use ?csv=...)" />
-      <button id="loadBtn">Load CSV</button>
-    </div>
-  </header>
+  <div class="topbar" title="Green flags are courses. Clusters show counts.">
+    <span class="legend-dot"></span> Golf Atlas — Courses Map
+  </div>
   <div id="map"></div>
-</div>
 
-<script>
-(function(){
-  const qs = new URLSearchParams(location.search);
-  const csvUrl = qs.get('csv') || '';
+  <script>
+    // ----------- Helpers -----------
+    function getParam(name) {
+      const p = new URLSearchParams(location.search).get(name);
+      return p ? decodeURIComponent(p) : null;
+    }
 
-  const map = L.map('map', {
-    zoomSnap: .25,
-    zoomDelta: .25
-  });
-
-  // Basemap (Carto Voyager)
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> & Carto',
-    maxZoom: 19
-  }).addTo(map);
-
-  const cluster = L.markerClusterGroup({
-    showCoverageOnHover: false,
-    spiderfyOnMaxZoom: true,
-    disableClusteringAtZoom: 12,
-    maxClusterRadius: 60
-  });
-  map.addLayer(cluster);
-
-  const input = document.getElementById('csvInput');
-  const btn = document.getElementById('loadBtn');
-  if (csvUrl) input.value = csvUrl;
-
-  btn.addEventListener('click', () => {
-    const url = input.value.trim();
-    if (!url) return alert('Please paste a published CSV URL.');
-    loadCsv(url);
-    const enc = encodeURIComponent(url);
-    const next = location.pathname + '?csv=' + enc;
-    history.replaceState({}, '', next);
-  });
-
-  if (csvUrl) loadCsv(csvUrl); else map.setView([39.8283, -98.5795], 4); // USA default
-
-  function loadCsv(url){
-    cluster.clearLayers();
-    fetchCsv(url).then(rows => {
-      if (!rows.length) {
-        alert('CSV loaded but no rows found.');
-        return;
-      }
-      const markers = [];
-      let bounds = L.latLngBounds();
-
-      rows.forEach(r => {
-        const lat = parseFloat(s(r['Latitude']));
-        const lon = parseFloat(s(r['Longitude']));
-        if (Number.isFinite(lat) && Number.isFinite(lon)) {
-          const m = L.marker([lat, lon]);
-
-          // Hover tooltip: Resort + City, State
-          const resort = s(r['Course Resort']);
-          const city = s(r['City']);
-          const st = s(r['State/Province']);
-          const hoverText = `<strong>${resort || s(r['Course Name'])}</strong><br>${[city, st].filter(Boolean).join(', ')}`;
-          m.bindTooltip(hoverText, {direction:'top', opacity:.95, sticky:true});
-
-          // Popup: rich card
-          m.bindPopup(renderPopup(r), {maxWidth: 420, minWidth: 320, className: ''});
-
-          cluster.addLayer(m);
-          markers.push(m);
-          bounds.extend([lat,lon]);
+    function coalesce(obj, keys) {
+      for (const k of keys) {
+        if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== "") {
+          return obj[k];
         }
-      });
-
-      if (bounds.isValid()) {
-        map.fitBounds(bounds.pad(0.12));
-      } else {
-        map.setView([39.8283, -98.5795], 4);
       }
+      return undefined;
+    }
 
-      // Cluster hover: show predominant resort (mode)
-      cluster.on('clustermouseover', (e) => {
-        const child = e.layer.getAllChildMarkers().map(x => x);
-        const resorts = {};
-        child.forEach(mk => {
-          const r = mk.getTooltip().getContent();
-          const name = r.replace(/<br[\s\S]*$/,'').replace(/<[^>]*>/g,'').trim();
-          resorts[name] = (resorts[name] || 0) + 1;
+    function toNumber(x) {
+      if (x === undefined) return undefined;
+      const n = Number(String(x).replace(/[^\d.-]/g, ""));
+      return isFinite(n) ? n : undefined;
+    }
+
+    // ----------- Map init -----------
+    const map = L.map('map', {
+      worldCopyJump: true,
+      preferCanvas: true
+    });
+
+    // Light basemap (Carto Positron)
+    const tiles = L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+      {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+        maxZoom: 19
+      }
+    ).addTo(map);
+
+    // Keep view within USA + AK/HI
+    const usBounds = L.latLngBounds(
+      L.latLng(5, -170),   // SW
+      L.latLng(72, -50)    // NE
+    );
+    map.setMaxBounds(usBounds.pad(0.05));
+    map.fitBounds(L.latLngBounds([ [24.5, -125], [49.5, -66.5] ]), { padding: [20,20] });
+
+    // ----------- Icons -----------
+    // Golf flag SVG marker
+    const flagSVG = encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="34" height="46" viewBox="0 0 34 46">
+        <defs>
+          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="1" stdDeviation="1" flood-opacity="0.35"/>
+          </filter>
+        </defs>
+        <g filter="url(#shadow)">
+          <rect x="15.5" y="6" width="3" height="32" fill="#6b7280" rx="1.5"/>
+          <path d="M17 7 L28 12 L17 17 Z" fill="#16a34a" stroke="#064e3b" stroke-width="1.25"/>
+          <ellipse cx="17" cy="40" rx="10" ry="3.5" fill="#86efac" stroke="#16a34a" stroke-width="1"/>
+          <circle cx="22.5" cy="38.2" r="1.5" fill="#065f46"/>
+        </g>
+      </svg>
+    `);
+
+    const flagIcon = L.icon({
+      iconUrl: `data:image/svg+xml;charset=UTF-8,${flagSVG}`,
+      iconSize: [34, 46],
+      iconAnchor: [17, 45],
+      popupAnchor: [0, -38]
+    });
+
+    // Cluster icon (golf ball with count)
+    function golfBallClusterIcon(cluster) {
+      const count = cluster.getChildCount();
+      const size = count < 10 ? 36 : count < 50 ? 42 : count < 200 ? 50 : 58;
+
+      const ballSVG = encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 60 60">
+          <defs>
+            <radialGradient id="ballGrad" cx="40%" cy="30%" r="70%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="100%" stop-color="#e5e7eb"/>
+            </radialGradient>
+            <filter id="ballShadow" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.35"/>
+            </filter>
+          </defs>
+          <g filter="url(#ballShadow)">
+            <circle cx="30" cy="30" r="24" fill="url(#ballGrad)" stroke="#d1d5db" stroke-width="1.5"/>
+            ${[12,18,24,30,36,42,48].map(y =>
+              [18,24,30,36,42].map(x =>
+                `<circle cx="${x}" cy="${y}" r="1.4" fill="#d1d5db" opacity="${
+                  (y===12||y===48)?0.35:(y===18||y===42)?0.45:(y===24||y===36)?0.55:0.6
+                }"/>`
+              ).join('')
+            ).join('')}
+            <text x="30" y="34" text-anchor="middle"
+                  font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+                  font-size="20" font-weight="700" fill="#111827">${count}</text>
+          </g>
+        </svg>
+      `);
+
+      return L.divIcon({
+        html: `<div class="ga-cluster"><img src="data:image/svg+xml;charset=UTF-8,${ballSVG}" alt="${count}"/></div>`,
+        className: 'ga-cluster-wrapper',
+        iconSize: [size, size]
+      });
+    }
+
+    // ----------- Cluster layer -----------
+    const markers = L.markerClusterGroup({
+      showCoverageOnHover: false,
+      spiderfyOnMaxZoom: true,
+      maxClusterRadius: 55,
+      iconCreateFunction: golfBallClusterIcon
+    });
+    map.addLayer(markers);
+
+    // ----------- Load CSV -----------
+    const csvUrl = getParam('csv') || '';
+    if (!csvUrl) {
+      console.warn('No CSV URL provided. Pass ?csv=<public CSV URL>');
+    }
+
+    Papa.parse(csvUrl, {
+      download: true,
+      header: true,
+      dynamicTyping: false,
+      skipEmptyLines: true,
+      complete: function(results) {
+        const rows = results.data || [];
+        let added = 0;
+
+        rows.forEach((row) => {
+          // Try common column names (case-insensitive)
+          // Lat/Lng
+          const lat = toNumber(coalesce(row, ['lat','Lat','LAT','latitude','Latitude','LATITUDE']));
+          const lng = toNumber(coalesce(row, ['lng','Lon','lon','Lng','LON','longitude','Longitude','LONGITUDE']));
+
+          if (lat === undefined || lng === undefined) return; // need coordinates
+
+          // Course name & details
+          const name = coalesce(row, ['Name','Course','Course Name','Title','Club','course','name']) || 'Unnamed Course';
+          const city = coalesce(row, ['City','city','Town','town']);
+          const state = coalesce(row, ['State','state','Province','province','ST']);
+          const rank = coalesce(row, ['Rank','rank','Ranking','ranking']);
+          const price = coalesce(row, ['Price','price','Green Fee','green_fee','Avg Price']);
+          const lodging = coalesce(row, ['Lodging','lodging','On-site Lodging','Onsite Lodging','Onsite','Has Lodging']);
+          const url = coalesce(row, ['URL','Url','url','Website','website','Link','link']);
+
+          // Popup HTML
+          const lines = [];
+          lines.push(`<h3 class="popup-title">${escapeHtml(name)}</h3>`);
+          if (city || state) lines.push(`<p class="popup-sub">${escapeHtml([city, state].filter(Boolean).join(', '))}</p>`);
+          if (rank) lines.push(`<p class="popup-line"><strong>Rank:</strong> ${escapeHtml(String(rank))}</p>`);
+          if (price) lines.push(`<p class="popup-line"><strong>Price:</strong> ${escapeHtml(String(price))}</p>`);
+          if (lodging) lines.push(`<p class="popup-line"><strong>Lodging:</strong> ${escapeHtml(String(lodging))}</p>`);
+          if (url) lines.push(`<p class="popup-link"><a href="${safeUrl(url)}" target="_blank" rel="noopener">Visit site ↗</a></p>`);
+
+          const m = L.marker([lat, lng], { icon: flagIcon }).bindPopup(lines.join(''));
+          markers.addLayer(m);
+          added++;
         });
-        const top = Object.entries(resorts).sort((a,b)=>b[1]-a[1])[0];
-        if (top) {
-          e.layer.bindTooltip(top[0], {direction:'top', opacity:.95, sticky:true}).openTooltip();
+
+        if (added > 0) {
+          try {
+            map.fitBounds(markers.getBounds().pad(0.1));
+          } catch(e) {
+            // fall back to default US view
+            map.fitBounds(L.latLngBounds([ [24.5, -125], [49.5, -66.5] ]), { padding: [20,20] });
+          }
+        } else {
+          alert('No valid rows found in the CSV (need Latitude/Longitude columns).');
         }
-      });
-
-    }).catch(err => {
-      console.error(err);
-      alert('Failed to load CSV. Check that it is published to the web as CSV and the URL is accessible.');
+      },
+      error: function(err) {
+        console.error('CSV load error:', err);
+        alert('There was a problem loading the CSV. Make sure the ?csv= link is public.');
+      }
     });
-  }
 
-  function fetchCsv(url){
-    return new Promise((resolve, reject) => {
-      Papa.parse(url, {
-        header: true,
-        download: true,
-        skipEmptyLines: true,
-        complete: (res) => resolve(cleanRows(res.data)),
-        error: (err) => reject(err)
-      });
-    });
-  }
-
-  function cleanRows(rows){
-    return rows.map(r => {
-      const out = {};
-      Object.keys(r).forEach(k => out[norm(k)] = (r[k] ?? '').toString().trim());
-      return out;
-    });
-  }
-
-  function norm(k){
-    return (k || '')
-      .replace(/\u2013|\u2014/g,'-')
-      .replace(/[^\x20-\x7E]/g,'')
-      .trim();
-  }
-  function s(v){ return (v || '').toString().trim(); }
-
-  function renderPopup(row){
-    const course = s(row['Course Name']);
-    const resort = s(row['Course Resort']);
-    const city = s(row['City']);
-    const state = s(row['State/Province']);
-    const region = s(row['Region']);
-    const par = s(row['Par']);
-    const yards = s(row['Yardage (Back Tees)']);
-    const arch = s(row['Architect(s)']);
-    const year = s(row['Year Opened']);
-    const fees = s(row['Cost per Course (Green Fee Range)']);
-    const lodging = s(row['Lodging On-Site (Yes/No)']);
-    const lodgingDet = s(row['Lodging Details & Typical Price']);
-    const walk = s(row['Walking Friendly (Yes/No)']);
-    const caddie = s(row['Caddie/Cart Policy']);
-    const practice = s(row['Practice Facilities (Range/Short Game)']);
-    const dining = s(row['On-site Dining (Notes)']);
-    const airports = s(row['Nearby Airports (Distance)']);
-    const url = s(row['Website URL']);
-    const phone = s(row['Phone']);
-    const rank = s(row['Ranking (Consensus or Golf Digest Top 100)']);
-    const peak = s(row['Peak Season / Best Time to Visit']);
-    const type = s(row['Course Type']);            // optional
-    const highlights = s(row['Highlights']);       // optional
-    const logo = s(row['Logo URL']);               // optional
-    const thumb = s(row['Thumbnail URL']);         // optional
-
-    // Fallback logo = initials
-    const initials = (resort || course || 'GA')
-      .split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()||'').join('');
-
-    const logoBlock = logo
-      ? `<div class="logo"><img alt="logo" src="${logo}"/></div>`
-      : `<div class="logo">${initials || 'GA'}</div>`;
-
-    const metaTop = [
-      resort ? resort : '',
-      [city, state].filter(Boolean).join(', ')
-    ].filter(Boolean).join(' • ');
-
-    const chips = [
-      par ? `Par ${par}` : '',
-      yards ? `${yards} yds` : '',
-      type ? type : ''
-    ].filter(Boolean).map(x=>`<span class="chip">${x}</span>`).join('');
-
-    const details = [
-      arch ? rowItem('🧑‍💼', `<strong>Architect:</strong> ${arch}`) : '',
-      year ? rowItem('📅', `<strong>Opened:</strong> ${year}`) : '',
-      fees ? rowItem('💰', `<strong>Green Fee:</strong> ${fees}`) : '',
-      peak ? rowItem('🌤️', `<strong>Peak Season:</strong> ${peak}`) : '',
-      lodging ? rowItem('🏠', `<strong>Lodging:</strong> ${lodging}${lodgingDet ? ' — ' + escapeHtml(lodgingDet) : ''}`) : '',
-      walk || caddie ? rowItem('🚶', `<strong>Walking/Caddie:</strong> ${[walk, caddie].filter(Boolean).join(' • ')}`) : '',
-      practice ? rowItem('🏌️', `<strong>Practice:</strong> ${practice}`) : '',
-      dining ? rowItem('🍽️', `<strong>Dining:</strong> ${dining}`) : '',
-      airports ? rowItem('✈️', `<strong>Airports:</strong> ${airports}`) : '',
-      rank ? rowItem('🏆', `<strong>Ranking:</strong> ${rank}`) : '',
-      highlights ? rowItem('⭐', `<strong>Highlights:</strong> ${highlights}`) : ''
-    ].filter(Boolean).join('');
-
-    const actions = [
-      url ? `<a class="btn primary" href="${url}" target="_blank" rel="noopener">Visit Website</a>` : '',
-      phone ? `<a class="btn" href="tel:${phone.replace(/[^0-9+]/g,'')}">Call</a>` : ''
-    ].join('');
-
-    const thumbImg = thumb ? `<img class="thumb" src="${thumb}" alt="course photo" />` : '';
-
-    return `
-      <div class="popup-card">
-        <div class="popup-header">
-          ${logoBlock}
-          <div class="title">
-            <div class="course">${escapeHtml(course || resort || 'Golf Course')}</div>
-            <div class="meta">${escapeHtml(metaTop)}</div>
-          </div>
-        </div>
-        ${thumbImg}
-        <div class="content">
-          ${chips ? `<div>${chips}</div>` : ``}
-          ${details || `<div class="row"><div>ℹ️</div><div>No additional details provided.</div></div>`}
-        </div>
-        ${actions ? `<div class="actions">${actions}</div>` : ``}
-      </div>
-    `;
-  }
-
-  function rowItem(emoji, html){ return `<div class="row"><div>${emoji}</div><div>${html}</div></div>`; }
-  function escapeHtml(str){ return (str || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-})();
-</script>
+    // ----------- Utilities -----------
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+    function safeUrl(u) {
+      const s = String(u).trim();
+      if (/^https?:\/\//i.test(s)) return s;
+      return 'https://' + s.replace(/^\/+/, '');
+    }
+  </script>
 </body>
 </html>
