@@ -54,7 +54,7 @@
       box-shadow: inset 0 0 0 1px #065f46;
     }
 
-    /* Search + Filters panel */
+    /* Search panel (no lodging toggle) */
     .control-panel {
       position: absolute;
       z-index: 1000;
@@ -76,7 +76,7 @@
       letter-spacing: .2px;
       color: #f8fafc;
     }
-    .control-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .control-row { display: flex; gap: 8px; margin-bottom: 4px; }
     .control-row input[type="text"] {
       flex: 1;
       background: #0f172a;
@@ -98,12 +98,6 @@
       font-weight: 700;
       cursor: pointer;
     }
-    .filters {
-      display: flex; align-items: center; gap: 10px;
-      font-size: 13px;
-    }
-    .filters label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-    .filters input[type="checkbox"] { transform: translateY(1px); }
 
     /* Condensed, dark popups */
     .leaflet-popup-content-wrapper {
@@ -129,7 +123,7 @@
       color: #a7f3d0; /* minty accent */
       font-weight: 600; margin: 0 0 6px; font-size: 12px;
     }
-    .popup-line { margin: 0 0 3px; color: #cbd5e1; font-size: 12px; }
+    .popup-line { margin: 0 0 3px; color: #cbd5e1; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .popup-line strong { color: #e2e8f0; }
     .popup-link a {
       text-decoration: none; color: #7dd3fc; font-weight: 700; font-size: 12px;
@@ -158,18 +152,12 @@
     <span class="legend-dot"></span> Golf Atlas — Courses Map
   </div>
 
-  <!-- Search + Filters -->
+  <!-- Search only -->
   <div class="control-panel">
-    <h4>Search & Filters</h4>
+    <h4>Search</h4>
     <div class="control-row">
       <input id="searchInput" type="text" placeholder="Search name, city, or state…" />
       <button id="clearBtn" class="btn" title="Clear search">Clear</button>
-    </div>
-    <div class="filters">
-      <label title="Only show courses that mention lodging">
-        <input id="lodgingOnly" type="checkbox" />
-        Has Lodging 🏨
-      </label>
     </div>
   </div>
 
@@ -187,7 +175,7 @@
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
-    // ---------------- Small helpers ----------------
+    // ---------------- Helpers ----------------
     function getParam(name) {
       const p = new URLSearchParams(location.search).get(name);
       return p ? decodeURIComponent(p) : null;
@@ -208,14 +196,13 @@
       const s = String(u || "").trim();
       if (!s) return "";
       if (/^https?:\/\//i.test(s)) return s;
-      // If looks like a domain or starts with www, normalize
       if (/^(www\.)?[\w-]+\.[a-z]{2,}([\/?#].*)?$/i.test(s)) {
         return "https://" + s.replace(/^https?:\/\//i, "").replace(/^\/+/, "");
       }
       return s;
     }
     function normKey(k) {
-      return String(k || "").replace(/\uFEFF/g, "").trim(); // strip BOM + trim
+      return String(k || "").replace(/\uFEFF/g, "").trim();
     }
     function keyIncludes(k, word) {
       return normKey(k).toLowerCase().includes(String(word).toLowerCase());
@@ -229,11 +216,13 @@
       }
       return undefined;
     }
-    // Debug flag (?debug=1 shows headers in console)
     const DEBUG = new URLSearchParams(location.search).has("debug");
 
     // ---------------- Map init ----------------
-    const map = L.map("map", { worldCopyJump: true, preferCanvas: true });
+    const map = L.map("map", {
+      worldCopyJump: true,
+      preferCanvas: true
+    });
 
     // Basemap
     L.tileLayer(
@@ -267,6 +256,12 @@
     });
     L.control.resetView = (opts) => new ResetView(opts);
     L.control.resetView({ position: 'topleft' }).addTo(map);
+
+    // ---------------- Popup headroom + behavior ----------------
+    // Give popups extra top padding so they don't sit off-screen after zoom/pan
+    L.Popup.prototype.options.autoPan = true;
+    L.Popup.prototype.options.autoPanPaddingTopLeft = L.point(20, 120); // more headroom
+    L.Popup.prototype.options.autoPanPaddingBottomRight = L.point(20, 20);
 
     // ---------------- Icons ----------------
     // Golf flag SVG marker
@@ -337,9 +332,17 @@
       showCoverageOnHover: false,
       spiderfyOnMaxZoom: true,
       maxClusterRadius: 55,
-      iconCreateFunction: golfBallClusterIcon
+      iconCreateFunction: golfBallClusterIcon,
+      zoomToBoundsOnClick: false // we'll handle clusterclick ourselves
     });
     map.addLayer(markers);
+
+    // Gentle cluster zoom (avoid zooming too deep)
+    markers.on('clusterclick', function (e) {
+      const current = map.getZoom();
+      const targetMax = Math.min(current + 2, 11); // cap how deep we go on click
+      map.fitBounds(e.layer.getBounds(), { padding: [50, 50], maxZoom: targetMax });
+    });
 
     // ---------------- Data + Rendering ----------------
     const csvUrl = getParam("csv") || "";
@@ -347,7 +350,6 @@
       console.warn("No CSV URL provided. Pass ?csv=<public CSV URL>");
     }
 
-    // Storage for all parsed rows (cleaned) to support filtering
     let ALL_ROWS = [];
 
     Papa.parse(csvUrl, {
@@ -362,14 +364,13 @@
           console.log("CSV headers:", Object.keys(rows[0]));
         }
 
-        // Normalize keys for each row
         ALL_ROWS = rows.map(row => {
           const cleaned = {};
           Object.keys(row).forEach(k => cleaned[normKey(k)] = row[k]);
           return cleaned;
         });
 
-        renderMarkers(); // initial draw
+        renderMarkers();
       },
       error: function (err) {
         console.error("CSV load error:", err);
@@ -377,78 +378,45 @@
       }
     });
 
-    // Build popup HTML (compact + dark, with emojis)
     function buildPopup(cleaned) {
+      // Fields (with flexible header matching)
       const name =
         pick(cleaned, ["Name","Course","Course Name","Title","Club","course","name"]) ||
         (() => {
           const k = Object.keys(cleaned).find(key => keyIncludes(key, "course"));
           return k ? cleaned[k] : undefined;
-        })() ||
-        "Unnamed Course";
+        })() || "Unnamed Course";
 
+      const resort = pick(cleaned, ["Resort","Resort Name","Property","Facility","Club","Resort/Property"]);
       const city   = pick(cleaned, ["City","city","Town","town"]);
       const state  = pick(cleaned, ["State","state","Province","province","ST"]);
       const rank   = pick(cleaned, ["Rank","rank","Ranking","ranking"]);
       const price  = pick(cleaned, ["Price","price","Green Fee","green_fee","Avg Price"]);
-      const lodge  = pick(cleaned, ["Lodging","lodging","On-site Lodging","Onsite Lodging","Onsite","Has Lodging"]);
+      const lodge  = pick(cleaned, ["Lodging","lodging","Lodging Options","On-site Lodging","Onsite Lodging","Onsite","Has Lodging"]);
+      const practice = pick(cleaned, ["Practice","Practice Facility","practice_facility","Range","Driving Range","Putting Green"]);
+      const dining = pick(cleaned, ["Dining","Restaurants","Food","On-site Dining","Onsite Dining"]);
       const link   = pick(cleaned, ["URL","Url","url","Website","website","Link","link"]);
 
-      const header = [
-        `<h3 class="popup-title">🏌️‍♂️ ${escapeHtml(name)}</h3>`,
-        (city || state) ? `<p class="popup-sub">📍 ${escapeHtml([city, state].filter(Boolean).join(", "))}</p>` : ""
-      ];
+      const parts = [];
+      parts.push(`<h3 class="popup-title">🏌️‍♂️ ${escapeHtml(name)}</h3>`);
+      if (resort) parts.push(`<p class="popup-line">🏰 <strong>Resort:</strong> ${escapeHtml(String(resort))}</p>`);
+      if (state || city) parts.push(`<p class="popup-line">📍 <strong>Location:</strong> ${escapeHtml([city, state].filter(Boolean).join(", "))}</p>`);
+      if (rank)  parts.push(`<p class="popup-line">🏆 <strong>Ranking:</strong> ${escapeHtml(String(rank))}</p>`);
+      if (price) parts.push(`<p class="popup-line">💵 <strong>Price:</strong> ${escapeHtml(String(price))}</p>`);
+      if (lodge) parts.push(`<p class="popup-line">🛏️ <strong>Lodging:</strong> ${escapeHtml(String(lodge))}</p>`);
+      if (practice) parts.push(`<p class="popup-line">⛳️ <strong>Practice:</strong> ${escapeHtml(String(practice))}</p>`);
+      if (dining) parts.push(`<p class="popup-line">🍽️ <strong>Dining:</strong> ${escapeHtml(String(dining))}</p>`);
+      if (link)  parts.push(`<p class="popup-link">🔗 <a href="${safeUrl(link)}" target="_blank" rel="noopener">Visit site</a></p>`);
 
-      const main = [];
-      if (rank)  main.push(`<p class="popup-line">🏆 <strong>Rank:</strong> ${escapeHtml(String(rank))}</p>`);
-      if (price) main.push(`<p class="popup-line">💵 <strong>Price:</strong> ${escapeHtml(String(price))}</p>`);
-      if (lodge) main.push(`<p class="popup-line">🏨 <strong>Lodging:</strong> ${escapeHtml(String(lodge))}</p>`);
-      if (link)  main.push(`<p class="popup-link">🔗 <a href="${safeUrl(link)}" target="_blank" rel="noopener">Visit site</a></p>`);
-
-      // Extras (limit to keep popup tight)
-      const hiddenKeys = new Set([
-        "lat","Lat","LAT","latitude","Latitude","LATITUDE",
-        "lng","Lon","lon","Lng","LON","longitude","Longitude","LONGITUDE"
-      ]);
-      const usedValues = new Set([name, city, state, rank, price, lodge, link].filter(Boolean));
-      const extras = [];
-      for (const k of Object.keys(cleaned)) {
-        if (hiddenKeys.has(k)) continue;
-        const v = cleaned[k];
-        if (v === null || v === undefined) continue;
-        const val = String(v).trim();
-        if (!val || usedValues.has(v)) continue;
-        if (val.length > 200) continue;
-
-        const label = normKey(k).replace(/[_\-]+/g, " ")
-          .replace(/\s+/g, " ")
-          .replace(/\b\w/g, c => c.toUpperCase());
-
-        const maybeUrl = safeUrl(val);
-        const pretty = /^https?:\/\//i.test(maybeUrl)
-          ? `<a href="${maybeUrl}" target="_blank" rel="noopener">${escapeHtml(val)}</a>`
-          : escapeHtml(val);
-
-        extras.push(`<p class="popup-line"><strong>${escapeHtml(label)}:</strong> ${pretty}</p>`);
-
-        if (extras.length >= 4) break; // cap extras to keep popup compact
-      }
-
-      return header.concat(main).concat(extras).join("");
+      return parts.join("");
     }
 
-    function rowPassesFilters(cleaned, q, lodgingOnly) {
-      // Lodging filter: look for truthy tokens in any lodging-ish column
-      if (lodgingOnly) {
-        const lodge = pick(cleaned, ["Lodging","lodging","On-site Lodging","Onsite Lodging","Onsite","Has Lodging"]);
-        const txt = String(lodge || "").toLowerCase();
-        const has = /(yes|true|y|✓|1|available|onsite|on-site)/i.test(txt);
-        if (!has) return false;
-      }
+    function rowPassesFilters(cleaned, q) {
       if (q) {
         const needle = q.toLowerCase();
         const hay = [
           pick(cleaned, ["Name","Course","Course Name","Title","Club","course","name"]),
+          pick(cleaned, ["Resort","Resort Name","Property","Facility","Club"]),
           pick(cleaned, ["City","city","Town","town"]),
           pick(cleaned, ["State","state","Province","province","ST"])
         ].filter(Boolean).join(" ").toLowerCase();
@@ -457,12 +425,10 @@
       return true;
     }
 
-    // Renders markers based on current filters
     function renderMarkers() {
       markers.clearLayers();
 
       const q = (document.getElementById("searchInput").value || "").trim();
-      const lodgingOnly = document.getElementById("lodgingOnly").checked;
 
       let added = 0;
       const groupBounds = [];
@@ -472,7 +438,7 @@
         const lng = toNumber(pick(cleaned, ["lng","Lon","lon","Lng","LON","longitude","Longitude","LONGITUDE"]));
         if (lat === undefined || lng === undefined) return;
 
-        if (!rowPassesFilters(cleaned, q, lodgingOnly)) return;
+        if (!rowPassesFilters(cleaned, q)) return;
 
         const popupHtml = buildPopup(cleaned);
         const m = L.marker([lat, lng], { icon: flagIcon }).bindPopup(popupHtml);
@@ -488,17 +454,14 @@
           map.fitBounds(defaultUSBounds, { padding: [20,20] });
         }
       } else {
-        // No results: just snap to default US view
         map.fitBounds(defaultUSBounds, { padding: [20,20] });
       }
     }
 
-    // ---------------- Search + Filters events ----------------
+    // ---------------- Search events ----------------
     const searchInput = document.getElementById("searchInput");
     const clearBtn = document.getElementById("clearBtn");
-    const lodgingOnly = document.getElementById("lodgingOnly");
 
-    // debounce for typing
     let t;
     searchInput.addEventListener("input", () => {
       clearTimeout(t);
@@ -508,7 +471,9 @@
       searchInput.value = "";
       renderMarkers();
     });
-    lodgingOnly.addEventListener("change", renderMarkers);
+
+    // --------------- Load CSV ---------------
+    const csvUrl = getParam("csv") || "";
 
   </script>
 </body>
