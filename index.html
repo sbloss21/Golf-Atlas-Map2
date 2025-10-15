@@ -6,21 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <!-- MarkerCluster CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
   <style>
     html, body, #map { height: 100%; margin: 0; }
@@ -50,12 +39,11 @@
       border-radius: 8px; padding: 8px 10px; font-size: 13px; font-weight: 700; cursor: pointer;
     }
 
-    /* Dark compact popups */
+    /* Dark, compact popups */
     .leaflet-popup-content-wrapper { background: #0f172a; color: #e5e7eb; border-radius: 10px; box-shadow: 0 16px 36px rgba(0,0,0,0.35); border: 1px solid #334155; }
     .leaflet-popup-tip { background: #0f172a; border: 1px solid #334155; }
     .leaflet-popup-content { margin: 8px 10px; line-height: 1.25; }
     .popup-title { font-weight: 800; font-size: 15px; margin: 0 0 4px; color: #f8fafc; }
-    .popup-sub { color: #a7f3d0; font-weight: 600; margin: 0 0 6px; font-size: 12px; }
     .popup-line { margin: 0 0 3px; color: #cbd5e1; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .popup-line strong { color: #e2e8f0; }
     .popup-link a { text-decoration: none; color: #7dd3fc; font-weight: 700; font-size: 12px; }
@@ -103,6 +91,11 @@
       for (const want of candidates) {
         if (Object.prototype.hasOwnProperty.call(obj, want)) return obj[want];
         const hit = keys.find(k => normKey(k).toLowerCase() === normKey(want).toLowerCase());
+        if (hit) return obj[hit];
+      }
+      // fuzzy: first key that includes the wanted token
+      for (const want of candidates) {
+        const hit = keys.find(k => keyIncludes(k, want));
         if (hit) return obj[hit];
       }
       return undefined;
@@ -178,17 +171,16 @@
     const markers = L.markerClusterGroup({
       showCoverageOnHover: false,
       spiderfyOnMaxZoom: true,
+      spiderfyDistanceMultiplier: 1.2,   // slight spread so they're easy to hover
+      zoomToBoundsOnClick: false,        // we'll spiderfy on click instead
       maxClusterRadius: 55,
-      iconCreateFunction: golfBallClusterIcon,
-      zoomToBoundsOnClick: false
+      iconCreateFunction: golfBallClusterIcon
     });
     map.addLayer(markers);
 
-    // Gentle cluster zoom
+    // Spiderfy clusters on click (pop-out instead of zoom)
     markers.on('clusterclick', function (e) {
-      const current = map.getZoom();
-      const targetMax = Math.min(current + 2, 11);
-      map.fitBounds(e.layer.getBounds(), { padding: [50, 50], maxZoom: targetMax });
+      e.layer.spiderfy();
     });
 
     // ---------------- Data + Rendering ----------------
@@ -220,30 +212,51 @@
     });
 
     function buildPopup(cleaned) {
+      // Primary fields (flexible header matching)
       const name =
         pick(cleaned, ["Name","Course","Course Name","Title","Club","course","name"]) ||
         (() => { const k = Object.keys(cleaned).find(key => keyIncludes(key, "course")); return k ? cleaned[k] : undefined; })() || "Unnamed Course";
 
-      const resort  = pick(cleaned, ["Resort","Resort Name","Property","Facility","Club","Resort/Property"]);
-      const city    = pick(cleaned, ["City","city","Town","town"]);
-      const state   = pick(cleaned, ["State","state","Province","province","ST"]);
-      const rank    = pick(cleaned, ["Rank","rank","Ranking","ranking"]);
-      const price   = pick(cleaned, ["Price","price","Green Fee","green_fee","Avg Price"]);
-      const lodge   = pick(cleaned, ["Lodging","lodging","Lodging Options","On-site Lodging","Onsite Lodging","Onsite","Has Lodging"]);
-      const practice= pick(cleaned, ["Practice","Practice Facility","practice_facility","Range","Driving Range","Putting Green"]);
-      const dining  = pick(cleaned, ["Dining","Restaurants","Food","On-site Dining","Onsite Dining"]);
-      const link    = pick(cleaned, ["URL","Url","url","Website","website","Link","link"]);
+      const resort   = pick(cleaned, ["Resort","Resort Name","Resort/Property","Property","Facility","Club"]);
+      const city     = pick(cleaned, ["City","city","Town","town"]);
+      const state    = pick(cleaned, ["State","ST","state","Province","province"]);
+      const rank     = pick(cleaned, ["Rank","Ranking","GD Rank","rank","ranking"]);
+      const price    = pick(cleaned, ["Price","Avg Price","Green Fee","price","green_fee"]);
+      const lodging  = pick(cleaned, ["Lodging","Lodging Options","On-site Lodging","Onsite Lodging","Has Lodging","lodging"]);
+      // fuzzy for practice/dining (any key containing token)
+      const practice = pick(cleaned, ["Practice Facility","Practice","practice","Driving Range","Range","Putting","Putting Green"]);
+      const dining   = pick(cleaned, ["Dining","Dining Options","Restaurants","Food","On-site Dining","Onsite Dining","dining"]);
+      const link     = pick(cleaned, ["URL","Website","Link","url","website","link"]);
 
       const parts = [];
       parts.push(`<h3 class="popup-title">🏌️‍♂️ ${escapeHtml(name)}</h3>`);
-      if (resort) parts.push(`<p class="popup-line">🏰 <strong>Resort:</strong> ${escapeHtml(String(resort))}</p>`);
+      if (resort)  parts.push(`<p class="popup-line">🏰 <strong>Resort:</strong> ${escapeHtml(String(resort))}</p>`);
       if (state || city) parts.push(`<p class="popup-line">📍 <strong>Location:</strong> ${escapeHtml([city, state].filter(Boolean).join(", "))}</p>`);
-      if (rank)  parts.push(`<p class="popup-line">🏆 <strong>Ranking:</strong> ${escapeHtml(String(rank))}</p>`);
-      if (price) parts.push(`<p class="popup-line">💵 <strong>Price:</strong> ${escapeHtml(String(price))}</p>`);
-      if (lodge) parts.push(`<p class="popup-line">🛏️ <strong>Lodging:</strong> ${escapeHtml(String(lodge))}</p>`);
-      if (practice) parts.push(`<p class="popup-line">⛳️ <strong>Practice:</strong> ${escapeHtml(String(practice))}</p>`);
-      if (dining) parts.push(`<p class="popup-line">🍽️ <strong>Dining:</strong> ${escapeHtml(String(dining))}</p>`);
-      if (link)  parts.push(`<p class="popup-link">🔗 <a href="${safeUrl(link)}" target="_blank" rel="noopener">Visit site</a></p>`);
+      if (rank)    parts.push(`<p class="popup-line">🏆 <strong>Ranking:</strong> ${escapeHtml(String(rank))}</p>`);
+      if (price)   parts.push(`<p class="popup-line">💵 <strong>Price:</strong> ${escapeHtml(String(price))}</p>`);
+      if (lodging) parts.push(`<p class="popup-line">🛏️ <strong>Lodging:</strong> ${escapeHtml(String(lodging))}</p>`);
+      if (practice)parts.push(`<p class="popup-line">⛳️ <strong>Practice:</strong> ${escapeHtml(String(practice))}</p>`);
+      if (dining)  parts.push(`<p class="popup-line">🍽️ <strong>Dining:</strong> ${escapeHtml(String(dining))}</p>`);
+      if (link)    parts.push(`<p class="popup-link">🔗 <a href="${safeUrl(link)}" target="_blank" rel="noopener">Visit site</a></p>`);
+
+      // Fallback: show up to 4 other non-empty columns so you never get a bare popup
+      const hiddenKeys = new Set(["lat","latitude","Lat","LAT","lng","lon","Lng","LON","longitude","Longitude","LONGITUDE"]);
+      const usedVals = new Set([name,resort,city,state,rank,price,lodging,practice,dining,link].filter(Boolean));
+      const extras = [];
+      for (const k of Object.keys(cleaned)) {
+        if (hiddenKeys.has(k)) continue;
+        const v = cleaned[k]; if (v == null) continue;
+        const val = String(v).trim(); if (!val || usedVals.has(v)) continue;
+        if (val.length > 200) continue;
+        const label = normKey(k).replace(/[_\-]+/g," ").replace(/\s+/g," ").replace(/\b\w/g, c => c.toUpperCase());
+        const maybeUrl = safeUrl(val);
+        const pretty = /^https?:\/\//i.test(maybeUrl) ? `<a href="${maybeUrl}" target="_blank" rel="noopener">${escapeHtml(val)}</a>` : escapeHtml(val);
+        extras.push(`<p class="popup-line">• <strong>${escapeHtml(label)}:</strong> ${pretty}</p>`);
+        if (extras.length >= 4) break;
+      }
+      if (!parts.length || parts.length === 1) parts.push(...extras);
+      else if (extras.length) parts.push(...extras);
+
       return parts.join("");
     }
 
@@ -252,18 +265,21 @@
         const needle = q.toLowerCase();
         const hay = [
           pick(cleaned, ["Name","Course","Course Name","Title","Club","course","name"]),
-          pick(cleaned, ["Resort","Resort Name","Property","Facility","Club"]),
+          pick(cleaned, ["Resort","Resort Name","Resort/Property","Property","Facility","Club"]),
           pick(cleaned, ["City","city","Town","town"]),
-          pick(cleaned, ["State","state","Province","province","ST"])
+          pick(cleaned, ["State","ST","state","Province","province"])
         ].filter(Boolean).join(" ").toLowerCase();
         if (!hay.includes(needle)) return false;
       }
       return true;
     }
 
+    let ALL_ROWS = [];
+
     function renderMarkers() {
       markers.clearLayers();
       const q = (document.getElementById("searchInput").value || "").trim();
+
       let added = 0; const groupBounds = [];
 
       ALL_ROWS.forEach(cleaned => {
@@ -291,6 +307,7 @@
     let t;
     searchInput.addEventListener("input", () => { clearTimeout(t); t = setTimeout(renderMarkers, 200); });
     clearBtn.addEventListener("click", () => { searchInput.value = ""; renderMarkers(); });
+
   </script>
 </body>
 </html>
