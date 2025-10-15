@@ -26,10 +26,10 @@
     html, body, #map { height: 100%; margin: 0; }
     body {
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      background: #f8fafc;
+      background: #0b1220; /* subtle night blue behind map edges */
     }
 
-    /* Simple header bar */
+    /* Top pill title */
     .topbar {
       position: absolute;
       z-index: 1000;
@@ -54,23 +54,85 @@
       box-shadow: inset 0 0 0 1px #065f46;
     }
 
-    /* Popups */
-    .leaflet-popup-content-wrapper {
+    /* Search + Filters panel */
+    .control-panel {
+      position: absolute;
+      z-index: 1000;
+      top: 60px;
+      left: 12px;
+      background: rgba(15, 23, 42, 0.95); /* slate-900-ish */
+      color: #e5e7eb;
+      backdrop-filter: blur(4px);
+      padding: 10px 12px;
       border-radius: 12px;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+      border: 1px solid rgba(148,163,184,0.25);
+      width: 280px;
+    }
+    .control-panel h4 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .2px;
+      color: #f8fafc;
+    }
+    .control-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .control-row input[type="text"] {
+      flex: 1;
+      background: #0f172a;
+      color: #e5e7eb;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      outline: none;
+    }
+    .control-row .btn {
+      white-space: nowrap;
+      background: #ffffff;
+      color: #0f172a;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .filters {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 13px;
+    }
+    .filters label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .filters input[type="checkbox"] { transform: translateY(1px); }
+
+    /* Condensed, dark popups */
+    .leaflet-popup-content-wrapper {
+      background: #0f172a; /* dark slate */
+      color: #e5e7eb;
+      border-radius: 10px;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.35);
+      border: 1px solid #334155;
+    }
+    .leaflet-popup-tip {
+      background: #0f172a;
+      border: 1px solid #334155;
     }
     .leaflet-popup-content {
-      margin: 10px 12px;
+      margin: 8px 10px;
+      line-height: 1.25; /* tighter */
     }
     .popup-title {
-      font-weight: 700; font-size: 16px; margin: 0 0 4px;
+      font-weight: 800; font-size: 15px; margin: 0 0 4px;
+      color: #f8fafc;
     }
     .popup-sub {
-      color: #065f46; font-weight: 600; margin: 0 0 6px;
+      color: #a7f3d0; /* minty accent */
+      font-weight: 600; margin: 0 0 6px; font-size: 12px;
     }
-    .popup-line { margin: 0 0 4px; color: #334155; }
+    .popup-line { margin: 0 0 3px; color: #cbd5e1; font-size: 12px; }
+    .popup-line strong { color: #e2e8f0; }
     .popup-link a {
-      text-decoration: none; color: #0f766e; font-weight: 600;
+      text-decoration: none; color: #7dd3fc; font-weight: 700; font-size: 12px;
     }
     .popup-link a:hover { text-decoration: underline; }
 
@@ -95,6 +157,22 @@
   <div class="topbar" title="Green flags are courses. Clusters show counts.">
     <span class="legend-dot"></span> Golf Atlas — Courses Map
   </div>
+
+  <!-- Search + Filters -->
+  <div class="control-panel">
+    <h4>Search & Filters</h4>
+    <div class="control-row">
+      <input id="searchInput" type="text" placeholder="Search name, city, or state…" />
+      <button id="clearBtn" class="btn" title="Clear search">Clear</button>
+    </div>
+    <div class="filters">
+      <label title="Only show courses that mention lodging">
+        <input id="lodgingOnly" type="checkbox" />
+        Has Lodging 🏨
+      </label>
+    </div>
+  </div>
+
   <div id="map"></div>
 
   <!-- Leaflet JS -->
@@ -109,7 +187,7 @@
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
-    // ----------- Small helpers -----------
+    // ---------------- Small helpers ----------------
     function getParam(name) {
       const p = new URLSearchParams(location.search).get(name);
       return p ? decodeURIComponent(p) : null;
@@ -130,7 +208,10 @@
       const s = String(u || "").trim();
       if (!s) return "";
       if (/^https?:\/\//i.test(s)) return s;
-      if (/\.[a-z]{2,}$/i.test(s)) return "https://" + s.replace(/^\/+/, ""); // look like domain
+      // If looks like a domain or starts with www, normalize
+      if (/^(www\.)?[\w-]+\.[a-z]{2,}([\/?#].*)?$/i.test(s)) {
+        return "https://" + s.replace(/^https?:\/\//i, "").replace(/^\/+/, "");
+      }
       return s;
     }
     function normKey(k) {
@@ -142,20 +223,19 @@
     function pick(obj, candidates) {
       const keys = Object.keys(obj);
       for (const want of candidates) {
-        if (obj.hasOwnProperty(want)) return obj[want];
+        if (Object.prototype.hasOwnProperty.call(obj, want)) return obj[want];
         const hit = keys.find(k => normKey(k).toLowerCase() === normKey(want).toLowerCase());
         if (hit) return obj[hit];
       }
       return undefined;
     }
-
     // Debug flag (?debug=1 shows headers in console)
     const DEBUG = new URLSearchParams(location.search).has("debug");
 
-    // ----------- Map init -----------
+    // ---------------- Map init ----------------
     const map = L.map("map", { worldCopyJump: true, preferCanvas: true });
 
-    // Light basemap (Carto Positron)
+    // Basemap
     L.tileLayer(
       "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
       {
@@ -166,11 +246,29 @@
     ).addTo(map);
 
     // Keep view within USA + AK/HI
+    const defaultUSBounds = L.latLngBounds([[24.5, -125], [49.5, -66.5]]);
     const usBounds = L.latLngBounds(L.latLng(5, -170), L.latLng(72, -50));
     map.setMaxBounds(usBounds.pad(0.05));
-    map.fitBounds(L.latLngBounds([[24.5, -125], [49.5, -66.5]]), { padding: [20, 20] });
+    map.fitBounds(defaultUSBounds, { padding: [20, 20] });
 
-    // ----------- Icons -----------
+    // --- Reset View control ---
+    const ResetView = L.Control.extend({
+      onAdd: function() {
+        const btn = L.DomUtil.create('button');
+        btn.innerHTML = 'Reset View';
+        btn.style.cssText = 'background:#fff;border:1px solid #e5e7eb;border-radius:999px;padding:6px 10px;box-shadow:0 6px 18px rgba(0,0,0,.08);cursor:pointer;font-weight:700;';
+        L.DomEvent.on(btn, 'click', (e) => {
+          L.DomEvent.stop(e);
+          map.fitBounds(defaultUSBounds, { padding: [20,20] });
+        });
+        return btn;
+      },
+      onRemove: function() {}
+    });
+    L.control.resetView = (opts) => new ResetView(opts);
+    L.control.resetView({ position: 'topleft' }).addTo(map);
+
+    // ---------------- Icons ----------------
     // Golf flag SVG marker
     const flagSVG = encodeURIComponent(`
       <svg xmlns="http://www.w3.org/2000/svg" width="34" height="46" viewBox="0 0 34 46">
@@ -234,7 +332,7 @@
       });
     }
 
-    // ----------- Cluster layer -----------
+    // ---------------- Cluster layer ----------------
     const markers = L.markerClusterGroup({
       showCoverageOnHover: false,
       spiderfyOnMaxZoom: true,
@@ -243,11 +341,14 @@
     });
     map.addLayer(markers);
 
-    // ----------- Load CSV -----------
+    // ---------------- Data + Rendering ----------------
     const csvUrl = getParam("csv") || "";
     if (!csvUrl) {
       console.warn("No CSV URL provided. Pass ?csv=<public CSV URL>");
     }
+
+    // Storage for all parsed rows (cleaned) to support filtering
+    let ALL_ROWS = [];
 
     Papa.parse(csvUrl, {
       download: true,
@@ -261,98 +362,153 @@
           console.log("CSV headers:", Object.keys(rows[0]));
         }
 
-        let added = 0;
-
-        rows.forEach((row) => {
-          // Normalize per-row keys (defensive)
+        // Normalize keys for each row
+        ALL_ROWS = rows.map(row => {
           const cleaned = {};
           Object.keys(row).forEach(k => cleaned[normKey(k)] = row[k]);
-
-          // Lat/Lng candidates
-          const lat = toNumber(
-            pick(cleaned, ["lat","Lat","LAT","latitude","Latitude","LATITUDE"])
-          );
-          const lng = toNumber(
-            pick(cleaned, ["lng","Lon","lon","Lng","LON","longitude","Longitude","LONGITUDE"])
-          );
-          if (lat === undefined || lng === undefined) return; // need coordinates
-
-          // Name + other nice-to-haves
-          let name =
-            pick(cleaned, ["Name","Course","Course Name","Title","Club","course","name"]) ||
-            (() => {
-              const k = Object.keys(cleaned).find(key => keyIncludes(key, "course"));
-              return k ? cleaned[k] : undefined;
-            })() ||
-            "Unnamed Course";
-
-          const city   = pick(cleaned, ["City","city","Town","town"]);
-          const state  = pick(cleaned, ["State","state","Province","province","ST"]);
-          const rank   = pick(cleaned, ["Rank","rank","Ranking","ranking"]);
-          const price  = pick(cleaned, ["Price","price","Green Fee","green_fee","Avg Price"]);
-          const lodge  = pick(cleaned, ["Lodging","lodging","On-site Lodging","Onsite Lodging","Onsite","Has Lodging"]);
-          const link   = pick(cleaned, ["URL","Url","url","Website","website","Link","link"]);
-
-          // Popup HTML
-          const lines = [];
-          lines.push(`<h3 class="popup-title">${escapeHtml(name)}</h3>`);
-          if (city || state) lines.push(`<p class="popup-sub">${escapeHtml([city, state].filter(Boolean).join(", "))}</p>`);
-          if (rank)  lines.push(`<p class="popup-line"><strong>Rank:</strong> ${escapeHtml(String(rank))}</p>`);
-          if (price) lines.push(`<p class="popup-line"><strong>Price:</strong> ${escapeHtml(String(price))}</p>`);
-          if (lodge) lines.push(`<p class="popup-line"><strong>Lodging:</strong> ${escapeHtml(String(lodge))}</p>`);
-          if (link)  lines.push(`<p class="popup-link"><a href="${safeUrl(link)}" target="_blank" rel="noopener">Visit site ↗</a></p>`);
-
-          // Show any other non-empty fields automatically (skip Lat/Lng + giant blobs)
-          const hiddenKeys = new Set([
-            "lat","Lat","LAT","latitude","Latitude","LATITUDE",
-            "lng","Lon","lon","Lng","LON","longitude","Longitude","LONGITUDE"
-          ]);
-          const usedValues = new Set([name, city, state, rank, price, lodge, link].filter(Boolean));
-
-          const extras = [];
-          for (const k of Object.keys(cleaned)) {
-            if (hiddenKeys.has(k)) continue;
-            const v = cleaned[k];
-            if (v === null || v === undefined) continue;
-            const val = String(v).trim();
-            if (!val || usedValues.has(v)) continue;
-            if (val.length > 300) continue; // keep tidy
-
-            // Prettify label
-            const label = normKey(k).replace(/[_\-]+/g, " ")
-              .replace(/\s+/g, " ")
-              .replace(/\b\w/g, c => c.toUpperCase());
-
-            // Linkify if it looks like a URL
-            const maybeUrl = safeUrl(val);
-            const pretty = /^https?:\/\//i.test(maybeUrl)
-              ? `<a href="${maybeUrl}" target="_blank" rel="noopener">${escapeHtml(val)}</a>`
-              : escapeHtml(val);
-
-            extras.push(`<p class="popup-line"><strong>${escapeHtml(label)}:</strong> ${pretty}</p>`);
-          }
-          if (extras.length) lines.push(...extras);
-
-          const m = L.marker([lat, lng], { icon: flagIcon }).bindPopup(lines.join(""));
-          markers.addLayer(m);
-          added++;
+          return cleaned;
         });
 
-        if (added > 0) {
-          try {
-            map.fitBounds(markers.getBounds().pad(0.1));
-          } catch (e) {
-            map.fitBounds(L.latLngBounds([[24.5, -125], [49.5, -66.5]]), { padding: [20, 20] });
-          }
-        } else {
-          alert("No valid rows found in the CSV (need Latitude/Longitude columns).");
-        }
+        renderMarkers(); // initial draw
       },
       error: function (err) {
         console.error("CSV load error:", err);
         alert("There was a problem loading the CSV. Make sure the ?csv= link is public.");
       }
     });
+
+    // Build popup HTML (compact + dark, with emojis)
+    function buildPopup(cleaned) {
+      const name =
+        pick(cleaned, ["Name","Course","Course Name","Title","Club","course","name"]) ||
+        (() => {
+          const k = Object.keys(cleaned).find(key => keyIncludes(key, "course"));
+          return k ? cleaned[k] : undefined;
+        })() ||
+        "Unnamed Course";
+
+      const city   = pick(cleaned, ["City","city","Town","town"]);
+      const state  = pick(cleaned, ["State","state","Province","province","ST"]);
+      const rank   = pick(cleaned, ["Rank","rank","Ranking","ranking"]);
+      const price  = pick(cleaned, ["Price","price","Green Fee","green_fee","Avg Price"]);
+      const lodge  = pick(cleaned, ["Lodging","lodging","On-site Lodging","Onsite Lodging","Onsite","Has Lodging"]);
+      const link   = pick(cleaned, ["URL","Url","url","Website","website","Link","link"]);
+
+      const header = [
+        `<h3 class="popup-title">🏌️‍♂️ ${escapeHtml(name)}</h3>`,
+        (city || state) ? `<p class="popup-sub">📍 ${escapeHtml([city, state].filter(Boolean).join(", "))}</p>` : ""
+      ];
+
+      const main = [];
+      if (rank)  main.push(`<p class="popup-line">🏆 <strong>Rank:</strong> ${escapeHtml(String(rank))}</p>`);
+      if (price) main.push(`<p class="popup-line">💵 <strong>Price:</strong> ${escapeHtml(String(price))}</p>`);
+      if (lodge) main.push(`<p class="popup-line">🏨 <strong>Lodging:</strong> ${escapeHtml(String(lodge))}</p>`);
+      if (link)  main.push(`<p class="popup-link">🔗 <a href="${safeUrl(link)}" target="_blank" rel="noopener">Visit site</a></p>`);
+
+      // Extras (limit to keep popup tight)
+      const hiddenKeys = new Set([
+        "lat","Lat","LAT","latitude","Latitude","LATITUDE",
+        "lng","Lon","lon","Lng","LON","longitude","Longitude","LONGITUDE"
+      ]);
+      const usedValues = new Set([name, city, state, rank, price, lodge, link].filter(Boolean));
+      const extras = [];
+      for (const k of Object.keys(cleaned)) {
+        if (hiddenKeys.has(k)) continue;
+        const v = cleaned[k];
+        if (v === null || v === undefined) continue;
+        const val = String(v).trim();
+        if (!val || usedValues.has(v)) continue;
+        if (val.length > 200) continue;
+
+        const label = normKey(k).replace(/[_\-]+/g, " ")
+          .replace(/\s+/g, " ")
+          .replace(/\b\w/g, c => c.toUpperCase());
+
+        const maybeUrl = safeUrl(val);
+        const pretty = /^https?:\/\//i.test(maybeUrl)
+          ? `<a href="${maybeUrl}" target="_blank" rel="noopener">${escapeHtml(val)}</a>`
+          : escapeHtml(val);
+
+        extras.push(`<p class="popup-line"><strong>${escapeHtml(label)}:</strong> ${pretty}</p>`);
+
+        if (extras.length >= 4) break; // cap extras to keep popup compact
+      }
+
+      return header.concat(main).concat(extras).join("");
+    }
+
+    function rowPassesFilters(cleaned, q, lodgingOnly) {
+      // Lodging filter: look for truthy tokens in any lodging-ish column
+      if (lodgingOnly) {
+        const lodge = pick(cleaned, ["Lodging","lodging","On-site Lodging","Onsite Lodging","Onsite","Has Lodging"]);
+        const txt = String(lodge || "").toLowerCase();
+        const has = /(yes|true|y|✓|1|available|onsite|on-site)/i.test(txt);
+        if (!has) return false;
+      }
+      if (q) {
+        const needle = q.toLowerCase();
+        const hay = [
+          pick(cleaned, ["Name","Course","Course Name","Title","Club","course","name"]),
+          pick(cleaned, ["City","city","Town","town"]),
+          pick(cleaned, ["State","state","Province","province","ST"])
+        ].filter(Boolean).join(" ").toLowerCase();
+        if (!hay.includes(needle)) return false;
+      }
+      return true;
+    }
+
+    // Renders markers based on current filters
+    function renderMarkers() {
+      markers.clearLayers();
+
+      const q = (document.getElementById("searchInput").value || "").trim();
+      const lodgingOnly = document.getElementById("lodgingOnly").checked;
+
+      let added = 0;
+      const groupBounds = [];
+
+      ALL_ROWS.forEach(cleaned => {
+        const lat = toNumber(pick(cleaned, ["lat","Lat","LAT","latitude","Latitude","LATITUDE"]));
+        const lng = toNumber(pick(cleaned, ["lng","Lon","lon","Lng","LON","longitude","Longitude","LONGITUDE"]));
+        if (lat === undefined || lng === undefined) return;
+
+        if (!rowPassesFilters(cleaned, q, lodgingOnly)) return;
+
+        const popupHtml = buildPopup(cleaned);
+        const m = L.marker([lat, lng], { icon: flagIcon }).bindPopup(popupHtml);
+        markers.addLayer(m);
+        groupBounds.push([lat, lng]);
+        added++;
+      });
+
+      if (added > 0) {
+        try {
+          map.fitBounds(L.latLngBounds(groupBounds).pad(0.1));
+        } catch(e) {
+          map.fitBounds(defaultUSBounds, { padding: [20,20] });
+        }
+      } else {
+        // No results: just snap to default US view
+        map.fitBounds(defaultUSBounds, { padding: [20,20] });
+      }
+    }
+
+    // ---------------- Search + Filters events ----------------
+    const searchInput = document.getElementById("searchInput");
+    const clearBtn = document.getElementById("clearBtn");
+    const lodgingOnly = document.getElementById("lodgingOnly");
+
+    // debounce for typing
+    let t;
+    searchInput.addEventListener("input", () => {
+      clearTimeout(t);
+      t = setTimeout(renderMarkers, 200);
+    });
+    clearBtn.addEventListener("click", () => {
+      searchInput.value = "";
+      renderMarkers();
+    });
+    lodgingOnly.addEventListener("change", renderMarkers);
 
   </script>
 </body>
