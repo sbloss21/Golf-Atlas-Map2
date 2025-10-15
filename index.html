@@ -23,6 +23,31 @@
     }
     .legend-dot { width: 10px; height: 10px; border-radius: 50%; background: #16a34a; display: inline-block; margin-right: 6px; box-shadow: inset 0 0 0 1px #065f46; }
 
+    /* Control column (buttons stacked + search below) */
+    .control-column .btn-simple {
+      display:block;
+      background:#fff;border:1px solid #e5e7eb;border-radius:999px;padding:6px 10px;
+      box-shadow:0 6px 18px rgba(0,0,0,.08);cursor:pointer;font-weight:700;font-size:13px;margin:0 0 6px 0;
+    }
+    .control-column .search-wrap {
+      background: rgba(15, 23, 42, 0.95);
+      color: #e5e7eb;
+      border: 1px solid rgba(148,163,184,0.25);
+      border-radius: 12px;
+      padding: 10px;
+      width: 260px;
+    }
+    .control-column .search-wrap h4 {
+      margin: 0 0 6px; font-size: 13px; font-weight: 800; letter-spacing:.2px; color:#f8fafc;
+    }
+    .control-column .search-row { display:flex; gap:8px; }
+    .control-column input[type="text"] {
+      flex:1; background:#0f172a; color:#e5e7eb; border:1px solid #334155; border-radius:8px; padding:8px 10px; font-size:13px; outline:none;
+    }
+    .control-column .clear-btn {
+      background:#ffffff; color:#0f172a; border:1px solid #e2e8f0; border-radius:8px; padding:8px 10px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;
+    }
+
     /* Dark, compact popups */
     .leaflet-popup-content-wrapper { background: #0f172a; color: #e5e7eb; border-radius: 10px; box-shadow: 0 16px 36px rgba(0,0,0,0.35); border: 1px solid #334155; }
     .leaflet-popup-tip { background: #0f172a; border: 1px solid #334155; }
@@ -30,18 +55,20 @@
     .popup-title { font-weight: 800; font-size: 15px; margin: 0 0 4px; color: #f8fafc; }
     .popup-line { margin: 0 0 3px; color: #cbd5e1; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .popup-line strong { color: #e2e8f0; }
-    .popup-link a { text-decoration: none; color: #7dd3fc; font-weight: 700; font-size: 12px; }
-    .popup-link a:hover { text-decoration: underline; }
+    .popup-cta {
+      margin-top: 6px;
+    }
+    .popup-cta a {
+      display:inline-block; text-decoration:none; font-weight:800; font-size:12px;
+      background:#22c55e; color:#0b1220; border:1px solid #16a34a; padding:6px 10px; border-radius:999px;
+    }
+    .popup-cta a:hover { filter:brightness(0.95); }
 
+    /* Cluster visuals */
     .ga-cluster-wrapper { background: transparent !important; border: none !important; box-shadow: none !important; }
     .ga-cluster img { display: block; width: 100%; height: auto; pointer-events: none; }
 
     .leaflet-marker-icon, .leaflet-marker-shadow { image-rendering: auto; }
-    /* Button group (Reset + Hawaii) */
-    .leaflet-control .btn-simple {
-      background:#fff;border:1px solid #e5e7eb;border-radius:999px;padding:6px 10px;
-      box-shadow:0 6px 18px rgba(0,0,0,.08);cursor:pointer;font-weight:700;font-size:13px;margin:0 0 6px 0;
-    }
   </style>
 </head>
 <body>
@@ -97,24 +124,41 @@
     map.setMaxBounds(usMaxBounds.pad(0.05));
     map.fitBounds(lower48Bounds, { padding: [20, 20] });
 
-    // --- Controls: Reset (Lower 48) + Hawaii ---
-    const ControlButtons = L.Control.extend({
+    // --- Stacked Controls: Reset (top) then Hawaii, then Search box ---
+    const ControlColumn = L.Control.extend({
       onAdd: function() {
-        const div = L.DomUtil.create('div');
-        const reset = L.DomUtil.create('button', 'btn-simple', div);
-        reset.textContent = 'Reset View';
-        const hawaii = L.DomUtil.create('button', 'btn-simple', div);
-        hawaii.textContent = 'Hawaii';
+        const wrap = L.DomUtil.create('div', 'control-column');
 
+        const reset = L.DomUtil.create('button', 'btn-simple', wrap);
+        reset.textContent = 'Reset View';
         L.DomEvent.on(reset, 'click', (e) => { L.DomEvent.stop(e); map.fitBounds(lower48Bounds, { padding: [20,20] }); });
+
+        const hawaii = L.DomUtil.create('button', 'btn-simple', wrap);
+        hawaii.textContent = 'Hawaii';
         L.DomEvent.on(hawaii, 'click', (e) => { L.DomEvent.stop(e); map.fitBounds(hawaiiBounds, { padding: [20,20] }); });
 
-        return div;
+        // Search box
+        const panel = L.DomUtil.create('div', 'search-wrap', wrap);
+        const h4 = L.DomUtil.create('h4', '', panel);
+        h4.textContent = 'Search';
+        const row = L.DomUtil.create('div', 'search-row', panel);
+        const input = L.DomUtil.create('input', '', row);
+        input.type = 'text';
+        input.placeholder = 'Name, city, or state…';
+        input.id = 'searchInput';
+        const clear = L.DomUtil.create('button', 'clear-btn', row);
+        clear.textContent = 'Clear';
+        clear.id = 'clearBtn';
+
+        // Prevent map drag/scroll when interacting
+        L.DomEvent.disableClickPropagation(wrap);
+        L.DomEvent.disableScrollPropagation(wrap);
+        return wrap;
       },
       onRemove: function() {}
     });
-    L.control.buttons = (opts) => new ControlButtons(opts);
-    L.control.buttons({ position: 'topleft' }).addTo(map);
+    L.control.controlColumn = (opts) => new ControlColumn(opts);
+    L.control.controlColumn({ position: 'topleft' }).addTo(map);
 
     // Popups: extra headroom so they don’t get pushed off-screen
     L.Popup.prototype.options.autoPan = true;
@@ -220,12 +264,29 @@
       if (lodging)  parts.push(`<p class="popup-line">🛏️ <strong>Lodging:</strong> ${escapeHtml(String(lodging))}</p>`);
       if (practice) parts.push(`<p class="popup-line">⛳️ <strong>Practice:</strong> ${escapeHtml(String(practice))}</p>`);
       if (dining)   parts.push(`<p class="popup-line">🍽️ <strong>Dining:</strong> ${escapeHtml(String(dining))}</p>`);
-      if (link)     parts.push(`<p class="popup-link">🔗 <a href="${safeUrl(link)}" target="_blank" rel="noopener">Visit site</a></p>`);
+      if (link)     parts.push(`<p class="popup-cta"><a href="${safeUrl(link)}" target="_blank" rel="noopener">Visit Course Website ↗</a></p>`);
       return parts.join("");
+    }
+
+    function rowPassesFilters(cleaned, q) {
+      if (q) {
+        const needle = q.toLowerCase();
+        const hay = [
+          pick(cleaned, ["Name","Course","Course Name","Title","Club","course","name"]),
+          pick(cleaned, ["Resort","Resort Name","Resort/Property","Property","Facility","Club"]),
+          pick(cleaned, ["City","city","Town","town"]),
+          pick(cleaned, ["State","ST","state","Province","province"])
+        ].filter(Boolean).join(" ").toLowerCase();
+        if (!hay.includes(needle)) return false;
+      }
+      return true;
     }
 
     function renderMarkers() {
       markers.clearLayers();
+
+      const inputEl = document.getElementById("searchInput");
+      const q = inputEl ? (inputEl.value || "").trim() : "";
 
       let added = 0; const groupBounds = [];
 
@@ -233,6 +294,7 @@
         const lat = toNumber(pick(cleaned, ["lat","Lat","LAT","latitude","Latitude","LATITUDE"]));
         const lng = toNumber(pick(cleaned, ["lng","Lon","lon","Lng","LON","longitude","Longitude","LONGITUDE"]));
         if (lat === undefined || lng === undefined) return;
+        if (!rowPassesFilters(cleaned, q)) return;
 
         const m = L.marker([lat, lng], { icon: flagIcon }).bindPopup(buildPopup(cleaned));
         markers.addLayer(m);
@@ -246,6 +308,19 @@
         map.fitBounds(lower48Bounds, { padding: [20,20] });
       }
     }
+
+    // Hook up search events after control renders
+    setTimeout(() => {
+      const searchInput = document.getElementById("searchInput");
+      const clearBtn = document.getElementById("clearBtn");
+      if (searchInput) {
+        let t;
+        searchInput.addEventListener("input", () => { clearTimeout(t); t = setTimeout(renderMarkers, 200); });
+      }
+      if (clearBtn && searchInput) {
+        clearBtn.addEventListener("click", () => { searchInput.value = ""; renderMarkers(); });
+      }
+    }, 0);
   </script>
 </body>
 </html>
