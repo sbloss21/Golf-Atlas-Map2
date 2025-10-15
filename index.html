@@ -24,126 +24,46 @@
 
   <style>
     html, body, #map { height: 100%; margin: 0; }
-    body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      background: #0b1220; /* subtle night blue behind map edges */
-    }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #0b1220; }
 
-    /* Top pill title */
     .topbar {
-      position: absolute;
-      z-index: 1000;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #ffffff;
-      color: #065f46;
-      padding: 8px 12px;
-      border-radius: 999px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-      font-weight: 600;
-      letter-spacing: 0.2px;
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      border: 1px solid #e5e7eb;
+      position: absolute; z-index: 1000; top: 12px; left: 50%; transform: translateX(-50%);
+      background: #ffffff; color: #065f46; padding: 8px 12px; border-radius: 999px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08); font-weight: 600; letter-spacing: 0.2px;
+      display: flex; gap: 8px; align-items: center; border: 1px solid #e5e7eb;
     }
-    .legend-dot {
-      width: 10px; height: 10px; border-radius: 50%; background: #16a34a;
-      display: inline-block; vertical-align: middle; margin-right: 6px;
-      box-shadow: inset 0 0 0 1px #065f46;
-    }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; background: #16a34a; display: inline-block; margin-right: 6px; box-shadow: inset 0 0 0 1px #065f46; }
 
-    /* Search panel (no lodging toggle) */
     .control-panel {
-      position: absolute;
-      z-index: 1000;
-      top: 60px;
-      left: 12px;
-      background: rgba(15, 23, 42, 0.95); /* slate-900-ish */
-      color: #e5e7eb;
-      backdrop-filter: blur(4px);
-      padding: 10px 12px;
-      border-radius: 12px;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.25);
-      border: 1px solid rgba(148,163,184,0.25);
-      width: 280px;
+      position: absolute; z-index: 1000; top: 60px; left: 12px;
+      background: rgba(15, 23, 42, 0.95); color: #e5e7eb; backdrop-filter: blur(4px);
+      padding: 10px 12px; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+      border: 1px solid rgba(148,163,184,0.25); width: 280px;
     }
-    .control-panel h4 {
-      margin: 0 0 8px;
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing: .2px;
-      color: #f8fafc;
-    }
+    .control-panel h4 { margin: 0 0 8px; font-size: 14px; font-weight: 700; letter-spacing: .2px; color: #f8fafc; }
     .control-row { display: flex; gap: 8px; margin-bottom: 4px; }
     .control-row input[type="text"] {
-      flex: 1;
-      background: #0f172a;
-      color: #e5e7eb;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 8px 10px;
-      font-size: 13px;
-      outline: none;
+      flex: 1; background: #0f172a; color: #e5e7eb; border: 1px solid #334155; border-radius: 8px; padding: 8px 10px; font-size: 13px; outline: none;
     }
     .control-row .btn {
-      white-space: nowrap;
-      background: #ffffff;
-      color: #0f172a;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 8px 10px;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
+      white-space: nowrap; background: #ffffff; color: #0f172a; border: 1px solid #e2e8f0;
+      border-radius: 8px; padding: 8px 10px; font-size: 13px; font-weight: 700; cursor: pointer;
     }
 
-    /* Condensed, dark popups */
-    .leaflet-popup-content-wrapper {
-      background: #0f172a; /* dark slate */
-      color: #e5e7eb;
-      border-radius: 10px;
-      box-shadow: 0 16px 36px rgba(0,0,0,0.35);
-      border: 1px solid #334155;
-    }
-    .leaflet-popup-tip {
-      background: #0f172a;
-      border: 1px solid #334155;
-    }
-    .leaflet-popup-content {
-      margin: 8px 10px;
-      line-height: 1.25; /* tighter */
-    }
-    .popup-title {
-      font-weight: 800; font-size: 15px; margin: 0 0 4px;
-      color: #f8fafc;
-    }
-    .popup-sub {
-      color: #a7f3d0; /* minty accent */
-      font-weight: 600; margin: 0 0 6px; font-size: 12px;
-    }
+    /* Dark compact popups */
+    .leaflet-popup-content-wrapper { background: #0f172a; color: #e5e7eb; border-radius: 10px; box-shadow: 0 16px 36px rgba(0,0,0,0.35); border: 1px solid #334155; }
+    .leaflet-popup-tip { background: #0f172a; border: 1px solid #334155; }
+    .leaflet-popup-content { margin: 8px 10px; line-height: 1.25; }
+    .popup-title { font-weight: 800; font-size: 15px; margin: 0 0 4px; color: #f8fafc; }
+    .popup-sub { color: #a7f3d0; font-weight: 600; margin: 0 0 6px; font-size: 12px; }
     .popup-line { margin: 0 0 3px; color: #cbd5e1; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .popup-line strong { color: #e2e8f0; }
-    .popup-link a {
-      text-decoration: none; color: #7dd3fc; font-weight: 700; font-size: 12px;
-    }
+    .popup-link a { text-decoration: none; color: #7dd3fc; font-weight: 700; font-size: 12px; }
     .popup-link a:hover { text-decoration: underline; }
 
-    /* Custom cluster */
-    .ga-cluster-wrapper {
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-    }
-    .ga-cluster img {
-      display: block;
-      width: 100%;
-      height: auto;
-      pointer-events: none;
-    }
+    .ga-cluster-wrapper { background: transparent !important; border: none !important; box-shadow: none !important; }
+    .ga-cluster img { display: block; width: 100%; height: auto; pointer-events: none; }
 
-    /* Leaflet default marker shadows off (cleaner look) */
     .leaflet-marker-icon, .leaflet-marker-shadow { image-rendering: auto; }
   </style>
 </head>
@@ -164,11 +84,7 @@
   <div id="map"></div>
 
   <!-- Leaflet JS -->
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""
-  ></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <!-- MarkerCluster JS -->
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <!-- PapaParse for CSV -->
@@ -176,37 +92,12 @@
 
   <script>
     // ---------------- Helpers ----------------
-    function getParam(name) {
-      const p = new URLSearchParams(location.search).get(name);
-      return p ? decodeURIComponent(p) : null;
-    }
-    function toNumber(x) {
-      if (x === undefined) return undefined;
-      const n = Number(String(x).replace(/[^\d.-]/g, ""));
-      return isFinite(n) ? n : undefined;
-    }
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-    }
-    function safeUrl(u) {
-      const s = String(u || "").trim();
-      if (!s) return "";
-      if (/^https?:\/\//i.test(s)) return s;
-      if (/^(www\.)?[\w-]+\.[a-z]{2,}([\/?#].*)?$/i.test(s)) {
-        return "https://" + s.replace(/^https?:\/\//i, "").replace(/^\/+/, "");
-      }
-      return s;
-    }
-    function normKey(k) {
-      return String(k || "").replace(/\uFEFF/g, "").trim();
-    }
-    function keyIncludes(k, word) {
-      return normKey(k).toLowerCase().includes(String(word).toLowerCase());
-    }
+    function getParam(name) { const p = new URLSearchParams(location.search).get(name); return p ? decodeURIComponent(p) : null; }
+    function toNumber(x) { if (x === undefined) return undefined; const n = Number(String(x).replace(/[^\d.-]/g, "")); return isFinite(n) ? n : undefined; }
+    function escapeHtml(str) { return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+    function safeUrl(u) { const s = String(u || "").trim(); if (!s) return ""; if (/^https?:\/\//i.test(s)) return s; if (/^(www\.)?[\w-]+\.[a-z]{2,}([\/?#].*)?$/i.test(s)) { return "https://" + s.replace(/^https?:\/\//i,"").replace(/^\/+/,""); } return s; }
+    function normKey(k) { return String(k || "").replace(/\uFEFF/g, "").trim(); }
+    function keyIncludes(k, word) { return normKey(k).toLowerCase().includes(String(word).toLowerCase()); }
     function pick(obj, candidates) {
       const keys = Object.keys(obj);
       for (const want of candidates) {
@@ -219,37 +110,25 @@
     const DEBUG = new URLSearchParams(location.search).has("debug");
 
     // ---------------- Map init ----------------
-    const map = L.map("map", {
-      worldCopyJump: true,
-      preferCanvas: true
-    });
+    const map = L.map("map", { worldCopyJump: true, preferCanvas: true });
 
-    // Basemap
-    L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-      {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
-        maxZoom: 19
-      }
-    ).addTo(map);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+      maxZoom: 19
+    }).addTo(map);
 
-    // Keep view within USA + AK/HI
     const defaultUSBounds = L.latLngBounds([[24.5, -125], [49.5, -66.5]]);
     const usBounds = L.latLngBounds(L.latLng(5, -170), L.latLng(72, -50));
     map.setMaxBounds(usBounds.pad(0.05));
     map.fitBounds(defaultUSBounds, { padding: [20, 20] });
 
-    // --- Reset View control ---
+    // Reset View control
     const ResetView = L.Control.extend({
       onAdd: function() {
         const btn = L.DomUtil.create('button');
         btn.innerHTML = 'Reset View';
         btn.style.cssText = 'background:#fff;border:1px solid #e5e7eb;border-radius:999px;padding:6px 10px;box-shadow:0 6px 18px rgba(0,0,0,.08);cursor:pointer;font-weight:700;';
-        L.DomEvent.on(btn, 'click', (e) => {
-          L.DomEvent.stop(e);
-          map.fitBounds(defaultUSBounds, { padding: [20,20] });
-        });
+        L.DomEvent.on(btn, 'click', (e) => { L.DomEvent.stop(e); map.fitBounds(defaultUSBounds, { padding: [20,20] }); });
         return btn;
       },
       onRemove: function() {}
@@ -257,21 +136,15 @@
     L.control.resetView = (opts) => new ResetView(opts);
     L.control.resetView({ position: 'topleft' }).addTo(map);
 
-    // ---------------- Popup headroom + behavior ----------------
-    // Give popups extra top padding so they don't sit off-screen after zoom/pan
+    // Popups: extra headroom so they don’t get pushed off-screen
     L.Popup.prototype.options.autoPan = true;
-    L.Popup.prototype.options.autoPanPaddingTopLeft = L.point(20, 120); // more headroom
+    L.Popup.prototype.options.autoPanPaddingTopLeft = L.point(20, 120);
     L.Popup.prototype.options.autoPanPaddingBottomRight = L.point(20, 20);
 
     // ---------------- Icons ----------------
-    // Golf flag SVG marker
     const flagSVG = encodeURIComponent(`
       <svg xmlns="http://www.w3.org/2000/svg" width="34" height="46" viewBox="0 0 34 46">
-        <defs>
-          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="1" stdDeviation="1" flood-opacity="0.35"/>
-          </filter>
-        </defs>
+        <defs><filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="1" flood-opacity="0.35"/></filter></defs>
         <g filter="url(#shadow)">
           <rect x="15.5" y="6" width="3" height="32" fill="#6b7280" rx="1.5"/>
           <path d="M17 7 L28 12 L17 17 Z" fill="#16a34a" stroke="#064e3b" stroke-width="1.25"/>
@@ -280,51 +153,25 @@
         </g>
       </svg>
     `);
+    const flagIcon = L.icon({ iconUrl: `data:image/svg+xml;charset=UTF-8,${flagSVG}`, iconSize: [34, 46], iconAnchor: [17, 45], popupAnchor: [0, -38] });
 
-    const flagIcon = L.icon({
-      iconUrl: `data:image/svg+xml;charset=UTF-8,${flagSVG}`,
-      iconSize: [34, 46],
-      iconAnchor: [17, 45],
-      popupAnchor: [0, -38]
-    });
-
-    // Cluster icon (golf ball with count)
     function golfBallClusterIcon(cluster) {
       const count = cluster.getChildCount();
       const size = count < 10 ? 36 : count < 50 ? 42 : count < 200 ? 50 : 58;
-
       const ballSVG = encodeURIComponent(`
         <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 60 60">
           <defs>
-            <radialGradient id="ballGrad" cx="40%" cy="30%" r="70%">
-              <stop offset="0%" stop-color="#ffffff"/>
-              <stop offset="100%" stop-color="#e5e7eb"/>
-            </radialGradient>
-            <filter id="ballShadow" x="-30%" y="-30%" width="160%" height="160%">
-              <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.35"/>
-            </filter>
+            <radialGradient id="ballGrad" cx="40%" cy="30%" r="70%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#e5e7eb"/></radialGradient>
+            <filter id="ballShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.35"/></filter>
           </defs>
           <g filter="url(#ballShadow)">
             <circle cx="30" cy="30" r="24" fill="url(#ballGrad)" stroke="#d1d5db" stroke-width="1.5"/>
-            ${[12,18,24,30,36,42,48].map(y =>
-              [18,24,30,36,42].map(x =>
-                `<circle cx="${x}" cy="${y}" r="1.4" fill="#d1d5db" opacity="${
-                  (y===12||y===48)?0.35:(y===18||y===42)?0.45:(y===24||y===36)?0.55:0.6
-                }"/>`
-              ).join("")
-            ).join("")}
-            <text x="30" y="34" text-anchor="middle"
-                  font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
-                  font-size="20" font-weight="700" fill="#111827">${count}</text>
+            ${[12,18,24,30,36,42,48].map(y => [18,24,30,36,42].map(x => `<circle cx="${x}" cy="${y}" r="1.4" fill="#d1d5db" opacity="${(y===12||y===48)?0.35:(y===18||y===42)?0.45:(y===24||y===36)?0.55:0.6}"/>`).join("")).join("")}
+            <text x="30" y="34" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="20" font-weight="700" fill="#111827">${count}</text>
           </g>
         </svg>
       `);
-
-      return L.divIcon({
-        html: `<div class="ga-cluster"><img src="data:image/svg+xml;charset=UTF-8,${ballSVG}" alt="${count}"/></div>`,
-        className: "ga-cluster-wrapper",
-        iconSize: [size, size]
-      });
+      return L.divIcon({ html: `<div class="ga-cluster"><img src="data:image/svg+xml;charset=UTF-8,${ballSVG}" alt="${count}"/></div>`, className: "ga-cluster-wrapper", iconSize: [size, size] });
     }
 
     // ---------------- Cluster layer ----------------
@@ -333,22 +180,20 @@
       spiderfyOnMaxZoom: true,
       maxClusterRadius: 55,
       iconCreateFunction: golfBallClusterIcon,
-      zoomToBoundsOnClick: false // we'll handle clusterclick ourselves
+      zoomToBoundsOnClick: false
     });
     map.addLayer(markers);
 
-    // Gentle cluster zoom (avoid zooming too deep)
+    // Gentle cluster zoom
     markers.on('clusterclick', function (e) {
       const current = map.getZoom();
-      const targetMax = Math.min(current + 2, 11); // cap how deep we go on click
+      const targetMax = Math.min(current + 2, 11);
       map.fitBounds(e.layer.getBounds(), { padding: [50, 50], maxZoom: targetMax });
     });
 
     // ---------------- Data + Rendering ----------------
     const csvUrl = getParam("csv") || "";
-    if (!csvUrl) {
-      console.warn("No CSV URL provided. Pass ?csv=<public CSV URL>");
-    }
+    if (!csvUrl) { console.warn("No CSV URL provided. Pass ?csv=<public CSV URL>"); }
 
     let ALL_ROWS = [];
 
@@ -360,14 +205,10 @@
       transformHeader: (h) => normKey(h),
       complete: function (results) {
         const rows = results.data || [];
-        if (DEBUG && rows.length) {
-          console.log("CSV headers:", Object.keys(rows[0]));
-        }
+        if (DEBUG && rows.length) { console.log("CSV headers:", Object.keys(rows[0])); }
 
         ALL_ROWS = rows.map(row => {
-          const cleaned = {};
-          Object.keys(row).forEach(k => cleaned[normKey(k)] = row[k]);
-          return cleaned;
+          const cleaned = {}; Object.keys(row).forEach(k => cleaned[normKey(k)] = row[k]); return cleaned;
         });
 
         renderMarkers();
@@ -379,23 +220,19 @@
     });
 
     function buildPopup(cleaned) {
-      // Fields (with flexible header matching)
       const name =
         pick(cleaned, ["Name","Course","Course Name","Title","Club","course","name"]) ||
-        (() => {
-          const k = Object.keys(cleaned).find(key => keyIncludes(key, "course"));
-          return k ? cleaned[k] : undefined;
-        })() || "Unnamed Course";
+        (() => { const k = Object.keys(cleaned).find(key => keyIncludes(key, "course")); return k ? cleaned[k] : undefined; })() || "Unnamed Course";
 
-      const resort = pick(cleaned, ["Resort","Resort Name","Property","Facility","Club","Resort/Property"]);
-      const city   = pick(cleaned, ["City","city","Town","town"]);
-      const state  = pick(cleaned, ["State","state","Province","province","ST"]);
-      const rank   = pick(cleaned, ["Rank","rank","Ranking","ranking"]);
-      const price  = pick(cleaned, ["Price","price","Green Fee","green_fee","Avg Price"]);
-      const lodge  = pick(cleaned, ["Lodging","lodging","Lodging Options","On-site Lodging","Onsite Lodging","Onsite","Has Lodging"]);
-      const practice = pick(cleaned, ["Practice","Practice Facility","practice_facility","Range","Driving Range","Putting Green"]);
-      const dining = pick(cleaned, ["Dining","Restaurants","Food","On-site Dining","Onsite Dining"]);
-      const link   = pick(cleaned, ["URL","Url","url","Website","website","Link","link"]);
+      const resort  = pick(cleaned, ["Resort","Resort Name","Property","Facility","Club","Resort/Property"]);
+      const city    = pick(cleaned, ["City","city","Town","town"]);
+      const state   = pick(cleaned, ["State","state","Province","province","ST"]);
+      const rank    = pick(cleaned, ["Rank","rank","Ranking","ranking"]);
+      const price   = pick(cleaned, ["Price","price","Green Fee","green_fee","Avg Price"]);
+      const lodge   = pick(cleaned, ["Lodging","lodging","Lodging Options","On-site Lodging","Onsite Lodging","Onsite","Has Lodging"]);
+      const practice= pick(cleaned, ["Practice","Practice Facility","practice_facility","Range","Driving Range","Putting Green"]);
+      const dining  = pick(cleaned, ["Dining","Restaurants","Food","On-site Dining","Onsite Dining"]);
+      const link    = pick(cleaned, ["URL","Url","url","Website","website","Link","link"]);
 
       const parts = [];
       parts.push(`<h3 class="popup-title">🏌️‍♂️ ${escapeHtml(name)}</h3>`);
@@ -407,7 +244,6 @@
       if (practice) parts.push(`<p class="popup-line">⛳️ <strong>Practice:</strong> ${escapeHtml(String(practice))}</p>`);
       if (dining) parts.push(`<p class="popup-line">🍽️ <strong>Dining:</strong> ${escapeHtml(String(dining))}</p>`);
       if (link)  parts.push(`<p class="popup-link">🔗 <a href="${safeUrl(link)}" target="_blank" rel="noopener">Visit site</a></p>`);
-
       return parts.join("");
     }
 
@@ -427,54 +263,34 @@
 
     function renderMarkers() {
       markers.clearLayers();
-
       const q = (document.getElementById("searchInput").value || "").trim();
-
-      let added = 0;
-      const groupBounds = [];
+      let added = 0; const groupBounds = [];
 
       ALL_ROWS.forEach(cleaned => {
         const lat = toNumber(pick(cleaned, ["lat","Lat","LAT","latitude","Latitude","LATITUDE"]));
         const lng = toNumber(pick(cleaned, ["lng","Lon","lon","Lng","LON","longitude","Longitude","LONGITUDE"]));
         if (lat === undefined || lng === undefined) return;
-
         if (!rowPassesFilters(cleaned, q)) return;
 
-        const popupHtml = buildPopup(cleaned);
-        const m = L.marker([lat, lng], { icon: flagIcon }).bindPopup(popupHtml);
+        const m = L.marker([lat, lng], { icon: flagIcon }).bindPopup(buildPopup(cleaned));
         markers.addLayer(m);
-        groupBounds.push([lat, lng]);
-        added++;
+        groupBounds.push([lat, lng]); added++;
       });
 
       if (added > 0) {
-        try {
-          map.fitBounds(L.latLngBounds(groupBounds).pad(0.1));
-        } catch(e) {
-          map.fitBounds(defaultUSBounds, { padding: [20,20] });
-        }
+        try { map.fitBounds(L.latLngBounds(groupBounds).pad(0.1)); }
+        catch(e) { map.fitBounds(defaultUSBounds, { padding: [20,20] }); }
       } else {
         map.fitBounds(defaultUSBounds, { padding: [20,20] });
       }
     }
 
-    // ---------------- Search events ----------------
+    // Search events
     const searchInput = document.getElementById("searchInput");
     const clearBtn = document.getElementById("clearBtn");
-
     let t;
-    searchInput.addEventListener("input", () => {
-      clearTimeout(t);
-      t = setTimeout(renderMarkers, 200);
-    });
-    clearBtn.addEventListener("click", () => {
-      searchInput.value = "";
-      renderMarkers();
-    });
-
-    // --------------- Load CSV ---------------
-    const csvUrl = getParam("csv") || "";
-
+    searchInput.addEventListener("input", () => { clearTimeout(t); t = setTimeout(renderMarkers, 200); });
+    clearBtn.addEventListener("click", () => { searchInput.value = ""; renderMarkers(); });
   </script>
 </body>
 </html>
