@@ -2,202 +2,320 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Golf Atlas – Courses</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Golf Atlas — Interactive Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
 
-  <!-- Leaflet core -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""
-  />
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""
-  ></script>
-
-  <!-- MarkerCluster plugin -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
-  />
+  <!-- Leaflet & MarkerCluster -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
-  <!-- Papa Parse (CSV) -->
+  <!-- Papa Parse for CSV -->
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
-  <style>
-    :root { --font: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
-    html, body { height: 100%; margin: 0; }
-    body { font-family: var(--font); }
-    #map { height: calc(100vh - 64px); width: 100%; }
-    .titlebar {
-      padding: 10px 12px;
-      display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
-      border-bottom: 1px solid #eee;
-    }
-    .titlebar h1 { margin: 0; font-size: 18px; font-weight: 700; }
-    .titlebar small { color: #666; }
+  <!-- Inter font (clean UI) -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 
-    /* Popup polish */
-    .leaflet-popup-content { margin: 10px 14px; }
-    .leaflet-popup-content-wrapper { border-radius: 12px; }
+  <style>
+    :root {
+      --bg: #0f172a; /* slate-900 */
+      --panel: #0b1220; /* deep navy */
+      --panel-2: #0d182a;
+      --text: #e5e7eb;  /* gray-200 */
+      --muted: #9ca3af; /* gray-400 */
+      --brand: #22c55e; /* emerald-500 */
+      --chip: #1f2937;  /* gray-800 */
+      --border: #1f2937;
+      --accent: #a7f3d0; /* emerald-200 */
+    }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+    #app { position: absolute; inset: 0; display: grid; grid-template-rows: auto 1fr; }
+    header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--border);
+    }
+    header h1 { font-size: 16px; margin: 0; font-weight: 600; letter-spacing: .3px; }
+    header .pill { font-size: 12px; color: var(--accent); background: #0a1b14; border: 1px solid #123422; padding: 2px 8px; border-radius: 999px; }
+    #controls { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+    #controls input[type="text"] {
+      width: min(48vw, 620px); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+      background: #0b1526; color: var(--text); outline: none;
+    }
+    #controls button {
+      padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
+      background: #13223a; color: var(--text); cursor: pointer;
+    }
+    #map { height: calc(100vh - 52px); }
+
+    /* Popup card */
+    .popup-card {
+      width: 320px; max-width: 86vw; background: #0a1222; border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,.45);
+    }
+    .popup-header {
+      display: grid; grid-template-columns: 48px 1fr; gap: 10px; align-items: center;
+      padding: 10px 12px; background: #0d182a; border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      width: 48px; height: 48px; border-radius: 10px; background: #0f1f38; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--border);
+      font-weight: 700; color: var(--brand);
+    }
+    .logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .title { line-height: 1.2; }
+    .title .course { font-size: 15px; font-weight: 700; color: #e7f5ff; }
+    .title .meta { margin-top: 2px; font-size: 12px; color: var(--muted); }
+
+    .thumb { width: 100%; height: 140px; object-fit: cover; background: #0b1426; display: block; }
+    .content { padding: 10px 12px; display: grid; gap: 8px; }
+    .row { display: grid; grid-template-columns: 18px 1fr; gap: 8px; align-items: start; font-size: 13px; color: #d1d5db; }
+    .chip { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--chip); border: 1px solid var(--border); font-size: 12px; color: #cbd5e1; margin-right: 6px; }
+    .actions { display: flex; gap: 8px; padding: 10px 12px 12px; }
+    .btn { text-decoration: none; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); color: #e5e7eb; background: #11213a; font-size: 13px; display: inline-flex; gap: 6px; align-items: center; }
+    .btn.primary { background: #063519; border-color: #0a4d27; color: #d1fae5; }
+    .btn:hover { filter: brightness(1.05); }
+
+    /* Marker tooltips (hover preview) */
+    .leaflet-tooltip {
+      background: #0b1526; color: #e5e7eb; border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; box-shadow: 0 8px 20px rgba(0,0,0,.35);
+    }
+
+    /* Responsive fix for mobile popups */
+    .leaflet-popup-content { margin: 8px 10px; }
+    .leaflet-popup-content-wrapper { background: transparent; box-shadow: none; }
+    .leaflet-popup-tip { background: #0a1222; border: 1px solid var(--border); }
   </style>
 </head>
 <body>
-  <div class="titlebar">
-    <h1>Golf Atlas – Courses</h1>
-    <small>Provide your data with <code>?csv=ENCODED_CSV_URL</code></small>
-  </div>
+<div id="app">
+  <header>
+    <h1>Golf Atlas Map</h1>
+    <span class="pill">CSV-powered</span>
+    <div id="controls">
+      <input id="csvInput" type="text" placeholder="Paste a published-to-web CSV URL (or use ?csv=...)" />
+      <button id="loadBtn">Load CSV</button>
+    </div>
+  </header>
   <div id="map"></div>
+</div>
 
-  <script>
-    // -------- Helpers --------
-    const getParam = (k) => new URL(location.href).searchParams.get(k);
-    const val = (x) => (x ?? "").toString().trim();
-    const num = (x) => (typeof x === "number" ? x : Number(x));
+<script>
+(function(){
+  const qs = new URLSearchParams(location.search);
+  const csvUrl = qs.get('csv') || '';
 
-    // Map + tiles
-    const map = L.map("map", { scrollWheelZoom: true });
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap contributors"
-    }).addTo(map);
-    map.setView([39.5, -98.5], 4); // default USA view so you see a map even if CSV fails
+  const map = L.map('map', {
+    zoomSnap: .25,
+    zoomDelta: .25
+  });
 
-    // Cluster group (feel free to tweak disableClusteringAtZoom)
-    const clusters = L.markerClusterGroup({
-      showCoverageOnHover: false,
-      spiderfyOnMaxZoom: true,
-      disableClusteringAtZoom: 10
-    }).addTo(map);
+  // Basemap (Carto Voyager)
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> & Carto',
+    maxZoom: 19
+  }).addTo(map);
 
-    // Cluster hover: if all child markers share one resort, show the resort; else show count
-    clusters.on("clustermouseover", (e) => {
-      try {
-        const children = e.layer.getAllChildMarkers();
-        const resorts = Array.from(new Set(children.map(m => m.options._resort).filter(Boolean)));
-        const text = (resorts.length === 1) ? resorts[0] : `${children.length} courses`;
-        e.layer.bindTooltip(text, { direction: "top", offset: [0, -8] }).openTooltip();
-      } catch {}
-    });
-    clusters.on("clustermouseout", (e) => {
-      if (e.layer.getTooltip()) e.layer.closeTooltip();
-    });
+  const cluster = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    spiderfyOnMaxZoom: true,
+    disableClusteringAtZoom: 12,
+    maxClusterRadius: 60
+  });
+  map.addLayer(cluster);
 
-    // CSV loading
-    const csvUrl = getParam("csv");
-    if (!csvUrl) {
-      console.warn("No ?csv= URL provided. Add ?csv=<encoded csv url> to your page URL.");
-    } else {
-      Papa.parse(csvUrl, {
-        download: true,
-        header: true,
-        dynamicTyping: true,
-        skipEmptyLines: true,
-        complete: ({ data }) => {
-          if (!Array.isArray(data) || data.length === 0) {
-            console.warn("CSV loaded but empty.");
-            return;
-          }
+  const input = document.getElementById('csvInput');
+  const btn = document.getElementById('loadBtn');
+  if (csvUrl) input.value = csvUrl;
 
-          const bounds = L.latLngBounds();
-          let plotted = 0;
+  btn.addEventListener('click', () => {
+    const url = input.value.trim();
+    if (!url) return alert('Please paste a published CSV URL.');
+    loadCsv(url);
+    const enc = encodeURIComponent(url);
+    const next = location.pathname + '?csv=' + enc;
+    history.replaceState({}, '', next);
+  });
 
-          data.forEach((r) => {
-            // Flexible lat/lon column names
-            const lat = r.Latitude ?? r.latitude ?? r.lat;
-            const lon = r.Longitude ?? r.longitude ?? r.lng ?? r.lon;
-            const latN = num(lat), lonN = num(lon);
-            if (!isFinite(latN) || !isFinite(lonN)) return;
+  if (csvUrl) loadCsv(csvUrl); else map.setView([39.8283, -98.5795], 4); // USA default
 
-            // Pull fields from your CSV
-            const name       = val(r["Course Name"] || r.name);
-            const resort     = val(r["Course Resort"]);
-            const city       = val(r["City"]);
-            const state      = val(r["State/Province"]);
-            const par        = val(r["Par"]);
-            const yardage    = val(r["Yardage (Back Tees)"]);
-            const arch       = val(r["Architect(s)"]);
-            const year       = val(r["Year Opened"]);
-            const fees       = val(r["Cost per Course (Green Fee Range)"]);
-            const walking    = val(r["Walking Friendly (Yes/No)"]);
-            const caddie     = val(r["Caddie/Cart Policy"]);
-            const practice   = val(r["Practice Facilities (Range/Short Game)"]);
-            const dining     = val(r["On-site Dining (Notes)"]);
-            const lodgingYN  = val(r["Lodging On-Site (Yes/No)"]);
-            const lodgingDet = val(r["Lodging Details & Typical Price"]);
-            const airports   = val(r["Nearby Airports (Distance)"]);
-            const website    = val(r["Website URL"]);
-            const phone      = val(r["Phone"]);
-            const ranking    = val(r["Ranking (Consensus or Golf Digest Top 100)"]);
+  function loadCsv(url){
+    cluster.clearLayers();
+    fetchCsv(url).then(rows => {
+      if (!rows.length) {
+        alert('CSV loaded but no rows found.');
+        return;
+      }
+      const markers = [];
+      let bounds = L.latLngBounds();
 
-            // Popup HTML (polished)
-            const courseLine = [par && `Par ${par}`, yardage && `${yardage} yds`]
-              .filter(Boolean).join(" • ");
+      rows.forEach(r => {
+        const lat = parseFloat(s(r['Latitude']));
+        const lon = parseFloat(s(r['Longitude']));
+        if (Number.isFinite(lat) && Number.isFinite(lon)) {
+          const m = L.marker([lat, lon]);
 
-            const lines = [];
-            if (courseLine) lines.push(`<div><b>Course:</b> ${courseLine}</div>`);
-            if (arch)       lines.push(`<div><b>Architect(s):</b> ${arch}</div>`);
-            if (year)       lines.push(`<div><b>Year Opened:</b> ${year}</div>`);
-            if (ranking)    lines.push(`<div><b>Ranking:</b> ${ranking}</div>`);
-            if (fees)       lines.push(`<div><b>Fees:</b> ${fees}</div>`);
-            if (walking)    lines.push(`<div><b>Walking:</b> ${walking}</div>`);
-            if (caddie)     lines.push(`<div><b>Caddie/Cart:</b> ${caddie}</div>`);
-            if (practice)   lines.push(`<div><b>Practice:</b> ${practice}</div>`);
-            if (dining)     lines.push(`<div><b>Dining:</b> ${dining}</div>`);
-            if (lodgingYN || lodgingDet) {
-              lines.push(`<div><b>Lodging:</b> ${[lodgingYN, lodgingDet].filter(Boolean).join(" — ")}</div>`);
-            }
-            if (airports)   lines.push(`<div><b>Airports:</b> ${airports}</div>`);
-            if (website)    lines.push(`<div style="margin-top:6px"><a href="${website}" target="_blank" rel="noopener">Website</a></div>`);
-            if (phone)      lines.push(`<div>${phone}</div>`);
+          // Hover tooltip: Resort + City, State
+          const resort = s(r['Course Resort']);
+          const city = s(r['City']);
+          const st = s(r['State/Province']);
+          const hoverText = `<strong>${resort || s(r['Course Name'])}</strong><br>${[city, st].filter(Boolean).join(', ')}`;
+          m.bindTooltip(hoverText, {direction:'top', opacity:.95, sticky:true});
 
-            const popupHtml = `
-              <div style="min-width:260px; max-width:360px;">
-                <div style="font-weight:700">${name || "Unknown"}</div>
-                ${resort ? `<div style="color:#444"><em>${resort}</em></div>` : ``}
-                <div style="margin:6px 0 8px 0; color:#333">
-                  ${[city, state].filter(Boolean).join(", ")}
-                </div>
-                <div style="font-size:13px; line-height:1.35; max-height:260px; overflow:auto; padding-right:4px;">
-                  ${lines.join("")}
-                </div>
-              </div>
-            `;
+          // Popup: rich card
+          m.bindPopup(renderPopup(r), {maxWidth: 420, minWidth: 320, className: ''});
 
-            // Create marker with resort stored for cluster tooltip logic
-            const marker = L.marker([latN, lonN], { _resort: resort })
-              .bindPopup(popupHtml);
-
-            // Hover tooltip on individual markers: show course name
-            if (name) marker.bindTooltip(name, { direction: "top", offset: [0, -8] });
-
-            clusters.addLayer(marker);
-            bounds.extend([latN, lonN]);
-            plotted++;
-          });
-
-          if (plotted > 0) {
-            map.fitBounds(bounds.pad(0.15));
-          } else {
-            console.warn("CSV loaded but no valid Latitude/Longitude found.");
-          }
-        },
-        error: (e) => {
-          console.error("CSV load error:", e);
-          alert("Could not load CSV. Open DevTools → Console for details.");
+          cluster.addLayer(m);
+          markers.push(m);
+          bounds.extend([lat,lon]);
         }
       });
-    }
 
-    // Debug toggle: add &debug=1 to URL
-    if (getParam("debug") === "1") console.log("Debug ON:", location.href);
-  </script>
+      if (bounds.isValid()) {
+        map.fitBounds(bounds.pad(0.12));
+      } else {
+        map.setView([39.8283, -98.5795], 4);
+      }
+
+      // Cluster hover: show predominant resort (mode)
+      cluster.on('clustermouseover', (e) => {
+        const child = e.layer.getAllChildMarkers().map(x => x);
+        const resorts = {};
+        child.forEach(mk => {
+          const r = mk.getTooltip().getContent();
+          const name = r.replace(/<br[\s\S]*$/,'').replace(/<[^>]*>/g,'').trim();
+          resorts[name] = (resorts[name] || 0) + 1;
+        });
+        const top = Object.entries(resorts).sort((a,b)=>b[1]-a[1])[0];
+        if (top) {
+          e.layer.bindTooltip(top[0], {direction:'top', opacity:.95, sticky:true}).openTooltip();
+        }
+      });
+
+    }).catch(err => {
+      console.error(err);
+      alert('Failed to load CSV. Check that it is published to the web as CSV and the URL is accessible.');
+    });
+  }
+
+  function fetchCsv(url){
+    return new Promise((resolve, reject) => {
+      Papa.parse(url, {
+        header: true,
+        download: true,
+        skipEmptyLines: true,
+        complete: (res) => resolve(cleanRows(res.data)),
+        error: (err) => reject(err)
+      });
+    });
+  }
+
+  function cleanRows(rows){
+    return rows.map(r => {
+      const out = {};
+      Object.keys(r).forEach(k => out[norm(k)] = (r[k] ?? '').toString().trim());
+      return out;
+    });
+  }
+
+  function norm(k){
+    return (k || '')
+      .replace(/\u2013|\u2014/g,'-')
+      .replace(/[^\x20-\x7E]/g,'')
+      .trim();
+  }
+  function s(v){ return (v || '').toString().trim(); }
+
+  function renderPopup(row){
+    const course = s(row['Course Name']);
+    const resort = s(row['Course Resort']);
+    const city = s(row['City']);
+    const state = s(row['State/Province']);
+    const region = s(row['Region']);
+    const par = s(row['Par']);
+    const yards = s(row['Yardage (Back Tees)']);
+    const arch = s(row['Architect(s)']);
+    const year = s(row['Year Opened']);
+    const fees = s(row['Cost per Course (Green Fee Range)']);
+    const lodging = s(row['Lodging On-Site (Yes/No)']);
+    const lodgingDet = s(row['Lodging Details & Typical Price']);
+    const walk = s(row['Walking Friendly (Yes/No)']);
+    const caddie = s(row['Caddie/Cart Policy']);
+    const practice = s(row['Practice Facilities (Range/Short Game)']);
+    const dining = s(row['On-site Dining (Notes)']);
+    const airports = s(row['Nearby Airports (Distance)']);
+    const url = s(row['Website URL']);
+    const phone = s(row['Phone']);
+    const rank = s(row['Ranking (Consensus or Golf Digest Top 100)']);
+    const peak = s(row['Peak Season / Best Time to Visit']);
+    const type = s(row['Course Type']);            // optional
+    const highlights = s(row['Highlights']);       // optional
+    const logo = s(row['Logo URL']);               // optional
+    const thumb = s(row['Thumbnail URL']);         // optional
+
+    // Fallback logo = initials
+    const initials = (resort || course || 'GA')
+      .split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()||'').join('');
+
+    const logoBlock = logo
+      ? `<div class="logo"><img alt="logo" src="${logo}"/></div>`
+      : `<div class="logo">${initials || 'GA'}</div>`;
+
+    const metaTop = [
+      resort ? resort : '',
+      [city, state].filter(Boolean).join(', ')
+    ].filter(Boolean).join(' • ');
+
+    const chips = [
+      par ? `Par ${par}` : '',
+      yards ? `${yards} yds` : '',
+      type ? type : ''
+    ].filter(Boolean).map(x=>`<span class="chip">${x}</span>`).join('');
+
+    const details = [
+      arch ? rowItem('🧑‍💼', `<strong>Architect:</strong> ${arch}`) : '',
+      year ? rowItem('📅', `<strong>Opened:</strong> ${year}`) : '',
+      fees ? rowItem('💰', `<strong>Green Fee:</strong> ${fees}`) : '',
+      peak ? rowItem('🌤️', `<strong>Peak Season:</strong> ${peak}`) : '',
+      lodging ? rowItem('🏠', `<strong>Lodging:</strong> ${lodging}${lodgingDet ? ' — ' + escapeHtml(lodgingDet) : ''}`) : '',
+      walk || caddie ? rowItem('🚶', `<strong>Walking/Caddie:</strong> ${[walk, caddie].filter(Boolean).join(' • ')}`) : '',
+      practice ? rowItem('🏌️', `<strong>Practice:</strong> ${practice}`) : '',
+      dining ? rowItem('🍽️', `<strong>Dining:</strong> ${dining}`) : '',
+      airports ? rowItem('✈️', `<strong>Airports:</strong> ${airports}`) : '',
+      rank ? rowItem('🏆', `<strong>Ranking:</strong> ${rank}`) : '',
+      highlights ? rowItem('⭐', `<strong>Highlights:</strong> ${highlights}`) : ''
+    ].filter(Boolean).join('');
+
+    const actions = [
+      url ? `<a class="btn primary" href="${url}" target="_blank" rel="noopener">Visit Website</a>` : '',
+      phone ? `<a class="btn" href="tel:${phone.replace(/[^0-9+]/g,'')}">Call</a>` : ''
+    ].join('');
+
+    const thumbImg = thumb ? `<img class="thumb" src="${thumb}" alt="course photo" />` : '';
+
+    return `
+      <div class="popup-card">
+        <div class="popup-header">
+          ${logoBlock}
+          <div class="title">
+            <div class="course">${escapeHtml(course || resort || 'Golf Course')}</div>
+            <div class="meta">${escapeHtml(metaTop)}</div>
+          </div>
+        </div>
+        ${thumbImg}
+        <div class="content">
+          ${chips ? `<div>${chips}</div>` : ``}
+          ${details || `<div class="row"><div>ℹ️</div><div>No additional details provided.</div></div>`}
+        </div>
+        ${actions ? `<div class="actions">${actions}</div>` : ``}
+      </div>
+    `;
+  }
+
+  function rowItem(emoji, html){ return `<div class="row"><div>${emoji}</div><div>${html}</div></div>`; }
+  function escapeHtml(str){ return (str || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+})();
+</script>
 </body>
 </html>
