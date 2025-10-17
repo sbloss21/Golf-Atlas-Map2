@@ -5,364 +5,392 @@
   <title>Golf Atlas Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <!-- MarkerCluster CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha512-p6V6wZ3GfOQ7mJj8YAjV9n1xQ9w7v2I9b5kB+6mV7eY1xD0y2t0B6Q3VhYJ6j9tJ2x4kZs1p2z7JY1x4dH0w2Q=="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha512-o9N1jJcYtA1P8Ifp6kQ7lCwG2rDq7pQ2V2y2eQe6m7H4xwN2b9W3ej3lF5b2pH4+5c1g2jKpM3f2k3u8XkK3Kw=="
+    crossorigin=""
+  ></script>
 
-  <style>
-    html, body, #map { height: 100%; margin: 0; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #0b1220; }
-
-    .topbar {
-      position: absolute; z-index: 1000; top: 12px; left: 50%; transform: translateX(-50%);
-      background: #ffffff; color: #065f46; padding: 8px 12px; border-radius: 999px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.08); font-weight: 600; letter-spacing: 0.2px;
-      display: flex; gap: 8px; align-items: center; border: 1px solid #e5e7eb;
-    }
-    .legend-dot { width: 10px; height: 10px; border-radius: 50%; background: #16a34a; display: inline-block; margin-right: 6px; box-shadow: inset 0 0 0 1px #065f46; }
-
-    /* Control column (buttons stacked + search below) */
-    .control-column .btn-simple {
-      display:block;
-      background:#fff;border:1px solid #e5e7eb;border-radius:999px;padding:6px 10px;
-      box-shadow:0 6px 18px rgba(0,0,0,.08);cursor:pointer;font-weight:700;font-size:13px;margin:0 0 6px 0;
-    }
-    .control-column .search-wrap {
-      background: rgba(15, 23, 42, 0.95);
-      color: #e5e7eb;
-      border: 1px solid rgba(148,163,184,0.25);
-      border-radius: 12px;
-      padding: 10px;
-      width: 260px;
-    }
-    .control-column .search-wrap h4 {
-      margin: 0 0 6px; font-size: 13px; font-weight: 800; letter-spacing:.2px; color:#f8fafc;
-    }
-    .control-column .search-row { display:flex; gap:8px; }
-    .control-column input[type="text"] {
-      flex:1; background:#0f172a; color:#e5e7eb; border:1px solid #334155; border-radius:8px; padding:8px 10px; font-size:13px; outline:none;
-    }
-    .control-column .clear-btn {
-      background:#ffffff; color:#0f172a; border:1px solid #e2e8f0; border-radius:8px; padding:8px 10px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;
-    }
-
-    /* Dark, compact popups */
-    .leaflet-popup-content-wrapper { background: #0f172a; color: #e5e7eb; border-radius: 10px; box-shadow: 0 16px 36px rgba(0,0,0,0.35); border: 1px solid #334155; }
-    .leaflet-popup-tip { background: #0f172a; border: 1px solid #334155; }
-    .leaflet-popup-content { margin: 8px 10px; line-height: 1.25; }
-    .popup-title { font-weight: 800; font-size: 15px; margin: 0 0 4px; color: #f8fafc; }
-    .popup-line { margin: 0 0 3px; color: #cbd5e1; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .popup-line strong { color: #e2e8f0; }
-    .popup-cta { margin-top: 6px; }
-    .popup-cta a {
-      display:inline-block; text-decoration:none; font-weight:800; font-size:12px;
-      background:#22c55e; color:#0b1220; border:1px solid #16a34a; padding:6px 10px; border-radius:999px;
-    }
-    .popup-cta a:hover { filter:brightness(0.95); }
-
-    /* Cluster visuals */
-    .ga-cluster-wrapper { background: transparent !important; border: none !important; box-shadow: none !important; }
-    .ga-cluster img { display: block; width: 100%; height: auto; pointer-events: none; }
-
-    .leaflet-marker-icon, .leaflet-marker-shadow { image-rendering: auto; }
-  </style>
-</head>
-<body>
-  <div class="topbar" title="Green flags are courses. Clusters show counts.">
-    <span class="legend-dot"></span> Golf Atlas — Courses Map
-  </div>
-
-  <div id="map"></div>
-
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <!-- MarkerCluster JS -->
+  <!-- MarkerCluster (optional but helpful if you have a lot of pins) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+  />
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
   <!-- PapaParse for CSV -->
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
+  <style>
+    :root {
+      --brand-green: #0e5135; /* forest green you’ve been using */
+      --brand-cream: #f9f7f2;
+      --text-dark: #1f2937;
+      --muted: #6b7280;
+      --link: #0ea5e9;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text-dark);
+      background: #fff;
+    }
+
+    #app {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      height: 100%;
+    }
+
+    header {
+      padding: 10px 14px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    header .title {
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      color: var(--brand-green);
+    }
+
+    header .meta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    #map {
+      width: 100%;
+      height: calc(100vh - 56px);
+    }
+
+    /* Clean white popup */
+    .leaflet-popup-content-wrapper {
+      background: #ffffff;
+      color: var(--text-dark);
+      border-radius: 12px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.15);
+      border: 1px solid #e5e7eb;
+    }
+    .leaflet-popup-content {
+      margin: 0;
+    }
+    .popup {
+      padding: 12px 14px;
+      max-width: 320px;
+    }
+    .popup h3 {
+      margin: 0 0 6px 0;
+      font-size: 18px;
+      line-height: 1.2;
+      font-weight: 800;
+      color: var(--brand-green);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      color: #374151;
+      background: #f9fafb;
+    }
+    .badge.gold {
+      color: #7c5e10;
+      background: #fff7e6;
+      border-color: #fde68a;
+    }
+    .popup .sub {
+      margin: 0 0 10px 0;
+      font-size: 13px;
+      color: #4b5563;
+    }
+    .kv {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .kv th {
+      text-align: left;
+      padding: 6px 8px 6px 0;
+      color: #6b7280;
+      font-weight: 600;
+      white-space: nowrap;
+      vertical-align: top;
+    }
+    .kv td {
+      padding: 6px 0;
+      color: #111827;
+    }
+    .kv tr + tr td, .kv tr + tr th {
+      border-top: 1px dashed #e5e7eb;
+    }
+    .muted {
+      color: var(--muted);
+    }
+
+    /* Debug panel (shows when &debug=1) */
+    #debug {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(255,255,255,0.96);
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 12px;
+      max-width: 40ch;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+      display: none;
+      z-index: 9999;
+    }
+    #debug pre {
+      margin: 6px 0 0 0;
+      white-space: pre-wrap;
+      max-height: 25vh;
+      overflow: auto;
+    }
+
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <div class="title">Golf Atlas — U.S. Courses Map</div>
+      <div class="meta" id="meta"></div>
+    </header>
+    <div id="map"></div>
+  </div>
+
+  <div id="debug">
+    <strong>Debug</strong>
+    <pre id="debugLog"></pre>
+  </div>
+
   <script>
-    // ---------------- Helpers ----------------
-    function getParam(name) { const p = new URLSearchParams(location.search).get(name); return p ? decodeURIComponent(p) : null; }
-    function toNumber(x) { if (x === undefined) return undefined; const n = Number(String(x).replace(/[^\d.-]/g, "")); return isFinite(n) ? n : undefined; }
-    function escapeHtml(str) { return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
-    function safeUrl(u) { const s = String(u || "").trim(); if (!s) return ""; if (/^https?:\/\//i.test(s)) return s; if (/^(www\.)?[\w-]+\.[a-z]{2,}([\/?#].*)?$/i.test(s)) { return "https://" + s.replace(/^https?:\/\//i,"").replace(/^\/+/,""); } return s; }
-    function normKey(k) { return String(k || "").replace(/\uFEFF/g, "").trim(); }
-    function keyIncludes(k, word) { return normKey(k).toLowerCase().includes(String(word).toLowerCase()); }
-    function pick(obj, candidates) {
-      const keys = Object.keys(obj);
-      for (const want of candidates) {
-        if (Object.prototype.hasOwnProperty.call(obj, want)) return obj[want];
-        const hit = keys.find(k => normKey(k).toLowerCase() === normKey(want).toLowerCase());
-        if (hit) return obj[hit];
-      }
-      for (const want of candidates) {
-        const hit = keys.find(k => keyIncludes(k, want));
-        if (hit) return obj[hit];
-      }
-      return undefined;
-    }
-    // Find any URL-ish value across all columns
-    function pickAnyUrl(obj) {
-      const keys = Object.keys(obj);
-      for (const k of keys) {
-        const lk = normKey(k).toLowerCase();
-        if (lk.includes("url") || lk.includes("website") || lk.includes("link")) {
-          const v = String(obj[k] ?? "").trim();
-          if (v) return v;
-        }
-      }
-      return undefined;
-    }
-    const DEBUG = new URLSearchParams(location.search).has("debug");
+    // ----- Helpers -----
+    const qs = new URLSearchParams(location.search);
+    const CSV_URL = qs.get('csv') || '';
+    const DEBUG = qs.get('debug') === '1';
 
-    // ---------------- Map init ----------------
-    const map = L.map("map", { worldCopyJump: true, preferCanvas: true });
+    const log = (...args) => {
+      if (DEBUG) {
+        console.log('[DEBUG]', ...args);
+        const el = document.getElementById('debugLog');
+        if (el) el.textContent += args.map(a => {
+          try { return typeof a === 'string' ? a : JSON.stringify(a); }
+          catch { return String(a); }
+        }).join(' ') + '\n';
+      }
+    };
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
-      maxZoom: 19
+    if (DEBUG) {
+      document.getElementById('debug').style.display = 'block';
+    }
+
+    document.getElementById('meta').textContent = CSV_URL ? 'Data source: CSV param detected' : 'No CSV provided';
+
+    // Accept a few possible lat/lng header variants
+    function getLatLng(row) {
+      // normalize keys to lower for flexible matching
+      const keys = Object.keys(row);
+      const lookup = Object.fromEntries(keys.map(k => [k.toLowerCase(), k]));
+
+      const latKey = ['lat','latitude','lat_dd'].find(k => lookup[k]);
+      const lngKey = ['lng','lon','long','longitude','lng_dd','lon_dd'].find(k => lookup[k]);
+
+      const lat = latKey ? parseFloat(row[lookup[latKey]]) : NaN;
+      const lng = lngKey ? parseFloat(row[lookup[lngKey]]) : NaN;
+
+      if (!isFinite(lat) || !isFinite(lng)) return null;
+      return [lat, lng];
+    }
+
+    function safeVal(row, key) {
+      // access with exact field name including parentheses
+      const v = (row && row[key] != null) ? String(row[key]).trim() : '';
+      return v;
+    }
+
+    // Render the popup using your preferred fields (includes the new Stay & Play)
+    function renderPopup(row) {
+      const title = safeVal(row, 'course') || safeVal(row, 'name') || 'Course';
+      const city = safeVal(row, 'city');
+      const state = safeVal(row, 'state') || safeVal(row, 'st');
+      const cost = safeVal(row, 'cost_per_course(green_fee_range_)');
+      const stayPlay = safeVal(row, 'stay_and_play(yes_no)'); // <-- NEW FIELD (shows as "Stay & Play")
+      const lodgingYN = safeVal(row, 'lodging_on-site(yes_no)');
+      const lodgingNotes = safeVal(row, 'lodging_details');
+      const season = safeVal(row, 'peak_season/best_time_to_visit');
+      const top100 = safeVal(row, 'top_100_ranking');
+      const par = safeVal(row, 'par');
+      const yard = safeVal(row, 'yardage(black_tees)');
+      const arch = safeVal(row, 'architect');
+      const website = safeVal(row, 'website') || safeVal(row, 'url');
+
+      const headerBadges = [];
+      if (top100) headerBadges.push(`<span class="badge gold">Top 100: ${top100}</span>`);
+      if (par) headerBadges.push(`<span class="badge">Par ${par}</span>`);
+      if (yard) headerBadges.push(`<span class="badge">${yard} yds</span>`);
+
+      const subline = [city, state].filter(Boolean).join(', ');
+
+      // Build table rows conditionally
+      const rows = [];
+
+      if (cost) rows.push(rowHTML('Cost', cost));
+      if (stayPlay) rows.push(rowHTML('Stay &amp; Play', stayPlay)); // <-- NEW ROW
+      if (lodgingYN) rows.push(rowHTML('On-site Lodging', lodgingYN));
+      if (lodgingNotes) rows.push(rowHTML('Lodging Notes', lodgingNotes));
+      if (season) rows.push(rowHTML('Best Season', season));
+      if (arch) rows.push(rowHTML('Architect', arch));
+      if (website) rows.push(rowHTML('Website', linkHTML(website)));
+
+      if (rows.length === 0) {
+        rows.push(`<tr><td colspan="2" class="muted">No extra details yet.</td></tr>`);
+      }
+
+      return `
+        <div class="popup">
+          <h3>${escapeHTML(title)} ${headerBadges.join(' ')}</h3>
+          ${subline ? `<p class="sub">${escapeHTML(subline)}</p>` : ''}
+          <table class="kv" role="table">
+            <tbody>
+              ${rows.join('\n')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function rowHTML(label, valueHTML) {
+      return `<tr>
+        <th>${label}</th>
+        <td>${valueHTML}</td>
+      </tr>`;
+    }
+
+    function linkHTML(url) {
+      try {
+        const u = new URL(url);
+        const host = u.hostname.replace(/^www\./, '');
+        return `<a href="${u.href}" target="_blank" rel="noopener">Visit ${host}</a>`;
+      } catch {
+        // if it's not a valid URL, just show text
+        return escapeHTML(url);
+      }
+    }
+
+    function escapeHTML(s) {
+      return String(s)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'",'&#39;');
+    }
+
+    // ----- Map init -----
+    const map = L.map('map', {
+      zoomControl: true
+    });
+
+    // Light basemap (Carto)
+    const tiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
     }).addTo(map);
 
-    // Bounds
-    const lower48Bounds = L.latLngBounds([[25.0, -125.0], [49.5, -66.5]]);
-    const hawaiiBounds  = L.latLngBounds([[18.5, -161.2], [22.5, -154.5]]);
-    const usMaxBounds   = L.latLngBounds(L.latLng(5, -170), L.latLng(72, -50));
-    map.setMaxBounds(usMaxBounds.pad(0.05));
-    map.fitBounds(lower48Bounds, { padding: [20, 20] });
+    // Start roughly on the U.S. (CONUS)
+    const CONUS_BOUNDS = L.latLngBounds(
+      [24.5, -125.0], // SW
+      [49.6, -66.9]   // NE
+    );
+    map.fitBounds(CONUS_BOUNDS, { padding: [20, 20] });
 
-    // --- Stacked Controls: Reset (top) then Hawaii, then Search box ---
-    const ControlColumn = L.Control.extend({
-      onAdd: function() {
-        const wrap = L.DomUtil.create('div', 'control-column');
-
-        const reset = L.DomUtil.create('button', 'btn-simple', wrap);
-        reset.textContent = 'Reset View';
-        L.DomEvent.on(reset, 'click', (e) => { L.DomEvent.stop(e); map.fitBounds(lower48Bounds, { padding: [20,20] }); });
-
-        const hawaii = L.DomUtil.create('button', 'btn-simple', wrap);
-        hawaii.textContent = 'Hawaii';
-        L.DomEvent.on(hawaii, 'click', (e) => { L.DomEvent.stop(e); map.fitBounds(hawaiiBounds, { padding: [20,20] }); });
-
-        // Search box
-        const panel = L.DomUtil.create('div', 'search-wrap', wrap);
-        const h4 = L.DomUtil.create('h4', '', panel);
-        h4.textContent = 'Search';
-        const row = L.DomUtil.create('div', 'search-row', panel);
-        const input = L.DomUtil.create('input', '', row);
-        input.type = 'text';
-        input.placeholder = 'Name, city, or state…';
-        input.id = 'searchInput';
-        const clear = L.DomUtil.create('button', 'clear-btn', row);
-        clear.textContent = 'Clear';
-        clear.id = 'clearBtn';
-
-        L.DomEvent.disableClickPropagation(wrap);
-        L.DomEvent.disableScrollPropagation(wrap);
-        return wrap;
-      },
-      onRemove: function() {}
-    });
-    L.control.controlColumn = (opts) => new ControlColumn(opts);
-    L.control.controlColumn({ position: 'topleft' }).addTo(map);
-
-    // Popups: extra headroom so they don’t get pushed off-screen
-    L.Popup.prototype.options.autoPan = true;
-    L.Popup.prototype.options.autoPanPaddingTopLeft = L.point(20, 120);
-    L.Popup.prototype.options.autoPanPaddingBottomRight = L.point(20, 20);
-
-    // ---------------- Icons ----------------
-    const flagSVG = encodeURIComponent(`
-      <svg xmlns="http://www.w3.org/2000/svg" width="34" height="46" viewBox="0 0 34 46">
-        <defs><filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="1" flood-opacity="0.35"/></filter></defs>
-        <g filter="url(#shadow)">
-          <rect x="15.5" y="6" width="3" height="32" fill="#6b7280" rx="1.5"/>
-          <path d="M17 7 L28 12 L17 17 Z" fill="#16a34a" stroke="#064e3b" stroke-width="1.25"/>
-          <ellipse cx="17" cy="40" rx="10" ry="3.5" fill="#86efac" stroke="#16a34a" stroke-width="1"/>
-          <circle cx="22.5" cy="38.2" r="1.5" fill="#065f46"/>
-        </g>
-      </svg>
-    `);
-    const flagIcon = L.icon({ iconUrl: `data:image/svg+xml;charset=UTF-8,${flagSVG}`, iconSize: [34, 46], iconAnchor: [17, 45], popupAnchor: [0, -38] });
-
-    function golfBallClusterIcon(cluster) {
-      const count = cluster.getChildCount();
-      const size = count < 10 ? 36 : count < 50 ? 42 : count < 200 ? 50 : 58;
-      const ballSVG = encodeURIComponent(`
-        <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 60 60">
-          <defs>
-            <radialGradient id="ballGrad" cx="40%" cy="30%" r="70%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#e5e7eb"/></radialGradient>
-            <filter id="ballShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.35"/></filter>
-          </defs>
-          <g filter="url(#ballShadow)">
-            <circle cx="30" cy="30" r="24" fill="url(#ballGrad)" stroke="#d1d5db" stroke-width="1.5"/>
-            ${[12,18,24,30,36,42,48].map(y => [18,24,30,36,42].map(x => `<circle cx="${x}" cy="${y}" r="1.4" fill="#d1d5db" opacity="${(y===12||y===48)?0.35:(y===18||y===42)?0.45:(y===24||y===36)?0.55:0.6}"/>`).join("")).join("")}
-            <text x="30" y="34" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="20" font-weight="700" fill="#111827">${count}</text>
-          </g>
-        </svg>
-      `);
-      return L.divIcon({ html: `<div class="ga-cluster"><img src="data:image/svg+xml;charset=UTF-8,${ballSVG}" alt="${count}"/></div>`, className: "ga-cluster-wrapper", iconSize: [size, size] });
-    }
-
-    // ---------------- Cluster layer ----------------
-    const markers = L.markerClusterGroup({
+    // marker cluster group
+    const cluster = L.markerClusterGroup({
       showCoverageOnHover: false,
-      spiderfyOnMaxZoom: true,
-      spiderfyDistanceMultiplier: 1.2,
-      zoomToBoundsOnClick: false,
-      maxClusterRadius: 55,
-      iconCreateFunction: golfBallClusterIcon
-    });
-    map.addLayer(markers);
+      spiderfyOnEveryZoom: false,
+      maxClusterRadius: 45
+    }).addTo(map);
 
-    // Spiderfy clusters on click
-    markers.on('clusterclick', function (e) { e.layer.spiderfy(); });
+    // ----- Load CSV & plot -----
+    (async function init() {
+      if (!CSV_URL) {
+        log('No CSV URL supplied. Add ?csv=<published CSV URL>');
+        return;
+      }
 
-    // ---------------- Data + Rendering ----------------
-    const csvUrl = getParam("csv") || "";
-    if (!csvUrl) { console.warn("No CSV URL provided. Pass ?csv=<public CSV URL>"); }
+      log('Fetching CSV from', CSV_URL);
 
-    let ALL_ROWS = [];
+      Papa.parse(CSV_URL, {
+        download: true,
+        header: true,
+        dynamicTyping: false,
+        skipEmptyLines: true,
+        complete: (results) => {
+          const rows = results.data || [];
+          log('Parsed rows:', rows.length);
+          plotRows(rows);
+        },
+        error: (err) => {
+          console.error('CSV parse error:', err);
+          log('CSV parse error:', String(err));
+        }
+      });
+    })();
 
-    Papa.parse(csvUrl, {
-      download: true,
-      header: true,
-      dynamicTyping: false,
-      skipEmptyLines: true,
-      transformHeader: (h) => normKey(h),
-      complete: function (results) {
-        const rows = results.data || [];
-        if (DEBUG && rows.length) { console.log("CSV headers:", Object.keys(rows[0])); }
+    function plotRows(rows) {
+      const bounds = L.latLngBounds([]);
+      let plotted = 0;
 
-        ALL_ROWS = rows.map(row => {
-          const cleaned = {}; Object.keys(row).forEach(k => cleaned[normKey(k)] = row[k]); return cleaned;
+      rows.forEach((row, idx) => {
+        const latlng = getLatLng(row);
+        if (!latlng) {
+          log(`Row ${idx} missing/invalid lat/lng`, row);
+          return;
+        }
+
+        const popup = renderPopup(row);
+        const marker = L.marker(latlng, {
+          title: safeVal(row, 'course') || safeVal(row, 'name') || 'Course'
         });
-
-        renderMarkers();
-      },
-      error: function (err) {
-        console.error("CSV load error:", err);
-        alert("There was a problem loading the CSV. Make sure the ?csv= link is public.");
-      }
-    });
-
-    function buildPopup(cleaned) {
-      const name =
-        pick(cleaned, ["course_name","Name","Course","Course Name","Title","Club","course","name"]) ||
-        (() => { const k = Object.keys(cleaned).find(key => keyIncludes(key, "course")); return k ? cleaned[k] : undefined; })() || "Unnamed Course";
-
-      const resort   = pick(cleaned, ["resort","Resort","Resort Name","Resort/Property","Property","Facility","Club"]);
-      const city     = pick(cleaned, ["city","City","Town","town"]);
-      const state    = pick(cleaned, ["state","State","ST","Province","province"]);
-
-      // Ranking: prefer new header, then legacy, then generic variants
-      const rank     = pick(cleaned, ["top_100_ranking","course_ranking","Rank","Ranking","GD Rank","rank","ranking"]);
-
-      // Your custom columns + common variants
-      const numCourses = pick(cleaned, [
-        "#_of_courses_on_property",
-        "courses_on_site",
-        "# of Courses","Courses on Property","Total Courses","Number of Courses","Courses","Course Count","# Courses","Courses (Property)"
-      ]);
-
-      const price    = pick(cleaned, [
-        "cost_per_course(green_fee_range_",
-        "Cost per Course","cost_per_course","Price","Avg Price","Green Fee","price","green_fee"
-      ]);
-
-      const peak     = pick(cleaned, [
-        "peak_season/best_time_to_visit",
-        "peak season","best time to visit","Peak Season","Best Time To Visit","Peak Season / Best Time To Visit"
-      ]);
-
-      const lodgingYN = pick(cleaned, [
-        "lodging_on-site(yes_no)",
-        "Lodging on Site","Has Lodging","On-site Lodging","Onsite Lodging","lodging"
-      ]);
-
-      const lodgingDetails = pick(cleaned, [
-        "lodging_details",
-        "Lodging Details","Lodging Options","On-site Lodging Details"
-      ]);
-
-      const practice = pick(cleaned, ["Practice Facility","Practice","practice","Driving Range","Range","Putting","Putting Green"]);
-      const dining   = pick(cleaned, ["Dining","Dining Options","Restaurants","Food","On-site Dining","Onsite Dining","dining"]);
-
-      // Robust URL pick (scan any url/website/link column)
-      const linkRaw = pick(cleaned, ["URL","Website","Link","Course URL","Resort URL","Official Site","Official Website","Site"]) || pickAnyUrl(cleaned);
-      const link    = linkRaw ? safeUrl(linkRaw) : "";
-
-      const parts = [];
-      parts.push(`<h3 class="popup-title">🏌️‍♂️ ${escapeHtml(name)}</h3>`);
-      if (resort)       parts.push(`<p class="popup-line">🏰 <strong>Resort:</strong> ${escapeHtml(String(resort))}</p>`);
-      if (state || city)parts.push(`<p class="popup-line">📍 <strong>Location:</strong> ${escapeHtml([city, state].filter(Boolean).join(", "))}</p>`);
-      if (numCourses)   parts.push(`<p class="popup-line">🏘️ <strong>Courses on property:</strong> ${escapeHtml(String(numCourses))}</p>`);
-      if (rank)         parts.push(`<p class="popup-line">🏆 <strong>Top 100:</strong> #${escapeHtml(String(rank))}</p>`);
-      if (price)        parts.push(`<p class="popup-line">💵 <strong>Price:</strong> ${escapeHtml(String(price))}</p>`);
-      if (peak)         parts.push(`<p class="popup-line">📅 <strong>Peak season:</strong> ${escapeHtml(String(peak))}</p>`);
-      if (lodgingYN)    parts.push(`<p class="popup-line">🛏️ <strong>Lodging on-site:</strong> ${escapeHtml(String(lodgingYN))}</p>`);
-      if (lodgingDetails) parts.push(`<p class="popup-line">🏨 <strong>Lodging details:</strong> ${escapeHtml(String(lodgingDetails))}</p>`);
-      if (practice)     parts.push(`<p class="popup-line">⛳️ <strong>Practice:</strong> ${escapeHtml(String(practice))}</p>`);
-      if (dining)       parts.push(`<p class="popup-line">🍽️ <strong>Dining:</strong> ${escapeHtml(String(dining))}</p>`);
-      if (link)         parts.push(`<p class="popup-cta"><a href="${link}" target="_blank" rel="noopener">Visit Course Website ↗</a></p>`);
-      return parts.join("");
-    }
-
-    function rowPassesFilters(cleaned, q) {
-      if (q) {
-        const needle = q.toLowerCase();
-        const hay = [
-          pick(cleaned, ["course_name","Name","Course","Course Name","Title","Club","course","name"]),
-          pick(cleaned, ["resort","Resort","Resort Name","Resort/Property","Property","Facility","Club"]),
-          pick(cleaned, ["city","City","Town","town"]),
-          pick(cleaned, ["state","State","ST","Province","province"])
-        ].filter(Boolean).join(" ").toLowerCase();
-        if (!hay.includes(needle)) return false;
-      }
-      return true;
-    }
-
-    function renderMarkers() {
-      markers.clearLayers();
-
-      const inputEl = document.getElementById("searchInput");
-      const q = inputEl ? (inputEl.value || "").trim() : "";
-
-      let added = 0; const groupBounds = [];
-
-      ALL_ROWS.forEach(cleaned => {
-        const lat = toNumber(pick(cleaned, ["lat","Lat","LAT","latitude","Latitude","LATITUDE"]));
-        const lng = toNumber(pick(cleaned, ["lng","Lon","lon","Lng","LON","longitude","Longitude","LONGITUDE","long","Long","LONG"]));
-        if (lat === undefined || lng === undefined) return;
-        if (!rowPassesFilters(cleaned, q)) return;
-
-        const m = L.marker([lat, lng], { icon: flagIcon }).bindPopup(buildPopup(cleaned));
-        markers.addLayer(m);
-        groupBounds.push([lat, lng]); added++;
+        marker.bindPopup(popup, { maxWidth: 340 });
+        cluster.addLayer(marker);
+        bounds.extend(latlng);
+        plotted++;
       });
 
-      if (added > 0) {
-        try { map.fitBounds(L.latLngBounds(groupBounds).pad(0.1)); }
-        catch(e) { map.fitBounds(lower48Bounds, { padding: [20,20] }); }
+      if (plotted > 0) {
+        map.fitBounds(bounds.pad(0.08));
       } else {
-        map.fitBounds(lower48Bounds, { padding: [20,20] });
+        map.fitBounds(CONUS_BOUNDS, { padding: [20, 20] });
       }
-    }
 
-    // Hook up search events after control renders
-    setTimeout(() => {
-      const searchInput = document.getElementById("searchInput");
-      const clearBtn = document.getElementById("clearBtn");
-      if (searchInput) {
-        let t;
-        searchInput.addEventListener("input", () => { clearTimeout(t); t = setTimeout(renderMarkers, 200); });
-      }
-      if (clearBtn && searchInput) {
-        clearBtn.addEventListener("click", () => { searchInput.value = ""; renderMarkers(); });
-      }
-    }, 0);
+      log('Markers plotted:', plotted);
+    }
   </script>
 </body>
 </html>
