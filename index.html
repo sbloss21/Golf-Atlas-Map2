@@ -4,28 +4,18 @@
   <meta charset="utf-8" />
   <title>Golf Atlas Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Leaflet (no SRI) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- MarkerCluster -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-
-  <!-- PapaParse -->
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
   <style>
     :root{
       --brand-green:#0e5135;
-      --dark-1:#0f172a; /* slate-900 */
-      --dark-2:#111827; /* gray-900 */
-      --text-strong:#f8fafc;
-      --text:#e5e7eb;
-      --muted:#94a3b8;
-      --link:#38bdf8;
+      --dark-1:#0f172a; --dark-2:#111827;
+      --text-strong:#f8fafc; --text:#e5e7eb; --muted:#94a3b8; --link:#38bdf8;
     }
     html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans;background:#fff;color:#111827}
     #app{display:grid;grid-template-rows:auto 1fr;height:100%}
@@ -34,54 +24,54 @@
     .meta{font-size:12px;color:#6b7280}
     #map{width:100%;height:calc(100vh - 56px)}
 
-    /* Dark popup style (restored) */
+    /* Dark popup */
     .leaflet-popup-content-wrapper{
       background:linear-gradient(180deg,var(--dark-1),var(--dark-2));
       color:var(--text);
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.08);
+      border-radius:14px;border:1px solid rgba(255,255,255,.08);
       box-shadow:0 14px 30px rgba(0,0,0,.35);
     }
     .leaflet-popup-tip{background:var(--dark-2);border:1px solid rgba(255,255,255,.08)}
     .popup{padding:14px 16px;max-width:360px}
     .popup h3{margin:0 0 8px 0;font-size:18px;line-height:1.2;font-weight:900;color:var(--text-strong);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .badge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.18);color:#fef9c3;background:rgba(250,204,21,.12)}
-    .sub{margin:0 0 10px 0;font-size:13px;color:var(--muted)}
-
+    .sub{margin:0 10px 10px 0;font-size:13px;color:var(--muted)}
     .kv{width:100%;border-collapse:collapse;font-size:13px}
     .kv th{text-align:left;padding:7px 10px 7px 0;color:#cbd5e1;font-weight:700;white-space:nowrap;vertical-align:top}
     .kv td{padding:7px 0;color:#e5e7eb}
     .kv tr + tr td, .kv tr + tr th{border-top:1px dashed rgba(255,255,255,.12)}
-
     a{color:var(--link);text-decoration:none} a:hover{text-decoration:underline}
     .pill-yes{display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.45);color:#bbf7d0;font-weight:800}
     .pill-no{display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(148,163,184,.18);border:1px solid rgba(148,163,184,.4);color:#e2e8f0;font-weight:800}
 
-    /* Debug panel */
+    /* CTA button */
+    .btn{
+      display:inline-block;margin:6px 0 10px 0;padding:8px 12px;border-radius:10px;
+      background:#0e5135;color:#fff;font-weight:800;border:1px solid rgba(255,255,255,.15);
+      text-decoration:none;box-shadow:0 6px 14px rgba(0,0,0,.35);
+    }
+    .btn:hover{filter:brightness(1.05)}
+
+    /* Debug */
     #debug{position:fixed;bottom:10px;left:10px;background:rgba(17,24,39,.96);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px;font-size:12px;color:#e5e7eb;max-width:42ch;box-shadow:0 6px 16px rgba(0,0,0,.35);display:none;z-index:9999}
     #debug pre{margin:6px 0 0 0;white-space:pre-wrap;max-height:25vh;overflow:auto}
 
-    /* Custom flag pin */
+    /* Custom flag pin (keep) */
     .ga-flag-pin{position:relative;transform:translate(-12px,-36px);width:24px;height:36px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
     .ga-flag-pin svg{display:block}
-
-    /* Small golf-ball cluster with centered count */
+    /* Small golf-ball cluster (keep) */
     .ga-cluster-ball{
       width:34px;height:34px;border-radius:50%;
       background:radial-gradient(circle at 30% 30%, #ffffff 0%, #f3f4f6 60%, #e5e7eb 100%);
-      border:1px solid rgba(0,0,0,.18);
-      box-shadow:0 6px 14px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.9);
-      position:relative;
-      display:flex;align-items:center;justify-content:center;
-      font-weight:900;color:#0f172a; /* dark text on light ball */
+      border:1px solid rgba(0,0,0,.18); box-shadow:0 6px 14px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.9);
+      position:relative; display:flex;align-items:center;justify-content:center;
+      font-weight:900;color:#0f172a;
     }
     .ga-cluster-ball:before{
-      content:"";
-      position:absolute;inset:4px;border-radius:50%;
-      background:
-        radial-gradient(#d1d5db 1px, transparent 1px) 0 0/6px 6px,
-        radial-gradient(#cbd5e1 1px, transparent 1px) 3px 3px/6px 6px;
-      opacity:.65;mix-blend-mode:multiply;
+      content:""; position:absolute; inset:4px; border-radius:50%;
+      background: radial-gradient(#d1d5db 1px, transparent 1px) 0 0/6px 6px,
+                  radial-gradient(#cbd5e1 1px, transparent 1px) 3px 3px/6px 6px;
+      opacity:.65; mix-blend-mode:multiply;
     }
     .ga-cluster-wrap{filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
   </style>
@@ -101,9 +91,7 @@
   </div>
 
   <script>
-    /* =======================
-       Query + Debug helpers
-       ======================= */
+    /* --- Query + Debug --- */
     const qs = new URLSearchParams(location.search);
     const CSV_URL = qs.get('csv') || '';
     const DEBUG = qs.get('debug') === '1';
@@ -113,17 +101,13 @@
       if(!DEBUG) return;
       console.log('[DEBUG]',...args);
       const el = debugLog();
-      if(el) el.textContent += args.map(a=>{
-        try{return typeof a==='string'?a:JSON.stringify(a);}catch{return String(a);}
-      }).join(' ') + '\n';
+      if(el) el.textContent += args.map(a=>{ try{return typeof a==='string'?a:JSON.stringify(a);}catch{return String(a);} }).join(' ') + '\n';
     }
     if(DEBUG) debugBox().style.display='block';
     window.addEventListener('error', e => log('JS error:', e.message, 'at', e.filename+':'+e.lineno+':'+e.colno));
     document.getElementById('meta').textContent = CSV_URL ? 'Data source: CSV param detected' : 'No CSV provided';
 
-    /* =======================
-       Data helpers
-       ======================= */
+    /* --- Helpers --- */
     function getLatLng(row){
       const keys = Object.keys(row);
       const lookup = Object.fromEntries(keys.map(k => [k.toLowerCase(), k]));
@@ -136,75 +120,72 @@
     }
     const V = (row,key)=> (row && row[key]!=null) ? String(row[key]).trim() : '';
     const safe = (s)=> String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
+
+    // Robust course title resolver
+    function getCourseTitle(row){
+      // 1) explicit priority list
+      const PREFERRED = ['course','course_name','name','club','club_name','golf_course','resort','resort_name','Course','Name'];
+      for (const k of PREFERRED){ const v = V(row,k); if (v) return v; }
+      // 2) fuzzy: first key that contains "course" or ends with "name"
+      for (const key of Object.keys(row)){
+        const lk = key.toLowerCase();
+        if ((lk.includes('course') || lk.endsWith('name')) &&
+            !lk.includes('website') && !lk.includes('booking')) {
+          const v = V(row,key); if (v) return v;
+        }
+      }
+      return 'Course'; // final fallback
+    }
+
     const yesNoPill = (val)=>{
       const v=(val||'').toLowerCase();
       if(v.startsWith('y')) return `<span class="pill-yes">Yes</span>`;
       if(v.startsWith('n')) return `<span class="pill-no">No</span>`;
       return safe(val);
     };
-    const linkHTML=(url)=>{ try{ const u=new URL(url); const host=u.hostname.replace(/^www\./,''); return `<a href="${u.href}" target="_blank" rel="noopener">Visit ${host}</a>`; }catch{return safe(url);} };
+    function bestURL(row){
+      const candidates = ['website','url','website_url','web','site','link','Booking','booking_url','Website','URL'];
+      for (const k of candidates){ const v = V(row,k); if (v) return v; }
+      return '';
+    }
+    const linkHost = (url)=>{ try{const u=new URL(url); return u.hostname.replace(/^www\./,'');}catch{return url;} };
     const rowHTML=(label,html)=> `<tr><th>${label}</th><td>${html}</td></tr>`;
 
-    /* =======================
-       Custom Icons
-       ======================= */
+    /* --- Icons (keep) --- */
     function flagDivIcon(){
       const svg = `
         <svg width="24" height="36" viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
-          <!-- pin body -->
           <path d="M12 0 C7 0 3 4 3 9c0 7 9 18 9 18s9-11 9-18c0-5-4-9-9-9z" fill="#0e5135" stroke="white" stroke-width="1.2"/>
-          <!-- flag pole -->
           <rect x="11.2" y="6" width="1.6" height="10" fill="#e5e7eb"/>
-          <!-- flag -->
           <path d="M12.8 6 L20 8.8 L12.8 11.6 Z" fill="#f43f5e"/>
-          <!-- shadow -->
           <ellipse cx="12" cy="33.5" rx="6.5" ry="2.5" fill="rgba(0,0,0,.25)"/>
         </svg>`;
-      return L.divIcon({
-        className:'ga-flag-pin',
-        html:svg,
-        iconSize:[24,36],
-        iconAnchor:[12,36],
-        popupAnchor:[0,-34]
-      });
+      return L.divIcon({ className:'ga-flag-pin', html:svg, iconSize:[24,36], iconAnchor:[12,36], popupAnchor:[0,-34] });
     }
-
-    // Small centered-count golf ball
     function clusterIconCreateFunction(cluster){
       const count = cluster.getChildCount();
-      return L.divIcon({
-        html: `<div class="ga-cluster-ball">${count}</div>`,
-        className:'ga-cluster-wrap',
-        iconSize:[34,34]
-      });
+      return L.divIcon({ html:`<div class="ga-cluster-ball">${count}</div>`, className:'ga-cluster-wrap', iconSize:[34,34] });
     }
 
-    /* =======================
-       Popup renderer (DARK + emojis) — includes all key fields
-       ======================= */
+    /* --- Popup renderer --- */
     function renderPopup(row){
-      // Title always shows (fallback prevents “missing name”)
-      const title = V(row,'course') || V(row,'name') || V(row,'Course') || '⛳ Course';
+      const title = getCourseTitle(row);               // <-- robust title
       const city  = V(row,'city');
       const state = V(row,'state') || V(row,'st') || V(row,'State');
       const subline = [city,state].filter(Boolean).join(', ');
 
-      // Data fields
       const top100 = V(row,'top_100_ranking');
       const par    = V(row,'par');
       const yard   = V(row,'yardage(black_tees)');
       const arch   = V(row,'architect');
       const cost   = V(row,'cost_per_course(green_fee_range_)');
-      const stay   = V(row,'stay_and_play(yes_no)');          // NEW
+      const stay   = V(row,'stay_and_play(yes_no)');
       const lodgeY = V(row,'lodging_on-site(yes_no)');
       const lodgeN = V(row,'lodging_details');
       const season = V(row,'peak_season/best_time_to_visit');
       const region = V(row,'region') || V(row,'Region');
-      const phone  = V(row,'phone') || V(row,'Phone');
-      const site   = V(row,'website') || V(row,'url') || V(row,'Website') || V(row,'URL');
-      const booking= V(row,'booking_url') || V(row,'Booking');
+      const siteURL= bestURL(row); // <-- for CTA button
 
-      // Badges row (Top 100 + Par + Yardage)
       const badges = [];
       if (top100) badges.push(`<span class="badge">🏆 Top 100: ${safe(top100)}</span>`);
       if (par)    badges.push(`<span class="badge">Par ${safe(par)}</span>`);
@@ -212,38 +193,35 @@
 
       const rows = [];
       if (region) rows.push(rowHTML('🗺️ Region', safe(region)));
-      if (cost)   rows.push(rowHTML('💵 Cost', safe(cost)));
       if (stay)   rows.push(rowHTML('🛌 Stay & Play', yesNoPill(stay)));
       if (lodgeY) rows.push(rowHTML('🏨 On-site Lodging', yesNoPill(lodgeY)));
       if (lodgeN) rows.push(rowHTML('📝 Lodging Notes', safe(lodgeN)));
       if (season) rows.push(rowHTML('📆 Best Season', safe(season)));
       if (arch)   rows.push(rowHTML('🏗️ Architect', safe(arch)));
-      if (phone)  rows.push(rowHTML('📞 Phone', safe(phone)));
-      if (site)   rows.push(rowHTML('🔗 Website', linkHTML(site)));
-      if (booking)rows.push(rowHTML('🧾 Booking', linkHTML(booking)));
+      if (cost)   rows.push(rowHTML('💵 Cost', safe(cost)));
+      // Phone removed by request
       if (!rows.length) rows.push(`<tr><td colspan="2" class="sub">No extra details yet.</td></tr>`);
+
+      const cta = siteURL ? `<a class="btn" href="${siteURL}" target="_blank" rel="noopener">Visit Course Website</a>` : '';
 
       return `
         <div class="popup">
           <h3>⛳ ${safe(title)} ${badges.join(' ')}</h3>
           ${subline ? `<p class="sub">${safe(subline)}</p>` : ''}
+          ${cta}
           <table class="kv" role="table"><tbody>${rows.join('')}</tbody></table>
         </div>
       `;
     }
 
-    /* =======================
-       Map init
-       ======================= */
+    /* --- Map --- */
     const map = L.map('map',{zoomControl:true});
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
       attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
     }).addTo(map);
-
     const CONUS_BOUNDS = L.latLngBounds([24.5,-125.0],[49.6,-66.9]);
     map.fitBounds(CONUS_BOUNDS,{padding:[20,20]});
 
-    // Cluster group using small golf ball
     const cluster = L.markerClusterGroup({
       showCoverageOnHover:false,
       spiderfyOnEveryZoom:false,
@@ -251,9 +229,6 @@
       iconCreateFunction: clusterIconCreateFunction
     }).addTo(map);
 
-    /* =======================
-       Load CSV & plot
-       ======================= */
     (function init(){
       if(!CSV_URL){ log('No CSV URL supplied. Add ?csv=<published CSV URL>'); return; }
       log('Fetching CSV from', CSV_URL);
@@ -269,26 +244,16 @@
     })();
 
     function plotRows(rows){
-      const bounds = L.latLngBounds([]);
-      let plotted = 0;
-
+      const bounds = L.latLngBounds([]); let plotted = 0;
       rows.forEach((row, idx)=>{
         const latlng = getLatLng(row);
         if(!latlng){ log(`Row ${idx} missing/invalid lat/lng`, row); return; }
-
-        const marker = L.marker(latlng, {
-          title: V(row,'course') || V(row,'name') || 'Course',
-          icon: flagDivIcon() // keep the golf-flag pins
-        });
+        const marker = L.marker(latlng, { title: getCourseTitle(row), icon: flagDivIcon() });
         marker.bindPopup(renderPopup(row), {maxWidth:380});
         cluster.addLayer(marker);
-        bounds.extend(latlng);
-        plotted++;
+        bounds.extend(latlng); plotted++;
       });
-
-      if(plotted>0) map.fitBounds(bounds.pad(0.08));
-      else map.fitBounds(CONUS_BOUNDS,{padding:[20,20]});
-
+      if(plotted>0) map.fitBounds(bounds.pad(0.08)); else map.fitBounds(CONUS_BOUNDS,{padding:[20,20]});
       log('Markers plotted:', plotted);
     }
   </script>
