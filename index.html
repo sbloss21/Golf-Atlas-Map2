@@ -5,28 +5,13 @@
   <title>Golf Atlas Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha512-p6V6wZ3GfOQ7mJj8YAjV9n1xQ9w7v2I9b5kB+6mV7eY1xD0y2t0B6Q3VhYJ6j9tJ2x4kZs1p2z7JY1x4dH0w2Q=="
-    crossorigin=""
-  />
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha512-o9N1jJcYtA1P8Ifp6kQ7lCwG2rDq7pQ2V2y2eQe6m7H4xwN2b9W3ej3lF5b2pH4+5c1g2jKpM3f2k3u8XkK3Kw=="
-    crossorigin=""
-  ></script>
+  <!-- Leaflet (no integrity attrs to avoid blocking) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- MarkerCluster (optional but helpful if you have a lot of pins) -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
-  />
+  <!-- MarkerCluster -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
   <!-- PapaParse for CSV -->
@@ -34,144 +19,36 @@
 
   <style>
     :root {
-      --brand-green: #0e5135; /* forest green you’ve been using */
+      --brand-green: #0e5135;
       --brand-cream: #f9f7f2;
       --text-dark: #1f2937;
       --muted: #6b7280;
       --link: #0ea5e9;
     }
+    html, body { height: 100%; margin: 0; color: var(--text-dark); background: #fff; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans; }
+    #app { display: grid; grid-template-rows: auto 1fr; height: 100%; }
+    header { padding: 10px 14px; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    header .title { font-weight: 700; letter-spacing: .2px; color: var(--brand-green); }
+    header .meta { font-size: 12px; color: var(--muted); }
+    #map { width: 100%; height: calc(100vh - 56px); }
 
-    html, body {
-      height: 100%;
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
-      color: var(--text-dark);
-      background: #fff;
-    }
+    .leaflet-popup-content-wrapper { background: #fff; color: var(--text-dark); border-radius: 12px; box-shadow: 0 10px 24px rgba(0,0,0,.15); border: 1px solid #e5e7eb; }
+    .leaflet-popup-content { margin: 0; }
+    .popup { padding: 12px 14px; max-width: 320px; }
+    .popup h3 { margin: 0 0 6px 0; font-size: 18px; line-height: 1.2; font-weight: 800; color: var(--brand-green); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid #e5e7eb; color: #374151; background: #f9fafb; }
+    .badge.gold { color: #7c5e10; background: #fff7e6; border-color: #fde68a; }
+    .popup .sub { margin: 0 0 10px 0; font-size: 13px; color: #4b5563; }
+    .kv { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .kv th { text-align: left; padding: 6px 8px 6px 0; color: #6b7280; font-weight: 600; white-space: nowrap; vertical-align: top; }
+    .kv td { padding: 6px 0; color: #111827; }
+    .kv tr + tr td, .kv tr + tr th { border-top: 1px dashed #e5e7eb; }
+    .muted { color: var(--muted); }
+    a { color: var(--link); text-decoration: none; } a:hover { text-decoration: underline; }
 
-    #app {
-      display: grid;
-      grid-template-rows: auto 1fr;
-      height: 100%;
-    }
-
-    header {
-      padding: 10px 14px;
-      border-bottom: 1px solid #e5e7eb;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    header .title {
-      font-weight: 700;
-      letter-spacing: 0.2px;
-      color: var(--brand-green);
-    }
-
-    header .meta {
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    #map {
-      width: 100%;
-      height: calc(100vh - 56px);
-    }
-
-    /* Clean white popup */
-    .leaflet-popup-content-wrapper {
-      background: #ffffff;
-      color: var(--text-dark);
-      border-radius: 12px;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.15);
-      border: 1px solid #e5e7eb;
-    }
-    .leaflet-popup-content {
-      margin: 0;
-    }
-    .popup {
-      padding: 12px 14px;
-      max-width: 320px;
-    }
-    .popup h3 {
-      margin: 0 0 6px 0;
-      font-size: 18px;
-      line-height: 1.2;
-      font-weight: 800;
-      color: var(--brand-green);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .badge {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 999px;
-      border: 1px solid #e5e7eb;
-      color: #374151;
-      background: #f9fafb;
-    }
-    .badge.gold {
-      color: #7c5e10;
-      background: #fff7e6;
-      border-color: #fde68a;
-    }
-    .popup .sub {
-      margin: 0 0 10px 0;
-      font-size: 13px;
-      color: #4b5563;
-    }
-    .kv {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-    .kv th {
-      text-align: left;
-      padding: 6px 8px 6px 0;
-      color: #6b7280;
-      font-weight: 600;
-      white-space: nowrap;
-      vertical-align: top;
-    }
-    .kv td {
-      padding: 6px 0;
-      color: #111827;
-    }
-    .kv tr + tr td, .kv tr + tr th {
-      border-top: 1px dashed #e5e7eb;
-    }
-    .muted {
-      color: var(--muted);
-    }
-
-    /* Debug panel (shows when &debug=1) */
-    #debug {
-      position: fixed;
-      bottom: 10px;
-      left: 10px;
-      background: rgba(255,255,255,0.96);
-      border: 1px solid #e5e7eb;
-      border-radius: 10px;
-      padding: 10px 12px;
-      font-size: 12px;
-      max-width: 40ch;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-      display: none;
-      z-index: 9999;
-    }
-    #debug pre {
-      margin: 6px 0 0 0;
-      white-space: pre-wrap;
-      max-height: 25vh;
-      overflow: auto;
-    }
-
-    a { color: var(--link); text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    /* Debug panel */
+    #debug { position: fixed; bottom: 10px; left: 10px; background: rgba(255,255,255,.96); border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; font-size: 12px; max-width: 42ch; box-shadow: 0 6px 16px rgba(0,0,0,.12); display: none; z-index: 9999; }
+    #debug pre { margin: 6px 0 0 0; white-space: pre-wrap; max-height: 25vh; overflow: auto; }
   </style>
 </head>
 <body>
@@ -189,162 +66,120 @@
   </div>
 
   <script>
-    // ----- Helpers -----
+    // ---- Debug helpers ----
     const qs = new URLSearchParams(location.search);
     const CSV_URL = qs.get('csv') || '';
     const DEBUG = qs.get('debug') === '1';
+    const debugBox = () => document.getElementById('debug');
+    const debugLog = () => document.getElementById('debugLog');
 
-    const log = (...args) => {
-      if (DEBUG) {
-        console.log('[DEBUG]', ...args);
-        const el = document.getElementById('debugLog');
-        if (el) el.textContent += args.map(a => {
-          try { return typeof a === 'string' ? a : JSON.stringify(a); }
-          catch { return String(a); }
-        }).join(' ') + '\n';
-      }
-    };
-
-    if (DEBUG) {
-      document.getElementById('debug').style.display = 'block';
+    function log(...args) {
+      if (!DEBUG) return;
+      console.log('[DEBUG]', ...args);
+      const el = debugLog();
+      if (el) el.textContent += args.map(a => {
+        try { return typeof a === 'string' ? a : JSON.stringify(a); }
+        catch { return String(a); }
+      }).join(' ') + '\n';
     }
+    if (DEBUG) debugBox().style.display = 'block';
+
+    // Catch runtime errors and show in debug box
+    window.addEventListener('error', (e) => {
+      log('JS error:', e.message, 'at', e.filename + ':' + e.lineno + ':' + e.colno);
+    });
 
     document.getElementById('meta').textContent = CSV_URL ? 'Data source: CSV param detected' : 'No CSV provided';
 
-    // Accept a few possible lat/lng header variants
+    // ---- CSV helpers ----
     function getLatLng(row) {
-      // normalize keys to lower for flexible matching
       const keys = Object.keys(row);
       const lookup = Object.fromEntries(keys.map(k => [k.toLowerCase(), k]));
-
       const latKey = ['lat','latitude','lat_dd'].find(k => lookup[k]);
       const lngKey = ['lng','lon','long','longitude','lng_dd','lon_dd'].find(k => lookup[k]);
-
       const lat = latKey ? parseFloat(row[lookup[latKey]]) : NaN;
       const lng = lngKey ? parseFloat(row[lookup[lngKey]]) : NaN;
-
       if (!isFinite(lat) || !isFinite(lng)) return null;
       return [lat, lng];
     }
-
     function safeVal(row, key) {
-      // access with exact field name including parentheses
       const v = (row && row[key] != null) ? String(row[key]).trim() : '';
       return v;
     }
 
-    // Render the popup using your preferred fields (includes the new Stay & Play)
-    function renderPopup(row) {
-      const title = safeVal(row, 'course') || safeVal(row, 'name') || 'Course';
-      const city = safeVal(row, 'city');
-      const state = safeVal(row, 'state') || safeVal(row, 'st');
-      const cost = safeVal(row, 'cost_per_course(green_fee_range_)');
-      const stayPlay = safeVal(row, 'stay_and_play(yes_no)'); // <-- NEW FIELD (shows as "Stay & Play")
-      const lodgingYN = safeVal(row, 'lodging_on-site(yes_no)');
-      const lodgingNotes = safeVal(row, 'lodging_details');
-      const season = safeVal(row, 'peak_season/best_time_to_visit');
-      const top100 = safeVal(row, 'top_100_ranking');
-      const par = safeVal(row, 'par');
-      const yard = safeVal(row, 'yardage(black_tees)');
-      const arch = safeVal(row, 'architect');
-      const website = safeVal(row, 'website') || safeVal(row, 'url');
-
-      const headerBadges = [];
-      if (top100) headerBadges.push(`<span class="badge gold">Top 100: ${top100}</span>`);
-      if (par) headerBadges.push(`<span class="badge">Par ${par}</span>`);
-      if (yard) headerBadges.push(`<span class="badge">${yard} yds</span>`);
-
-      const subline = [city, state].filter(Boolean).join(', ');
-
-      // Build table rows conditionally
-      const rows = [];
-
-      if (cost) rows.push(rowHTML('Cost', cost));
-      if (stayPlay) rows.push(rowHTML('Stay &amp; Play', stayPlay)); // <-- NEW ROW
-      if (lodgingYN) rows.push(rowHTML('On-site Lodging', lodgingYN));
-      if (lodgingNotes) rows.push(rowHTML('Lodging Notes', lodgingNotes));
-      if (season) rows.push(rowHTML('Best Season', season));
-      if (arch) rows.push(rowHTML('Architect', arch));
-      if (website) rows.push(rowHTML('Website', linkHTML(website)));
-
-      if (rows.length === 0) {
-        rows.push(`<tr><td colspan="2" class="muted">No extra details yet.</td></tr>`);
-      }
-
-      return `
-        <div class="popup">
-          <h3>${escapeHTML(title)} ${headerBadges.join(' ')}</h3>
-          ${subline ? `<p class="sub">${escapeHTML(subline)}</p>` : ''}
-          <table class="kv" role="table">
-            <tbody>
-              ${rows.join('\n')}
-            </tbody>
-          </table>
-        </div>
-      `;
-    }
-
     function rowHTML(label, valueHTML) {
-      return `<tr>
-        <th>${label}</th>
-        <td>${valueHTML}</td>
-      </tr>`;
+      return `<tr><th>${label}</th><td>${valueHTML}</td></tr>`;
     }
-
     function linkHTML(url) {
       try {
         const u = new URL(url);
         const host = u.hostname.replace(/^www\./, '');
         return `<a href="${u.href}" target="_blank" rel="noopener">Visit ${host}</a>`;
-      } catch {
-        // if it's not a valid URL, just show text
-        return escapeHTML(url);
-      }
+      } catch { return escapeHTML(url); }
     }
-
     function escapeHTML(s) {
-      return String(s)
-        .replaceAll('&','&amp;')
-        .replaceAll('<','&lt;')
-        .replaceAll('>','&gt;')
-        .replaceAll('"','&quot;')
-        .replaceAll("'",'&#39;');
+      return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
     }
 
-    // ----- Map init -----
-    const map = L.map('map', {
-      zoomControl: true
-    });
+    // ---- Popup renderer (includes Stay & Play) ----
+    function renderPopup(row) {
+      const title = safeVal(row,'course') || safeVal(row,'name') || 'Course';
+      const city = safeVal(row,'city');
+      const state = safeVal(row,'state') || safeVal(row,'st');
+      const cost = safeVal(row,'cost_per_course(green_fee_range_)');
+      const stayPlay = safeVal(row,'stay_and_play(yes_no)'); // NEW field
+      const lodgingYN = safeVal(row,'lodging_on-site(yes_no)');
+      const lodgingNotes = safeVal(row,'lodging_details');
+      const season = safeVal(row,'peak_season/best_time_to_visit');
+      const top100 = safeVal(row,'top_100_ranking');
+      const par = safeVal(row,'par');
+      const yard = safeVal(row,'yardage(black_tees)');
+      const arch = safeVal(row,'architect');
+      const website = safeVal(row,'website') || safeVal(row,'url');
 
-    // Light basemap (Carto)
-    const tiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+      const headerBadges = [];
+      if (top100) headerBadges.push(`<span class="badge gold">Top 100: ${escapeHTML(top100)}</span>`);
+      if (par) headerBadges.push(`<span class="badge">Par ${escapeHTML(par)}</span>`);
+      if (yard) headerBadges.push(`<span class="badge">${escapeHTML(yard)} yds</span>`);
+
+      const subline = [city, state].filter(Boolean).join(', ');
+      const rows = [];
+      if (cost) rows.push(rowHTML('Cost', escapeHTML(cost)));
+      if (stayPlay) rows.push(rowHTML('Stay &amp; Play', escapeHTML(stayPlay)));
+      if (lodgingYN) rows.push(rowHTML('On-site Lodging', escapeHTML(lodgingYN)));
+      if (lodgingNotes) rows.push(rowHTML('Lodging Notes', escapeHTML(lodgingNotes)));
+      if (season) rows.push(rowHTML('Best Season', escapeHTML(season)));
+      if (arch) rows.push(rowHTML('Architect', escapeHTML(arch)));
+      if (website) rows.push(rowHTML('Website', linkHTML(website)));
+      if (rows.length === 0) rows.push(`<tr><td colspan="2" class="muted">No extra details yet.</td></tr>`);
+
+      return `
+        <div class="popup">
+          <h3>${escapeHTML(title)} ${headerBadges.join(' ')}</h3>
+          ${subline ? `<p class="sub">${escapeHTML(subline)}</p>` : ''}
+          <table class="kv" role="table"><tbody>${rows.join('')}</tbody></table>
+        </div>`;
+    }
+
+    // ---- Map init ----
+    const map = L.map('map', { zoomControl: true });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
     }).addTo(map);
 
-    // Start roughly on the U.S. (CONUS)
-    const CONUS_BOUNDS = L.latLngBounds(
-      [24.5, -125.0], // SW
-      [49.6, -66.9]   // NE
-    );
+    const CONUS_BOUNDS = L.latLngBounds([24.5, -125.0], [49.6, -66.9]);
     map.fitBounds(CONUS_BOUNDS, { padding: [20, 20] });
 
-    // marker cluster group
     const cluster = L.markerClusterGroup({
       showCoverageOnHover: false,
       spiderfyOnEveryZoom: false,
       maxClusterRadius: 45
     }).addTo(map);
 
-    // ----- Load CSV & plot -----
-    (async function init() {
-      if (!CSV_URL) {
-        log('No CSV URL supplied. Add ?csv=<published CSV URL>');
-        return;
-      }
-
+    // ---- Load CSV & plot ----
+    (function init() {
+      if (!CSV_URL) { log('No CSV URL supplied. Add ?csv=<published CSV URL>'); return; }
       log('Fetching CSV from', CSV_URL);
-
       Papa.parse(CSV_URL, {
         download: true,
         header: true,
@@ -368,26 +203,18 @@
 
       rows.forEach((row, idx) => {
         const latlng = getLatLng(row);
-        if (!latlng) {
-          log(`Row ${idx} missing/invalid lat/lng`, row);
-          return;
-        }
+        if (!latlng) { log(`Row ${idx} missing/invalid lat/lng`, row); return; }
 
         const popup = renderPopup(row);
-        const marker = L.marker(latlng, {
-          title: safeVal(row, 'course') || safeVal(row, 'name') || 'Course'
-        });
+        const marker = L.marker(latlng, { title: safeVal(row,'course') || safeVal(row,'name') || 'Course' });
         marker.bindPopup(popup, { maxWidth: 340 });
         cluster.addLayer(marker);
         bounds.extend(latlng);
         plotted++;
       });
 
-      if (plotted > 0) {
-        map.fitBounds(bounds.pad(0.08));
-      } else {
-        map.fitBounds(CONUS_BOUNDS, { padding: [20, 20] });
-      }
+      if (plotted > 0) map.fitBounds(bounds.pad(0.08));
+      else map.fitBounds(CONUS_BOUNDS, { padding: [20, 20] });
 
       log('Markers plotted:', plotted);
     }
