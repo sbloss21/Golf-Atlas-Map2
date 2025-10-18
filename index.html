@@ -2,183 +2,259 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1"
+  />
   <title>Golf Atlas Map</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Leaflet (no SRI) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
+  <!-- Leaflet core -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
   <!-- MarkerCluster -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-
-  <!-- PapaParse -->
-  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+  />
 
   <style>
-    html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #0b1220; }
-    #map { height: 100%; }
+    :root{
+      --bg:#111716;       /* deep green-black */
+      --fg:#f6f6f6;       /* foreground text */
+      --accent:#d1be6b;   /* gold accent */
+      --ink:#0f1916;      /* dark ink for popups */
+      --card:#ffffff;     /* popup bg */
+    }
+    html, body { height:100%; margin:0; background:var(--bg); color:var(--fg); }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; }
 
-    /* === Dark, compact popup style (your original look) === */
-    .leaflet-popup-content-wrapper { background: #0f172a; color: #e5e7eb; border-radius: 10px; box-shadow: 0 16px 36px rgba(0,0,0,0.35); border: 1px solid #334155; }
-    .leaflet-popup-tip { background: #0f172a; border: 1px solid #334155; }
-    .leaflet-popup-content { margin: 8px 10px; line-height: 1.25; }
+    header {
+      padding: 18px 22px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      border-bottom:1px solid rgba(255,255,255,.05);
+    }
+    .brand { font-weight:800; letter-spacing:.06em; }
+    .tag { color:var(--accent); opacity:.9; }
 
-    .popup-title { font-weight: 800; font-size: 15px; margin: 0 0 6px; color: #f8fafc; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-    .popup-line  { margin: 0 0 3px; color: #cbd5e1; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .popup-line strong { color: #e2e8f0; }
+    .wrap { max-width: 1400px; margin: 0 auto; padding: 18px 22px 0; }
+    .hero {
+      display:grid;
+      grid-template-columns: 1.1fr 1.6fr;
+      gap:28px;
+      align-items:center;
+    }
+    .hero h1 { font-size: clamp(28px, 5vw, 56px); line-height:1.05; margin:10px 0 4px; }
+    .hero p  { font-size: clamp(14px, 2.2vw, 20px); margin: 0; color: var(--accent); }
 
-    /* CTA button */
-    .popup-cta { margin-top: 8px; }
-    .popup-cta a { display:inline-block; text-decoration:none; font-weight:800; font-size:12px; background:#22c55e; color:#0b1220; border:1px solid #16a34a; padding:6px 10px; border-radius:999px; }
-    .popup-cta a:hover { filter:brightness(0.95); }
+    .map-wrap {
+      position:relative;
+      height: 70vh;
+      border-radius: 16px;
+      overflow:hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,.35);
+      background:#0b0f0e;
+    }
+    #map { width:100%; height:100%; }
 
-    /* New: gold Top 100 pill */
-    .badge-pill{display:inline-block; font-size:11px; font-weight:800; padding:2px 8px; border-radius:999px; border:1px solid rgba(250,204,21,.45);}
-    .badge-gold{background:rgba(250,204,21,.12); color:#fde68a; box-shadow: inset 0 1px 0 rgba(255,255,255,.05);}
+    /* Hawaii inset card */
+    #hawaii-inset{
+      position:absolute;
+      right:16px;
+      bottom:16px;
+      width:220px;
+      height:150px;
+      border-radius:12px;
+      overflow:hidden;
+      box-shadow:0 8px 24px rgba(0,0,0,.35);
+      z-index:500;
+      border:1px solid rgba(255,255,255,.35);
+      background:#0b0f0e;
+    }
+    #hawaii-inset .leaflet-control-container{ display:none; } /* hide inset controls */
 
-    /* Keep your current icons */
-    .ga-flag-pin{position:relative;transform:translate(-12px,-36px);width:24px;height:36px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
-    .ga-flag-pin svg{display:block}
-    .ga-cluster-ball{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 30% 30%, #ffffff 0%, #f3f4f6 60%, #e5e7eb 100%);border:1px solid rgba(0,0,0,.18);box-shadow:0 6px 14px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.9);position:relative;display:flex;align-items:center;justify-content:center;font-weight:900;color:#0f172a;}
-    .ga-cluster-ball:before{content:"";position:absolute;inset:4px;border-radius:50%;background:radial-gradient(#d1d5db 1px, transparent 1px) 0 0/6px 6px,radial-gradient(#cbd5e1 1px, transparent 1px) 3px 3px/6px 6px;opacity:.65;mix-blend-mode:multiply;}
-    .ga-cluster-wrap{filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
+    /* Popup styling (white card, dark text) */
+    .leaflet-popup-content-wrapper{
+      background:var(--card);
+      color:var(--ink);
+      border-radius:12px;
+      box-shadow:0 12px 30px rgba(0,0,0,.25);
+    }
+    .leaflet-popup-tip{ background:var(--card); }
+    .ga-popup strong{ color:#0e1513; }
+    .ga-popup small{ color:#5c6b66; }
+
+    /* Cluster tweak: subtle dropshadow */
+    .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large{
+      box-shadow:0 2px 8px rgba(0,0,0,.25);
+    }
+
+    @media (max-width: 980px){
+      .hero{ grid-template-columns: 1fr; }
+      .map-wrap{ height: 68vh; }
+    }
   </style>
 </head>
 <body>
-  <div id="map"></div>
+  <header>
+    <div class="brand">GOLF ATLAS</div>
+    <div class="tag">Plan, Explore, Experience</div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <h1>GOLF ATLAS — YOUR ULTIMATE GOLF TRIP COMPANION</h1>
+        <p>Plan, Explore, and Experience the Best Golf Trips</p>
+      </div>
+
+      <div class="map-wrap">
+        <div id="map" aria-label="Golf Atlas map"></div>
+        <div id="hawaii-inset" aria-label="Hawaii inset map"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- JS libs -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
-    /* -------- helpers -------- */
-    const qs = new URLSearchParams(location.search);
-    const CSV_URL = qs.get('csv') || '';
+    /***** 1) MAP: default to LOWER 48 (CONUS) *****/
+    const conusBounds = L.latLngBounds([24.5, -125],[49.5, -66]); // SW, NE
+    const map = L.map('map', {
+      zoomControl: true,
+      minZoom: 3,
+      maxZoom: 18,
+      worldCopyJump: true
+    });
 
-    const V = (row,key)=> (row && row[key]!=null) ? String(row[key]).trim() : '';
-    const safe = (s)=> String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
+    // Default view is the continental US
+    map.fitBounds(conusBounds, { padding:[20,20] });
 
-    function getLatLng(row){
-      const keys = Object.keys(row);
-      const mapK = Object.fromEntries(keys.map(k=>[k.toLowerCase(),k]));
-      const latK = ['lat','latitude','lat_dd'].find(k=>mapK[k]);
-      const lngK = ['lng','lon','long','longitude','lng_dd','lon_dd'].find(k=>mapK[k]);
-      const lat = latK ? parseFloat(row[mapK[latK]]) : NaN;
-      const lng = lngK ? parseFloat(row[mapK[lngK]]) : NaN;
-      if(!isFinite(lat)||!isFinite(lng)) return null;
-      return [lat,lng];
+    // Keep panning roughly on North America
+    map.setMaxBounds(L.latLngBounds([10, -170], [72, -50]));
+
+    // Base tiles (swap to your preferred style if needed)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Cluster group for the MAIN map (not used on the inset)
+    const cluster = L.markerClusterGroup({
+      showCoverageOnHover:false,
+      spiderfyOnMaxZoom:true,
+      maxClusterRadius: 45
+    }).addTo(map);
+
+    /***** 2) HAWAII INSET *****/
+    const hiMap = L.map('hawaii-inset', {
+      zoomControl:false,
+      attributionControl:false,
+      dragging:false,
+      scrollWheelZoom:false,
+      doubleClickZoom:false,
+      boxZoom:false,
+      touchZoom:false
+    }).setView([20.75, -156.2], 7); // around Maui
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(hiMap);
+
+    /***** 3) CSV LOADER *****/
+    // Expect ?csv=<public-csv-url> (Google Sheets "Publish to web" CSV works great)
+    function getCsvUrl(){
+      const u = new URL(window.location.href);
+      return u.searchParams.get('csv') || '';
     }
 
-    function getCourseTitle(row){
-      const PREFERRED = ['course_name','course','name','club','club_name','Course','Name','Title'];
-      for (const k of PREFERRED){ const v = V(row,k); if (v) return v; }
-      for (const key of Object.keys(row)){ const lk=key.toLowerCase(); if ((lk.includes('course')||lk.endsWith('name')) && !lk.includes('website') && !lk.includes('booking')) { const v=V(row,key); if (v) return v; } }
-      return 'Course';
+    function parseCurrencyRange(val){
+      if(!val) return '';
+      return String(val).trim();
     }
 
-    function bestURL(row){
-      const candidates = ['website','url','website_url','web','site','link','Booking','booking_url','Website','URL'];
-      for (const k of candidates){ const v = V(row,k); if (v) return v; }
-      return '';
-    }
-
-    /* -------- icons (keep) -------- */
-    function flagDivIcon(){
-      const svg = `
-        <svg width="24" height="36" viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 0 C7 0 3 4 3 9c0 7 9 18 9 18s9-11 9-18c0-5-4-9-9-9z" fill="#0e5135" stroke="white" stroke-width="1.2"/>
-          <rect x="11.2" y="6" width="1.6" height="10" fill="#e5e7eb"/>
-          <path d="M12.8 6 L20 8.8 L12.8 11.6 Z" fill="#16a34a"/>
-          <ellipse cx="12" cy="33.5" rx="6.5" ry="2.5" fill="rgba(0,0,0,.25)"/>
-        </svg>`;
-      return L.divIcon({ className:'ga-flag-pin', html:svg, iconSize:[24,36], iconAnchor:[12,36], popupAnchor:[0,-34] });
-    }
-    function clusterIconCreateFunction(cluster){
-      const count = cluster.getChildCount();
-      return L.divIcon({ html:`<div class="ga-cluster-ball">${count}</div>`, className:'ga-cluster-wrap', iconSize:[34,34] });
-    }
-
-    /* -------- popup (original look + gold badge) -------- */
-    function renderPopup(row){
-      const title  = getCourseTitle(row);
-      const city   = V(row,'city');
-      const state  = V(row,'state') || V(row,'st');
-      const region = V(row,'region') || V(row,'Region');
-
-      const top100 = V(row,'top_100_ranking');
-      const par    = V(row,'par');
-      const yard   = V(row,'yardage(black_tees)');
-      const arch   = V(row,'architect');
-      const price  = V(row,'cost_per_course(green_fee_range_)');
-      const stay   = V(row,'stay_and_play(yes_no)');
-      const lodgeY = V(row,'lodging_on-site(yes_no)');
-      const lodgeN = V(row,'lodging_details');
-      const season = V(row,'peak_season/best_time_to_visit');
-      const siteURL= bestURL(row);
-
-      const lines = [];
-      if (state || city) lines.push(`<p class="popup-line">📍 <strong>Location:</strong> ${safe([city,state].filter(Boolean).join(', '))}</p>`);
-      if (region)        lines.push(`<p class="popup-line">🗺️ <strong>Region:</strong> ${safe(region)}</p>`);
-      if (par)           lines.push(`<p class="popup-line">⛳ <strong>Par:</strong> ${safe(par)}</p>`);
-      if (yard)          lines.push(`<p class="popup-line">📏 <strong>Yardage:</strong> ${safe(yard)} yds</p>`);
-      if (arch)          lines.push(`<p class="popup-line">🏗️ <strong>Architect:</strong> ${safe(arch)}</p>`);
-      if (price)         lines.push(`<p class="popup-line">💵 <strong>Price:</strong> ${safe(price)}</p>`);
-      if (stay)          lines.push(`<p class="popup-line">🛌 <strong>Stay &amp; Play:</strong> ${safe(stay)}</p>`);
-      if (lodgeY)        lines.push(`<p class="popup-line">🏨 <strong>On-site Lodging:</strong> ${safe(lodgeY)}</p>`);
-      if (lodgeN)        lines.push(`<p class="popup-line">📝 <strong>Lodging notes:</strong> ${safe(lodgeN)}</p>`);
-      if (season)        lines.push(`<p class="popup-line">📅 <strong>Best season:</strong> ${safe(season)}</p>`);
-
-      const badge = top100 ? `<span class="badge-pill badge-gold">🏆 Top 100: ${safe(top100)}</span>` : '';
-      const cta   = siteURL ? `<p class="popup-cta"><a href="${siteURL}" target="_blank" rel="noopener">Visit Course Website ↗</a></p>` : '';
+    function makePopupHTML(r){
+      const name = r.course_name || r.name || 'Course';
+      const city = r.city ? r.city : '';
+      const state = r.state || r.region || '';
+      const fee  = parseCurrencyRange(r['cost_per_course(green_fee_range_)'] || r.cost_per_course || r.green_fee_range);
+      const site = r.website || r.url || '';
 
       return `
-        <h3 class="popup-title">🏌️‍♂️ ${safe(title)} ${badge}</h3>
-        ${lines.join('')}
-        ${cta}
+        <div class="ga-popup">
+          <strong>${name}</strong><br/>
+          ${city ? city + ', ' : ''}${state}
+          ${fee ? `<br/><small>${fee}</small>` : ''}
+          ${site ? `<br/><a href="${site}" target="_blank" rel="noopener">Website</a>` : ''}
+        </div>
       `;
     }
 
-    /* -------- map -------- */
-    const map = L.map('map', { zoomControl:true });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>'
-    }).addTo(map);
+    function addRowAsMarker(r){
+      const lat = parseFloat(r.lat || r.latitude);
+      const lng = parseFloat(r.lng || r.lon || r.longitude);
+      if (Number.isNaN(lat) || Number.isNaN(lng)) return;
 
-    const lower48 = L.latLngBounds([[25.0,-125.0],[49.5,-66.5]]);
-    map.fitBounds(lower48, { padding:[20,20] });
+      const popupHTML = makePopupHTML(r);
+      const isHI = ((r.state || r.region || '').toUpperCase() === 'HI');
 
-    const cluster = L.markerClusterGroup({
-      showCoverageOnHover:false,
-      spiderfyOnEveryZoom:false,
-      maxClusterRadius:45,
-      iconCreateFunction: clusterIconCreateFunction
-    }).addTo(map);
-
-    /* -------- load CSV + plot -------- */
-    (function init(){
-      if(!CSV_URL){ console.warn('No CSV URL. Use ?csv=<published CSV URL>'); return; }
-      Papa.parse(CSV_URL, {
-        download:true, header:true, dynamicTyping:false, skipEmptyLines:true,
-        complete:(res)=>{
-          const rows = res.data || [];
-          plot(rows);
-        },
-        error:(err)=> console.error('CSV parse error:', err)
-      });
-    })();
-
-    function plot(rows){
-      const bounds = L.latLngBounds([]); let n=0;
-      rows.forEach((row)=>{
-        const latlng = getLatLng(row);
-        if(!latlng) return;
-        const m = L.marker(latlng, { icon: flagDivIcon(), title: getCourseTitle(row) });
-        m.bindPopup(renderPopup(row), { maxWidth: 360 });
+      if(isHI){
+        // Add to the inset
+        const m = L.marker([lat, lng]).bindPopup(popupHTML);
+        m.addTo(hiMap);
+        // Optional: jump the MAIN map to real Hawaii on click
+        m.on('click', () => {
+          map.flyTo([lat, lng], 8, { duration: 0.8 });
+          const ghost = L.marker([lat, lng]).addTo(map).bindPopup(popupHTML);
+          ghost.openPopup();
+          setTimeout(() => map.removeLayer(ghost), 5000);
+        });
+      }else{
+        // Add to the clustered main map
+        const m = L.marker([lat, lng]).bindPopup(popupHTML);
         cluster.addLayer(m);
-        bounds.extend(latlng); n++;
-      });
-      if(n>0) map.fitBounds(bounds.pad(0.08));
+      }
     }
+
+    function loadCSV(url){
+      if(!url){
+        console.warn('No CSV URL provided. Add ?csv=<public-csv-url> to the page URL.');
+        // Still show a couple sample points so the page isn’t empty
+        [
+          { course_name:'Pebble Beach', city:'Pebble Beach', state:'CA', lat:36.5678, lng:-121.95, 'cost_per_course(green_fee_range_)':'$595–625', website:'https://www.pebblebeach.com' },
+          { course_name:'Kapalua (Plantation)', city:'Lahaina', state:'HI', lat:20.9969, lng:-156.6530, 'cost_per_course(green_fee_range_)':'$395–450' }
+        ].forEach(addRowAsMarker);
+        return;
+      }
+
+      Papa.parse(url, {
+        download:true,
+        header:true,
+        skipEmptyLines:true,
+        complete: results => {
+          results.data.forEach(addRowAsMarker);
+        },
+        error: err => {
+          console.error('CSV load error:', err);
+        }
+      });
+    }
+
+    loadCSV(getCsvUrl());
   </script>
 </body>
 </html>
