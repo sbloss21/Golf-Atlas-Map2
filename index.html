@@ -21,16 +21,23 @@
     html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #0b1220; }
     #map { height: 100%; }
 
-    /* === Restored dark, compact popup style === */
+    /* === Dark, compact popup style (your original look) === */
     .leaflet-popup-content-wrapper { background: #0f172a; color: #e5e7eb; border-radius: 10px; box-shadow: 0 16px 36px rgba(0,0,0,0.35); border: 1px solid #334155; }
     .leaflet-popup-tip { background: #0f172a; border: 1px solid #334155; }
     .leaflet-popup-content { margin: 8px 10px; line-height: 1.25; }
-    .popup-title { font-weight: 800; font-size: 15px; margin: 0 0 4px; color: #f8fafc; }
-    .popup-line { margin: 0 0 3px; color: #cbd5e1; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .popup-title { font-weight: 800; font-size: 15px; margin: 0 0 6px; color: #f8fafc; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .popup-line  { margin: 0 0 3px; color: #cbd5e1; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .popup-line strong { color: #e2e8f0; }
-    .popup-cta { margin-top: 6px; }
+
+    /* CTA button */
+    .popup-cta { margin-top: 8px; }
     .popup-cta a { display:inline-block; text-decoration:none; font-weight:800; font-size:12px; background:#22c55e; color:#0b1220; border:1px solid #16a34a; padding:6px 10px; border-radius:999px; }
     .popup-cta a:hover { filter:brightness(0.95); }
+
+    /* New: gold Top 100 pill */
+    .badge-pill{display:inline-block; font-size:11px; font-weight:800; padding:2px 8px; border-radius:999px; border:1px solid rgba(250,204,21,.45);}
+    .badge-gold{background:rgba(250,204,21,.12); color:#fde68a; box-shadow: inset 0 1px 0 rgba(255,255,255,.05);}
 
     /* Keep your current icons */
     .ga-flag-pin{position:relative;transform:translate(-12px,-36px);width:24px;height:36px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
@@ -62,7 +69,6 @@
       return [lat,lng];
     }
 
-    // Robust title resolver (ensures course name always shows)
     function getCourseTitle(row){
       const PREFERRED = ['course_name','course','name','club','club_name','Course','Name','Title'];
       for (const k of PREFERRED){ const v = V(row,k); if (v) return v; }
@@ -92,7 +98,7 @@
       return L.divIcon({ html:`<div class="ga-cluster-ball">${count}</div>`, className:'ga-cluster-wrap', iconSize:[34,34] });
     }
 
-    /* -------- popup (restored visual + your fields) -------- */
+    /* -------- popup (original look + gold badge) -------- */
     function renderPopup(row){
       const title  = getCourseTitle(row);
       const city   = V(row,'city');
@@ -113,7 +119,6 @@
       const lines = [];
       if (state || city) lines.push(`<p class="popup-line">📍 <strong>Location:</strong> ${safe([city,state].filter(Boolean).join(', '))}</p>`);
       if (region)        lines.push(`<p class="popup-line">🗺️ <strong>Region:</strong> ${safe(region)}</p>`);
-      if (top100)        lines.push(`<p class="popup-line">🏆 <strong>Top 100:</strong> ${safe(top100)}</p>`);
       if (par)           lines.push(`<p class="popup-line">⛳ <strong>Par:</strong> ${safe(par)}</p>`);
       if (yard)          lines.push(`<p class="popup-line">📏 <strong>Yardage:</strong> ${safe(yard)} yds</p>`);
       if (arch)          lines.push(`<p class="popup-line">🏗️ <strong>Architect:</strong> ${safe(arch)}</p>`);
@@ -123,10 +128,11 @@
       if (lodgeN)        lines.push(`<p class="popup-line">📝 <strong>Lodging notes:</strong> ${safe(lodgeN)}</p>`);
       if (season)        lines.push(`<p class="popup-line">📅 <strong>Best season:</strong> ${safe(season)}</p>`);
 
-      const cta = siteURL ? `<p class="popup-cta"><a href="${siteURL}" target="_blank" rel="noopener">Visit Course Website ↗</a></p>` : '';
+      const badge = top100 ? `<span class="badge-pill badge-gold">🏆 Top 100: ${safe(top100)}</span>` : '';
+      const cta   = siteURL ? `<p class="popup-cta"><a href="${siteURL}" target="_blank" rel="noopener">Visit Course Website ↗</a></p>` : '';
 
       return `
-        <h3 class="popup-title">🏌️‍♂️ ${safe(title)}</h3>
+        <h3 class="popup-title">🏌️‍♂️ ${safe(title)} ${badge}</h3>
         ${lines.join('')}
         ${cta}
       `;
