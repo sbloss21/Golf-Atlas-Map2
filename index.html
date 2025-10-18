@@ -26,56 +26,87 @@
     html, body { height:100%; margin:0; }
     #map { width:100%; height:100%; }
 
-    /* ===== Dark popup style (emerald/charcoal) ===== */
+    /* ===== Dark popup style ===== */
     .leaflet-popup-content-wrapper{
-      background:#0f1916;                /* deep green-black */
-      color:#e7f2ee;                      /* soft mint text */
+      background:#0f1916;
+      color:#e7f2ee;
       border-radius:14px;
       box-shadow:0 14px 36px rgba(0,0,0,.35);
-      border:1px solid rgba(209,190,107,.25); /* faint gold edge */
+      border:1px solid rgba(209,190,107,.28);
     }
-    .leaflet-popup-tip{ background:#0f1916; border:1px solid rgba(209,190,107,.25); }
-    .ga-popup{ font: 500 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    .leaflet-popup-tip{ background:#0f1916; border:1px solid rgba(209,190,107,.28); }
+
+    .ga-popup{
+      font: 500 14px/1.55 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      min-width: 240px;
+    }
+    .ga-popup .top{
+      display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px;
+    }
     .ga-popup .title{
-      font-size:16px; font-weight:800; letter-spacing:.2px; margin:0 0 6px;
-      color:#f6fff9;
+      font-size:16px; font-weight:800; letter-spacing:.2px; margin:0; color:#f6fff9;
     }
-    .ga-popup .row { margin:2px 0; display:flex; gap:6px; align-items:flex-start; }
-    .ga-popup .label { opacity:.9; }
+    .ga-badge{
+      font-size:12px; font-weight:800; padding:4px 8px; border-radius:999px;
+      background: linear-gradient(180deg,#f5d77a,#d1be6b);
+      color:#0b0f0e; border:1px solid rgba(0,0,0,.15);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 2px 6px rgba(0,0,0,.25);
+      white-space:nowrap;
+    }
+    .ga-popup .row{ margin:4px 0; display:flex; gap:8px; align-items:flex-start; }
+    .ga-popup .label{ opacity:.9; }
     .ga-popup a{
       color:#d1be6b; text-decoration:none; border-bottom:1px dotted rgba(209,190,107,.55);
     }
     .ga-popup a:hover{ opacity:.85; }
+    .ga-actions{
+      margin-top:10px; display:flex; gap:10px; justify-content:flex-end;
+    }
+    .ga-btn{
+      appearance:none; border:none; cursor:pointer;
+      padding:8px 12px; border-radius:10px; font-weight:800; font-size:13px;
+      color:#0b0f0e; background:linear-gradient(180deg,#f5d77a,#d1be6b);
+      box-shadow: 0 3px 10px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.4);
+    }
+    .ga-btn:hover{ filter:brightness(0.98); }
 
-    /* ===== Custom cluster icon: golf ball with count ===== */
+    /* ===== Custom cluster icon => golf ball with dimples ===== */
     .ga-cluster {
-      background: radial-gradient(ellipse at 35% 30%, #ffffff 0%, #f0f0f0 60%, #e1e1e1 100%);
-      border: 2px solid #c9c9c9;
-      border-radius: 50%;
-      width: 44px; height: 44px;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,.25), inset 0 2px 6px rgba(0,0,0,.12);
       position: relative;
-      font-weight: 800; color:#0b0f0e;
-    }
-    .ga-cluster::after {
-      content: "";
-      position: absolute;
-      top: 8px; left: 12px;
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: rgba(0,0,0,.08);
+      width: 48px; height: 48px; border-radius: 50%;
+      background:
+        radial-gradient(35% 35% at 35% 30%, #ffffff 0%, #f6f6f6 60%, #ececec 100%);
+      border: 2px solid #d6d6d6;
       box-shadow:
-        10px 2px 0 rgba(0,0,0,.07),
-        18px 6px 0 rgba(0,0,0,.06),
-        6px 14px 0 rgba(0,0,0,.05),
-        16px 16px 0 rgba(0,0,0,.06),
-        2px 20px 0 rgba(0,0,0,.07);
-      filter: blur(.2px);
+        0 4px 12px rgba(0,0,0,.28),
+        inset 0 -4px 8px rgba(0,0,0,.12),
+        inset 0 4px 10px rgba(255,255,255,.55);
+      display:flex; align-items:center; justify-content:center;
+      color:#0b0f0e; font-weight:900; font-size:14px;
     }
-
-    /* Remove default cluster bg */
-    .marker-cluster div { background: transparent; border: none; }
+    /* Dimple pattern overlay */
+    .ga-cluster::before {
+      content:"";
+      position:absolute; inset:0; border-radius:50%;
+      background-image:
+        radial-gradient(circle at 10px 10px, rgba(0,0,0,.08) 2px, transparent 2.5px),
+        radial-gradient(circle at 24px 8px,  rgba(0,0,0,.07) 2px, transparent 2.5px),
+        radial-gradient(circle at 18px 22px, rgba(0,0,0,.06) 2px, transparent 2.5px),
+        radial-gradient(circle at 32px 20px, rgba(0,0,0,.07) 2px, transparent 2.5px),
+        radial-gradient(circle at 14px 32px, rgba(0,0,0,.06) 2px, transparent 2.5px),
+        radial-gradient(circle at 28px 34px, rgba(0,0,0,.07) 2px, transparent 2.5px);
+      opacity:.7;
+      filter: blur(.2px);
+      pointer-events:none;
+    }
+    /* Soft top highlight */
+    .ga-cluster::after {
+      content:"";
+      position:absolute; top:4px; left:6px; right:6px; height:14px; border-radius:50%;
+      background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.65), transparent 70%);
+      pointer-events:none;
+    }
+    .marker-cluster div{ background: transparent; border:none; } /* remove default */
 
   </style>
 </head>
@@ -92,27 +123,18 @@
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
-    /*** 0) CONFIG ***/
-    const SHOW_HI_NEAR_CA = true;  // draw HI off California (overview)
-    const CONUS_BOUNDS = L.latLngBounds(
-      [24.396308, -124.848974], // SW
-      [49.384358,  -66.885444]  // NE
-    );
+    /*** CONFIG ***/
+    const SHOW_HI_NEAR_CA = true;  // Draw Hawaii off California for overview
+    const CONUS_BOUNDS = L.latLngBounds([24.396308, -124.848974],[49.384358,-66.885444]);
 
-    // Simple visual offset to place Hawaii off California in overview.
-    // You can tweak these delta values to reposition the block.
+    // Reposition Hawaii visually for the overview
     function relocateHawaii(lat, lng){
-      // Move roughly 13° north and 35° east ≈ off NorCal
+      // Tweak these two numbers to nudge placement
       return [lat + 13, lng + 35];
     }
 
-    /*** 1) MAP (tight on the lower 48) ***/
-    const map = L.map('map', {
-      zoomControl: true,
-      minZoom: 3,
-      maxZoom: 18,
-      worldCopyJump: true
-    });
+    /*** MAP ***/
+    const map = L.map('map', { zoomControl: true, minZoom: 3, maxZoom: 18, worldCopyJump: true });
 
     // Light tiles so dark popups pop
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -128,147 +150,174 @@
     map.setMaxBounds(L.latLngBounds([10, -170], [72, -50]));
     map.options.maxBoundsViscosity = 0.6;
 
-    /*** 2) Icons (flag pin for markers, golf ball for clusters) ***/
-    // Flag pin (SVG data URL so you don’t need external files)
+    /*** Icons ***/
+    // Green pin with a red flag (inline SVG)
     const FLAG_PIN_URL = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
-      <svg width="36" height="48" viewBox="0 0 36 48" xmlns="http://www.w3.org/2000/svg">
+      <svg width="40" height="52" viewBox="0 0 40 52" xmlns="http://www.w3.org/2000/svg">
         <defs>
+          <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#1b7a44"/>
+            <stop offset="100%" stop-color="#0f5e34"/>
+          </linearGradient>
           <filter id="s" x="-50%" y="-50%" width="200%" height="200%">
             <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,.35)"/>
           </filter>
         </defs>
-        <path d="M18 48c-4-8-12-15-12-24C6 11 11 6 18 6s12 5 12 18c0 9-8 16-12 24z" fill="#0f1916" filter="url(#s)"/>
-        <circle cx="18" cy="18" r="10" fill="#162521" stroke="#d1be6b" stroke-width="1.5"/>
-        <path d="M12 21h10" stroke="#d1be6b" stroke-width="2" stroke-linecap="round"/>
-        <path d="M18 11v10" stroke="#d1be6b" stroke-width="2" stroke-linecap="round"/>
-        <path d="M19 14l0 -6" stroke="#d1be6b" stroke-width="1.5"/>
-        <path d="M19 8l8 3l-8 3z" fill="#d1be6b"/>
+        <!-- pin body -->
+        <path d="M20 52c-4.5-9-14-17-14-27C6 11.3 12.3 5 20 5s14 6.3 14 20c0 10-9.5 18-14 27z" fill="url(#g)" filter="url(#s)"/>
+        <circle cx="20" cy="21" r="11" fill="#0c3f25" opacity=".25"/>
+        <!-- flag pole -->
+        <path d="M23 9v15" stroke="#c6c6c6" stroke-width="1.6"/>
+        <!-- red flag -->
+        <path d="M23 10l10 3l-10 3z" fill="#e63946"/>
+        <!-- subtle rim -->
+        <circle cx="20" cy="21" r="10.5" fill="none" stroke="#0b3a22" stroke-opacity=".55"/>
       </svg>
     `);
 
     const flagIcon = L.icon({
       iconUrl: FLAG_PIN_URL,
-      iconSize: [36, 48],
-      iconAnchor: [18, 44],
-      popupAnchor: [0, -40],
-      tooltipAnchor: [0, -40]
+      iconSize: [40, 52],
+      iconAnchor: [20, 48],
+      popupAnchor: [0, -44],
+      tooltipAnchor: [0, -44]
     });
 
-    // Cluster group with custom "golf ball" icon + count
+    // Cluster group with custom golf-ball icon
     const cluster = L.markerClusterGroup({
       showCoverageOnHover:false,
       spiderfyOnMaxZoom:true,
-      maxClusterRadius:45,
-      iconCreateFunction: (cluster) => {
-        const count = cluster.getChildCount();
+      maxClusterRadius:44,
+      iconCreateFunction: (cl) => {
+        const count = cl.getChildCount();
         return L.divIcon({
           html: `<div class="ga-cluster">${count}</div>`,
-          className: '',  // we provide full HTML/CSS
-          iconSize: [44,44]
+          className: '', iconSize: [48,48]
         });
       }
     }).addTo(map);
 
-    // Group we use ONLY to fit after load (excludes AK; includes HI relocated)
+    // Group used to fit bounds (exclude AK; include relocated HI)
     const conusGroup = L.featureGroup();
 
-    /*** 3) CSV LOADER ***/
-    function csvUrlFromQuery(){
-      try{
-        const u = new URL(window.location.href);
-        return u.searchParams.get('csv') || '';
-      }catch(e){ return ''; }
+    // Will populate after CSV load to compute "other courses on property"
+    const resortCounts = new Map();
+
+    /*** Popup builder ***/
+    function parseRankBadge(val){
+      if(!val) return '';
+      const s = String(val).trim();
+      const m = s.match(/\d+/);
+      return m ? `#${m[0]}` : 'Top 100';
     }
 
-    // Build the dark, emoji popup with the “vital info”
-    function makePopupHTML(r, {isRelocatedHI=false} = {}){
-      const name = r.course_name || r.name || 'Course';
-      const city = r.city ? r.city : '';
-      const state = (r.state || r.region || '').toUpperCase();
+    function makePopupHTML(r, {isRelocatedHI=false, othersOnProperty=0} = {}){
+      const name   = r.course_name || r.name || 'Course';
+      const resort = r.resort || r.resort_name || '';
+      const city   = r.city ? r.city : '';
+      const state  = (r.state || r.region || '').toUpperCase();
+      const rank   = parseRankBadge(r.top_100_ranking || r.top100);
 
-      const top100 = (r.top_100_ranking || r.top100 || '').toString().trim();
       const par    = (r.par || '').toString().trim();
       const yards  = (r['yardage(black_tees)'] || r.yardage || r.yards || '').toString().trim();
       const arch   = (r.architect || '').toString().trim();
-
       const fee    = (r['cost_per_course(green_fee_range_)'] || r.cost_per_course || r.green_fee_range || '').toString().trim();
       const lodgeY = (r['lodging_on-site(yes_no)'] || r.lodging_on_site || r.lodging || '').toString().trim();
       const lodgeD = (r.lodging_details || '').toString().trim();
       const season = (r['peak_season/best_time_to_visit'] || r.peak_season || r.best_time || '').toString().trim();
       const site   = r.website || r.url || '';
 
+      const othersText = othersOnProperty > 0 ? `${othersOnProperty} other ${othersOnProperty === 1 ? 'course' : 'courses'} on property` : '';
+
       return `
         <div class="ga-popup">
-          <div class="title">⛳️ ${name}</div>
+          <div class="top">
+            <div class="title">⛳️ ${name}</div>
+            ${rank ? `<div class="ga-badge">🏆 ${rank}</div>` : ''}
+          </div>
+          ${resort ? `<div class="row">🏨 <span class="label">${resort}</span></div>` : ''}
           <div class="row">📍 <span class="label">${city ? city + ', ' : ''}${state}${isRelocatedHI ? ' • (HI – overview)' : ''}</span></div>
-          ${top100 ? `<div class="row">🏆 <span class="label">Top 100:</span> ${top100}</div>` : ''}
+          ${othersText ? `<div class="row">🟢 <span class="label">${othersText}</span></div>` : ''}
+
           ${par    ? `<div class="row">🧮 <span class="label">Par:</span> ${par}</div>` : ''}
           ${yards  ? `<div class="row">📏 <span class="label">Yardage:</span> ${yards}</div>` : ''}
           ${arch   ? `<div class="row">🛠️ <span class="label">Architect:</span> ${arch}</div>` : ''}
           ${fee    ? `<div class="row">💵 <span class="label">Fees:</span> ${fee}</div>` : ''}
           ${lodgeY ? `<div class="row">🏨 <span class="label">Lodging:</span> ${lodgeY}${lodgeD ? ` — ${lodgeD}` : ''}</div>` : (lodgeD ? `<div class="row">🏨 <span class="label">Lodging:</span> ${lodgeD}</div>` : '')}
           ${season ? `<div class="row">🗓️ <span class="label">Best time:</span> ${season}</div>` : ''}
-          ${site   ? `<div class="row">🌐 <a href="${site}" target="_blank" rel="noopener">Website</a></div>` : ''}
-          ${isRelocatedHI ? `<div class="row">✈️ <a href="#" class="ga-jump-hi">Jump to real Hawaii location</a></div>` : ''}
+
+          <div class="ga-actions">
+            ${site ? `<a class="ga-btn" href="${site}" target="_blank" rel="noopener">View Course</a>` : ''}
+          </div>
         </div>
       `;
     }
 
-    // Create the marker (handles HI relocation & “jump to real”)
+    /*** Marker creation ***/
     function addRowAsMarker(r){
       const rawLat = parseFloat(r.lat || r.latitude);
       const rawLng = parseFloat(r.lng || r.longitude || r.lon);
       if (Number.isNaN(rawLat) || Number.isNaN(rawLng)) return;
 
       const state = (r.state || r.region || '').toUpperCase();
-      let drawLat = rawLat, drawLng = rawLng, isRelocatedHI = false;
+      const resortKey = (r.resort || r.resort_name || '').trim().toLowerCase();
+      const totalAtResort = resortKey ? (resortCounts.get(resortKey) || 0) : 0;
+      const othersOnProperty = totalAtResort > 0 ? Math.max(0, totalAtResort - 1) : 0;
 
+      let drawLat = rawLat, drawLng = rawLng, isRelocatedHI = false;
       if (SHOW_HI_NEAR_CA && state === 'HI'){
-        const [rlat, rlng] = relocateHawaii(rawLat, rawLng);
-        drawLat = rlat; drawLng = rlng;
+        [drawLat, drawLng] = relocateHawaii(rawLat, rawLng);
         isRelocatedHI = true;
       }
 
       const marker = L.marker([drawLat, drawLng], { icon: flagIcon })
-        .bindPopup(makePopupHTML(r, {isRelocatedHI}), { maxWidth: 300 });
+        .bindPopup(makePopupHTML(r, {isRelocatedHI, othersOnProperty}), { maxWidth: 320 });
 
       cluster.addLayer(marker);
 
-      // Use for bounds fitting (exclude AK; include HI relocated)
+      // Fit calculation group (exclude AK; include relocated HI)
       if (state !== 'AK') conusGroup.addLayer(marker);
-
-      if (isRelocatedHI){
-        marker.on('popupopen', () => {
-          const a = document.querySelector('.ga-jump-hi');
-          if (a){
-            a.onclick = (e) => {
-              e.preventDefault();
-              map.flyTo([rawLat, rawLng], 8, { duration: 0.8 });
-            };
-          }
-        });
-      }
     }
 
-    /*** 4) CSV load + fit ***/
+    /*** CSV loading with resort pre-aggregation ***/
     function loadCSV(url){
-      if(!url){
-        // Samples if no CSV provided
-        [
-          { course_name:'Pebble Beach', city:'Pebble Beach', state:'CA', lat:36.5678, lng:-121.95,
-            'cost_per_course(green_fee_range_)':'$595–625', website:'https://www.pebblebeach.com',
-            par:'72', 'yardage(black_tees)':'6828', architect:'Jack Neville & Douglas Grant' },
-          { course_name:'Kapalua (Plantation)', city:'Lahaina', state:'HI', lat:20.9969, lng:-156.6530,
-            'cost_per_course(green_fee_range_)':'$395–450', website:'https://golfatkapalua.com',
-            par:'73', 'yardage(black_tees)':'7596', architect:'Bill Coore & Ben Crenshaw', top_100_ranking:'Yes' }
-        ].forEach(addRowAsMarker);
+      const addAll = (rows) => {
+        // Pre-aggregate resort counts
+        resortCounts.clear();
+        rows.forEach(r => {
+          const key = (r.resort || r.resort_name || '').trim().toLowerCase();
+          if(key){
+            resortCounts.set(key, (resortCounts.get(key) || 0) + 1);
+          }
+        });
 
-        // Fit to all non-AK markers (HI is already relocated into the view)
+        rows.forEach(addRowAsMarker);
+
+        // Fit to group (non-AK; HI is in-view via relocation)
         if (conusGroup.getLayers().length) {
           map.fitBounds(conusGroup.getBounds().pad(0.05));
         } else {
           map.fitBounds(CONUS_BOUNDS, { padding:[20,20] });
         }
+      };
+
+      if(!url){
+        // Sample if no CSV provided
+        const SAMPLE = [
+          { course_name:'Pebble Beach', city:'Pebble Beach', state:'CA', lat:36.5678, lng:-121.95,
+            website:'https://www.pebblebeach.com', par:'72', 'yardage(black_tees)':'6828',
+            architect:'Jack Neville & Douglas Grant', resort:'Pebble Beach Resorts',
+            'cost_per_course(green_fee_range_)':'$595–625', top_100_ranking:'#2' },
+          { course_name:'Spyglass Hill', city:'Pebble Beach', state:'CA', lat:36.593, lng:-121.964,
+            website:'https://www.pebblebeach.com/golf/spyglass-hill-golf-course/', par:'72', 'yardage(black_tees)':'6960',
+            architect:'Robert Trent Jones Sr.', resort:'Pebble Beach Resorts',
+            'cost_per_course(green_fee_range_)':'$340–420', top_100_ranking:'Top 100' },
+          { course_name:'Kapalua (Plantation)', city:'Lahaina', state:'HI', lat:20.9969, lng:-156.6530,
+            website:'https://golfatkapalua.com', par:'73', 'yardage(black_tees)':'7596',
+            architect:'Coore & Crenshaw', resort:'Kapalua',
+            'cost_per_course(green_fee_range_)':'$395–450', top_100_ranking:'#40' }
+        ];
+        addAll(SAMPLE);
         return;
       }
 
@@ -276,16 +325,7 @@
         download:true,
         header:true,
         skipEmptyLines:true,
-        complete: res => {
-          res.data.forEach(addRowAsMarker);
-
-          // Critical: fit to non-AK group (HI is in view via relocation)
-          if (conusGroup.getLayers().length) {
-            map.fitBounds(conusGroup.getBounds().pad(0.05));
-          } else {
-            map.fitBounds(CONUS_BOUNDS, { padding:[20,20] });
-          }
-        },
+        complete: res => addAll(res.data),
         error: err => {
           console.error('CSV load error:', err);
           map.fitBounds(CONUS_BOUNDS, { padding:[20,20] });
