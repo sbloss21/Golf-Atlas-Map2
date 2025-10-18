@@ -26,7 +26,7 @@
     html, body { height:100%; margin:0; }
     #map { width:100%; height:100%; }
 
-    /* ============ Dark popup styling ============ */
+    /* ===== Dark popup style (unchanged) ===== */
     .leaflet-popup-content-wrapper{
       background:#0f1916;
       color:#e7f2ee;
@@ -70,39 +70,46 @@
     }
     .ga-btn:hover{ filter:brightness(0.98); }
 
-    /* ============ Golf-ball cluster ============ */
+    /* ===== Golf-ball cluster (upgraded realism) =====
+       - base spherical shading via radial gradient
+       - tiled dimple grid (two staggered radial-gradient layers)
+       - soft top highlight
+       - natural shadow/depth with inset/outset shadows
+    */
     .ga-cluster {
       position: relative;
-      width: 48px; height: 48px; border-radius: 50%;
-      background:
-        radial-gradient(35% 35% at 35% 30%, #ffffff 0%, #f7f7f7 60%, #ececec 100%);
-      border: 2px solid #d6d6d6;
+      width: 50px; height: 50px; border-radius: 50%;
+      background: radial-gradient(120% 120% at 35% 30%, #ffffff 0%, #f5f5f5 55%, #e8e8e8 85%, #dcdcdc 100%);
+      border: 2px solid #d0d0d0;
       box-shadow:
-        0 4px 12px rgba(0,0,0,.28),
-        inset 0 -4px 8px rgba(0,0,0,.12),
-        inset 0 4px 10px rgba(255,255,255,.55);
+        0 6px 16px rgba(0,0,0,.28),     /* outer drop shadow */
+        inset 0 -6px 10px rgba(0,0,0,.12), /* lower inner shade */
+        inset 0 6px 12px rgba(255,255,255,.55); /* top inner glow */
       display:flex; align-items:center; justify-content:center;
       color:#0b0f0e; font-weight:900; font-size:14px;
     }
-    .ga-cluster::before {
+    /* Dimple grid (staggered) */
+    .ga-cluster::before{
       content:"";
-      position:absolute; inset:0; border-radius:50%;
+      position:absolute; inset:6px; border-radius:50%;
       background-image:
-        radial-gradient(circle at 10px 10px, rgba(0,0,0,.08) 2px, transparent 2.5px),
-        radial-gradient(circle at 24px 8px,  rgba(0,0,0,.07) 2px, transparent 2.5px),
-        radial-gradient(circle at 18px 22px, rgba(0,0,0,.06) 2px, transparent 2.5px),
-        radial-gradient(circle at 32px 20px, rgba(0,0,0,.07) 2px, transparent 2.5px),
-        radial-gradient(circle at 14px 32px, rgba(0,0,0,.06) 2px, transparent 2.5px),
-        radial-gradient(circle at 28px 34px, rgba(0,0,0,.07) 2px, transparent 2.5px);
-      opacity:.65; filter: blur(.2px); pointer-events:none;
-    }
-    .ga-cluster::after {
-      content:"";
-      position:absolute; top:4px; left:6px; right:6px; height:14px; border-radius:50%;
-      background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.65), transparent 70%);
+        radial-gradient(circle, rgba(0,0,0,.10) 28%, transparent 29%),
+        radial-gradient(circle, rgba(0,0,0,.08) 26%, transparent 27%);
+      background-size: 10px 10px, 10px 10px;
+      background-position: 0 0, 5px 5px; /* staggered */
+      opacity:.55;
+      filter: blur(.15px);
+      mix-blend-mode:multiply;
       pointer-events:none;
     }
-    .marker-cluster div{ background: transparent; border:none; }
+    /* Specular highlight */
+    .ga-cluster::after{
+      content:"";
+      position:absolute; top:5px; left:7px; right:7px; height:16px; border-radius:50%;
+      background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.7) 0%, rgba(255,255,255,.25) 55%, transparent 70%);
+      pointer-events:none;
+    }
+    .marker-cluster div{ background: transparent; border:none; } /* remove default */
 
   </style>
 </head>
@@ -147,7 +154,7 @@
     map.options.maxBoundsViscosity = 0.6;
 
     /*** Icons ***/
-    // Refined green pin with red flag (cleaner proportions & crisper edges)
+    // Cleaner teardrop pin with red flag (inner green circle removed)
     const FLAG_PIN_URL = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
       <svg width="40" height="54" viewBox="0 0 40 54" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -159,19 +166,17 @@
             <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,.35)"/>
           </filter>
         </defs>
-        <!-- teardrop -->
+        <!-- teardrop body -->
         <path d="M20 53c-4.9-9.8-15-18-15-28C5 11.4 12.2 4 20 4s15 7.4 15 21c0 10-10.1 18.2-15 28z" fill="url(#g)" filter="url(#s)"/>
-        <!-- rim -->
-        <path d="M20 32.5c-6.35 0-11.5-5.15-11.5-11.5S13.65 9.5 20 9.5 31.5 14.65 31.5 21 26.35 32.5 20 32.5z"
-              fill="none" stroke="#0b3a22" stroke-opacity=".55"/>
-        <!-- inner soft disk -->
-        <circle cx="20" cy="21" r="10" fill="#0c3f25" opacity=".2"/>
+        <!-- subtle rim -->
+        <path d="M20 32c-6.1 0-11-4.9-11-11S13.9 10 20 10s11 4.9 11 11-4.9 11-11 11z"
+              fill="none" stroke="#0a3a22" stroke-opacity=".55"/>
+        <!-- micro highlight -->
+        <path d="M13 13c3-2 7-2.4 10.5-1.4" stroke="white" stroke-opacity=".15" stroke-width="2" stroke-linecap="round"/>
         <!-- flag pole -->
-        <path d="M22.6 10v13" stroke="#e6e6e6" stroke-width="1.5"/>
+        <path d="M22.8 10.2v13" stroke="#e6e6e6" stroke-width="1.6"/>
         <!-- red flag -->
-        <path d="M22.6 11l10 3l-10 3z" fill="#e0212d"/>
-        <!-- tiny highlight -->
-        <ellipse cx="20" cy="12.5" rx="6.5" ry="3" fill="white" opacity=".08"/>
+        <path d="M22.8 11.2l9.6 3.2l-9.6 3.2z" fill="#e0212d"/>
       </svg>
     `);
 
@@ -183,7 +188,7 @@
       tooltipAnchor: [0, -46]
     });
 
-    // Cluster group with custom golf-ball icon
+    // Cluster group with upgraded golf-ball icon
     const cluster = L.markerClusterGroup({
       showCoverageOnHover:false,
       spiderfyOnMaxZoom:true,
@@ -192,7 +197,7 @@
         const count = cl.getChildCount();
         return L.divIcon({
           html: `<div class="ga-cluster">${count}</div>`,
-          className: '', iconSize: [48,48]
+          className: '', iconSize: [50,50]
         });
       }
     }).addTo(map);
@@ -214,14 +219,12 @@
       return m ? `#${m[0]}` : (/(yes|true|top)/i.test(s) ? 'Top 100' : '');
     }
     function parseOtherCourses(val){
-      const n = Number(String(val || '').replace(/[^0-9.-]/g,'')); // strip non-numeric
-      if (Number.isFinite(n) && n > 0) {
-        return Math.max(0, Math.floor(n) - 1);
-      }
+      const n = Number(String(val || '').replace(/[^0-9.-]/g,''));
+      if (Number.isFinite(n) && n > 0) return Math.max(0, Math.floor(n) - 1);
       return 0;
     }
 
-    /*** Popup builder ***/
+    /*** Popup builder (unchanged content logic) ***/
     function makePopupHTML(r, {isRelocatedHI=false} = {}){
       const name    = r.course_name || r.name || 'Course';
       const resort  = r.resort || r.resort_name || '';
