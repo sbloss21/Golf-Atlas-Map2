@@ -35,21 +35,48 @@
       border:1px solid rgba(209,190,107,.25); /* faint gold edge */
     }
     .leaflet-popup-tip{ background:#0f1916; border:1px solid rgba(209,190,107,.25); }
-    .ga-popup{ font: 500 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    .ga-popup{ font: 500 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
     .ga-popup .title{
       font-size:16px; font-weight:800; letter-spacing:.2px; margin:0 0 6px;
       color:#f6fff9;
     }
-    .ga-popup .line{ margin:2px 0; }
+    .ga-popup .row { margin:2px 0; display:flex; gap:6px; align-items:flex-start; }
+    .ga-popup .label { opacity:.9; }
     .ga-popup a{
       color:#d1be6b; text-decoration:none; border-bottom:1px dotted rgba(209,190,107,.55);
     }
     .ga-popup a:hover{ opacity:.85; }
 
-    /* Cluster shadow tweak */
-    .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large{
-      box-shadow:0 2px 8px rgba(0,0,0,.25);
+    /* ===== Custom cluster icon: golf ball with count ===== */
+    .ga-cluster {
+      background: radial-gradient(ellipse at 35% 30%, #ffffff 0%, #f0f0f0 60%, #e1e1e1 100%);
+      border: 2px solid #c9c9c9;
+      border-radius: 50%;
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,.25), inset 0 2px 6px rgba(0,0,0,.12);
+      position: relative;
+      font-weight: 800; color:#0b0f0e;
     }
+    .ga-cluster::after {
+      content: "";
+      position: absolute;
+      top: 8px; left: 12px;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: rgba(0,0,0,.08);
+      box-shadow:
+        10px 2px 0 rgba(0,0,0,.07),
+        18px 6px 0 rgba(0,0,0,.06),
+        6px 14px 0 rgba(0,0,0,.05),
+        16px 16px 0 rgba(0,0,0,.06),
+        2px 20px 0 rgba(0,0,0,.07);
+      filter: blur(.2px);
+    }
+
+    /* Remove default cluster bg */
+    .marker-cluster div { background: transparent; border: none; }
+
   </style>
 </head>
 <body>
@@ -65,12 +92,21 @@
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
-    /*** 1) MAP (tight on the lower 48) ***/
+    /*** 0) CONFIG ***/
+    const SHOW_HI_NEAR_CA = true;  // draw HI off California (overview)
     const CONUS_BOUNDS = L.latLngBounds(
       [24.396308, -124.848974], // SW
       [49.384358,  -66.885444]  // NE
     );
 
+    // Simple visual offset to place Hawaii off California in overview.
+    // You can tweak these delta values to reposition the block.
+    function relocateHawaii(lat, lng){
+      // Move roughly 13° north and 35° east ≈ off NorCal
+      return [lat + 13, lng + 35];
+    }
+
+    /*** 1) MAP (tight on the lower 48) ***/
     const map = L.map('map', {
       zoomControl: true,
       minZoom: 3,
@@ -88,21 +124,55 @@
     // Initial view = lower 48
     map.fitBounds(CONUS_BOUNDS, { padding:[20,20] });
 
-    // Keep users roughly on North America (prevents zooming way out for HI)
+    // Keep users roughly on North America
     map.setMaxBounds(L.latLngBounds([10, -170], [72, -50]));
     map.options.maxBoundsViscosity = 0.6;
 
-    // Cluster group
+    /*** 2) Icons (flag pin for markers, golf ball for clusters) ***/
+    // Flag pin (SVG data URL so you don’t need external files)
+    const FLAG_PIN_URL = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+      <svg width="36" height="48" viewBox="0 0 36 48" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="s" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,.35)"/>
+          </filter>
+        </defs>
+        <path d="M18 48c-4-8-12-15-12-24C6 11 11 6 18 6s12 5 12 18c0 9-8 16-12 24z" fill="#0f1916" filter="url(#s)"/>
+        <circle cx="18" cy="18" r="10" fill="#162521" stroke="#d1be6b" stroke-width="1.5"/>
+        <path d="M12 21h10" stroke="#d1be6b" stroke-width="2" stroke-linecap="round"/>
+        <path d="M18 11v10" stroke="#d1be6b" stroke-width="2" stroke-linecap="round"/>
+        <path d="M19 14l0 -6" stroke="#d1be6b" stroke-width="1.5"/>
+        <path d="M19 8l8 3l-8 3z" fill="#d1be6b"/>
+      </svg>
+    `);
+
+    const flagIcon = L.icon({
+      iconUrl: FLAG_PIN_URL,
+      iconSize: [36, 48],
+      iconAnchor: [18, 44],
+      popupAnchor: [0, -40],
+      tooltipAnchor: [0, -40]
+    });
+
+    // Cluster group with custom "golf ball" icon + count
     const cluster = L.markerClusterGroup({
       showCoverageOnHover:false,
       spiderfyOnMaxZoom:true,
-      maxClusterRadius:45
+      maxClusterRadius:45,
+      iconCreateFunction: (cluster) => {
+        const count = cluster.getChildCount();
+        return L.divIcon({
+          html: `<div class="ga-cluster">${count}</div>`,
+          className: '',  // we provide full HTML/CSS
+          iconSize: [44,44]
+        });
+      }
     }).addTo(map);
 
-    // Group we use ONLY to fit after load (excludes HI/AK)
+    // Group we use ONLY to fit after load (excludes AK; includes HI relocated)
     const conusGroup = L.featureGroup();
 
-    /*** 2) CSV LOADER ***/
+    /*** 3) CSV LOADER ***/
     function csvUrlFromQuery(){
       try{
         const u = new URL(window.location.href);
@@ -110,46 +180,90 @@
       }catch(e){ return ''; }
     }
 
-    function makePopupHTML(r){
+    // Build the dark, emoji popup with the “vital info”
+    function makePopupHTML(r, {isRelocatedHI=false} = {}){
       const name = r.course_name || r.name || 'Course';
       const city = r.city ? r.city : '';
-      const state = r.state || r.region || '';
-      const fee  = (r['cost_per_course(green_fee_range_)'] || r.cost_per_course || r.green_fee_range || '').toString().trim();
-      const site = r.website || r.url || '';
+      const state = (r.state || r.region || '').toUpperCase();
 
-      // Emojis: ⛳️ name, 📍 location, 💵 fee, 🌐 website
+      const top100 = (r.top_100_ranking || r.top100 || '').toString().trim();
+      const par    = (r.par || '').toString().trim();
+      const yards  = (r['yardage(black_tees)'] || r.yardage || r.yards || '').toString().trim();
+      const arch   = (r.architect || '').toString().trim();
+
+      const fee    = (r['cost_per_course(green_fee_range_)'] || r.cost_per_course || r.green_fee_range || '').toString().trim();
+      const lodgeY = (r['lodging_on-site(yes_no)'] || r.lodging_on_site || r.lodging || '').toString().trim();
+      const lodgeD = (r.lodging_details || '').toString().trim();
+      const season = (r['peak_season/best_time_to_visit'] || r.peak_season || r.best_time || '').toString().trim();
+      const site   = r.website || r.url || '';
+
       return `
         <div class="ga-popup">
           <div class="title">⛳️ ${name}</div>
-          <div class="line">📍 ${city ? city + ', ' : ''}${state}</div>
-          ${fee ? `<div class="line">💵 ${fee}</div>` : ''}
-          ${site ? `<div class="line">🌐 <a href="${site}" target="_blank" rel="noopener">Website</a></div>` : ''}
+          <div class="row">📍 <span class="label">${city ? city + ', ' : ''}${state}${isRelocatedHI ? ' • (HI – overview)' : ''}</span></div>
+          ${top100 ? `<div class="row">🏆 <span class="label">Top 100:</span> ${top100}</div>` : ''}
+          ${par    ? `<div class="row">🧮 <span class="label">Par:</span> ${par}</div>` : ''}
+          ${yards  ? `<div class="row">📏 <span class="label">Yardage:</span> ${yards}</div>` : ''}
+          ${arch   ? `<div class="row">🛠️ <span class="label">Architect:</span> ${arch}</div>` : ''}
+          ${fee    ? `<div class="row">💵 <span class="label">Fees:</span> ${fee}</div>` : ''}
+          ${lodgeY ? `<div class="row">🏨 <span class="label">Lodging:</span> ${lodgeY}${lodgeD ? ` — ${lodgeD}` : ''}</div>` : (lodgeD ? `<div class="row">🏨 <span class="label">Lodging:</span> ${lodgeD}</div>` : '')}
+          ${season ? `<div class="row">🗓️ <span class="label">Best time:</span> ${season}</div>` : ''}
+          ${site   ? `<div class="row">🌐 <a href="${site}" target="_blank" rel="noopener">Website</a></div>` : ''}
+          ${isRelocatedHI ? `<div class="row">✈️ <a href="#" class="ga-jump-hi">Jump to real Hawaii location</a></div>` : ''}
         </div>
       `;
     }
 
+    // Create the marker (handles HI relocation & “jump to real”)
     function addRowAsMarker(r){
-      const lat = parseFloat(r.lat || r.latitude);
-      const lng = parseFloat(r.lng || r.longitude || r.lon);
-      if (Number.isNaN(lat) || Number.isNaN(lng)) return;
-
-      const m = L.marker([lat, lng]).bindPopup(makePopupHTML(r), { maxWidth: 260 });
-      cluster.addLayer(m);
+      const rawLat = parseFloat(r.lat || r.latitude);
+      const rawLng = parseFloat(r.lng || r.longitude || r.lon);
+      if (Number.isNaN(rawLat) || Number.isNaN(rawLng)) return;
 
       const state = (r.state || r.region || '').toUpperCase();
-      if (state !== 'HI' && state !== 'AK') conusGroup.addLayer(m);
+      let drawLat = rawLat, drawLng = rawLng, isRelocatedHI = false;
+
+      if (SHOW_HI_NEAR_CA && state === 'HI'){
+        const [rlat, rlng] = relocateHawaii(rawLat, rawLng);
+        drawLat = rlat; drawLng = rlng;
+        isRelocatedHI = true;
+      }
+
+      const marker = L.marker([drawLat, drawLng], { icon: flagIcon })
+        .bindPopup(makePopupHTML(r, {isRelocatedHI}), { maxWidth: 300 });
+
+      cluster.addLayer(marker);
+
+      // Use for bounds fitting (exclude AK; include HI relocated)
+      if (state !== 'AK') conusGroup.addLayer(marker);
+
+      if (isRelocatedHI){
+        marker.on('popupopen', () => {
+          const a = document.querySelector('.ga-jump-hi');
+          if (a){
+            a.onclick = (e) => {
+              e.preventDefault();
+              map.flyTo([rawLat, rawLng], 8, { duration: 0.8 });
+            };
+          }
+        });
+      }
     }
 
+    /*** 4) CSV load + fit ***/
     function loadCSV(url){
       if(!url){
-        // No CSV provided—sample pins so page isn't empty
+        // Samples if no CSV provided
         [
-          { course_name:'Pebble Beach', city:'Pebble Beach', state:'CA', lat:36.5678, lng:-121.95, 'cost_per_course(green_fee_range_)':'$595–625', website:'https://www.pebblebeach.com' },
-          { course_name:'Whistling Straits', city:'Sheboygan', state:'WI', lat:43.845, lng:-87.205, 'cost_per_course(green_fee_range_)':'$300–410', website:'https://www.destinationkohler.com/golf/whistling-straits' },
-          { course_name:'Kapalua (Plantation)', city:'Lahaina', state:'HI', lat:20.9969, lng:-156.6530, 'cost_per_course(green_fee_range_)':'$395–450', website:'https://golfatkapalua.com' }
+          { course_name:'Pebble Beach', city:'Pebble Beach', state:'CA', lat:36.5678, lng:-121.95,
+            'cost_per_course(green_fee_range_)':'$595–625', website:'https://www.pebblebeach.com',
+            par:'72', 'yardage(black_tees)':'6828', architect:'Jack Neville & Douglas Grant' },
+          { course_name:'Kapalua (Plantation)', city:'Lahaina', state:'HI', lat:20.9969, lng:-156.6530,
+            'cost_per_course(green_fee_range_)':'$395–450', website:'https://golfatkapalua.com',
+            par:'73', 'yardage(black_tees)':'7596', architect:'Bill Coore & Ben Crenshaw', top_100_ranking:'Yes' }
         ].forEach(addRowAsMarker);
 
-        // Fit to CONUS markers only
+        // Fit to all non-AK markers (HI is already relocated into the view)
         if (conusGroup.getLayers().length) {
           map.fitBounds(conusGroup.getBounds().pad(0.05));
         } else {
@@ -165,7 +279,7 @@
         complete: res => {
           res.data.forEach(addRowAsMarker);
 
-          // Critical: fit to CONUS markers only (prevents zooming out for HI/AK)
+          // Critical: fit to non-AK group (HI is in view via relocation)
           if (conusGroup.getLayers().length) {
             map.fitBounds(conusGroup.getBounds().pad(0.05));
           } else {
@@ -177,6 +291,13 @@
           map.fitBounds(CONUS_BOUNDS, { padding:[20,20] });
         }
       });
+    }
+
+    function csvUrlFromQuery(){
+      try{
+        const u = new URL(window.location.href);
+        return u.searchParams.get('csv') || '';
+      }catch(e){ return ''; }
     }
 
     loadCSV(csvUrlFromQuery());
