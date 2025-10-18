@@ -26,7 +26,7 @@
     html, body { height:100%; margin:0; }
     #map { width:100%; height:100%; }
 
-    /* ===== Dark popup style ===== */
+    /* ============ Dark popup styling ============ */
     .leaflet-popup-content-wrapper{
       background:#0f1916;
       color:#e7f2ee;
@@ -38,7 +38,7 @@
 
     .ga-popup{
       font: 500 14px/1.55 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      min-width: 240px;
+      min-width: 260px;
     }
     .ga-popup .top{
       display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px;
@@ -70,12 +70,12 @@
     }
     .ga-btn:hover{ filter:brightness(0.98); }
 
-    /* ===== Custom cluster icon => golf ball with dimples ===== */
+    /* ============ Golf-ball cluster ============ */
     .ga-cluster {
       position: relative;
       width: 48px; height: 48px; border-radius: 50%;
       background:
-        radial-gradient(35% 35% at 35% 30%, #ffffff 0%, #f6f6f6 60%, #ececec 100%);
+        radial-gradient(35% 35% at 35% 30%, #ffffff 0%, #f7f7f7 60%, #ececec 100%);
       border: 2px solid #d6d6d6;
       box-shadow:
         0 4px 12px rgba(0,0,0,.28),
@@ -84,7 +84,6 @@
       display:flex; align-items:center; justify-content:center;
       color:#0b0f0e; font-weight:900; font-size:14px;
     }
-    /* Dimple pattern overlay */
     .ga-cluster::before {
       content:"";
       position:absolute; inset:0; border-radius:50%;
@@ -95,18 +94,15 @@
         radial-gradient(circle at 32px 20px, rgba(0,0,0,.07) 2px, transparent 2.5px),
         radial-gradient(circle at 14px 32px, rgba(0,0,0,.06) 2px, transparent 2.5px),
         radial-gradient(circle at 28px 34px, rgba(0,0,0,.07) 2px, transparent 2.5px);
-      opacity:.7;
-      filter: blur(.2px);
-      pointer-events:none;
+      opacity:.65; filter: blur(.2px); pointer-events:none;
     }
-    /* Soft top highlight */
     .ga-cluster::after {
       content:"";
       position:absolute; top:4px; left:6px; right:6px; height:14px; border-radius:50%;
       background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.65), transparent 70%);
       pointer-events:none;
     }
-    .marker-cluster div{ background: transparent; border:none; } /* remove default */
+    .marker-cluster div{ background: transparent; border:none; }
 
   </style>
 </head>
@@ -127,9 +123,9 @@
     const SHOW_HI_NEAR_CA = true;  // Draw Hawaii off California for overview
     const CONUS_BOUNDS = L.latLngBounds([24.396308, -124.848974],[49.384358,-66.885444]);
 
-    // Reposition Hawaii visually for the overview
+    // Reposition Hawaii visually for the overview (tweak to taste)
     function relocateHawaii(lat, lng){
-      // Tweak these two numbers to nudge placement
+      // +lat moves north, +lng moves east
       return [lat + 13, lng + 35];
     }
 
@@ -151,36 +147,40 @@
     map.options.maxBoundsViscosity = 0.6;
 
     /*** Icons ***/
-    // Green pin with a red flag (inline SVG)
+    // Refined green pin with red flag (cleaner proportions & crisper edges)
     const FLAG_PIN_URL = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
-      <svg width="40" height="52" viewBox="0 0 40 52" xmlns="http://www.w3.org/2000/svg">
+      <svg width="40" height="54" viewBox="0 0 40 54" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stop-color="#1b7a44"/>
+            <stop offset="0%" stop-color="#1c7f48"/>
             <stop offset="100%" stop-color="#0f5e34"/>
           </linearGradient>
           <filter id="s" x="-50%" y="-50%" width="200%" height="200%">
             <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,.35)"/>
           </filter>
         </defs>
-        <!-- pin body -->
-        <path d="M20 52c-4.5-9-14-17-14-27C6 11.3 12.3 5 20 5s14 6.3 14 20c0 10-9.5 18-14 27z" fill="url(#g)" filter="url(#s)"/>
-        <circle cx="20" cy="21" r="11" fill="#0c3f25" opacity=".25"/>
+        <!-- teardrop -->
+        <path d="M20 53c-4.9-9.8-15-18-15-28C5 11.4 12.2 4 20 4s15 7.4 15 21c0 10-10.1 18.2-15 28z" fill="url(#g)" filter="url(#s)"/>
+        <!-- rim -->
+        <path d="M20 32.5c-6.35 0-11.5-5.15-11.5-11.5S13.65 9.5 20 9.5 31.5 14.65 31.5 21 26.35 32.5 20 32.5z"
+              fill="none" stroke="#0b3a22" stroke-opacity=".55"/>
+        <!-- inner soft disk -->
+        <circle cx="20" cy="21" r="10" fill="#0c3f25" opacity=".2"/>
         <!-- flag pole -->
-        <path d="M23 9v15" stroke="#c6c6c6" stroke-width="1.6"/>
+        <path d="M22.6 10v13" stroke="#e6e6e6" stroke-width="1.5"/>
         <!-- red flag -->
-        <path d="M23 10l10 3l-10 3z" fill="#e63946"/>
-        <!-- subtle rim -->
-        <circle cx="20" cy="21" r="10.5" fill="none" stroke="#0b3a22" stroke-opacity=".55"/>
+        <path d="M22.6 11l10 3l-10 3z" fill="#e0212d"/>
+        <!-- tiny highlight -->
+        <ellipse cx="20" cy="12.5" rx="6.5" ry="3" fill="white" opacity=".08"/>
       </svg>
     `);
 
     const flagIcon = L.icon({
       iconUrl: FLAG_PIN_URL,
-      iconSize: [40, 52],
-      iconAnchor: [20, 48],
-      popupAnchor: [0, -44],
-      tooltipAnchor: [0, -44]
+      iconSize: [40, 54],
+      iconAnchor: [20, 50],
+      popupAnchor: [0, -46],
+      tooltipAnchor: [0, -46]
     });
 
     // Cluster group with custom golf-ball icon
@@ -200,34 +200,46 @@
     // Group used to fit bounds (exclude AK; include relocated HI)
     const conusGroup = L.featureGroup();
 
-    // Will populate after CSV load to compute "other courses on property"
-    const resortCounts = new Map();
-
-    /*** Popup builder ***/
+    /*** Helpers ***/
+    function csvUrlFromQuery(){
+      try{
+        const u = new URL(window.location.href);
+        return u.searchParams.get('csv') || '';
+      }catch(e){ return ''; }
+    }
     function parseRankBadge(val){
       if(!val) return '';
       const s = String(val).trim();
       const m = s.match(/\d+/);
-      return m ? `#${m[0]}` : 'Top 100';
+      return m ? `#${m[0]}` : (/(yes|true|top)/i.test(s) ? 'Top 100' : '');
+    }
+    function parseOtherCourses(val){
+      const n = Number(String(val || '').replace(/[^0-9.-]/g,'')); // strip non-numeric
+      if (Number.isFinite(n) && n > 0) {
+        return Math.max(0, Math.floor(n) - 1);
+      }
+      return 0;
     }
 
-    function makePopupHTML(r, {isRelocatedHI=false, othersOnProperty=0} = {}){
-      const name   = r.course_name || r.name || 'Course';
-      const resort = r.resort || r.resort_name || '';
-      const city   = r.city ? r.city : '';
-      const state  = (r.state || r.region || '').toUpperCase();
-      const rank   = parseRankBadge(r.top_100_ranking || r.top100);
+    /*** Popup builder ***/
+    function makePopupHTML(r, {isRelocatedHI=false} = {}){
+      const name    = r.course_name || r.name || 'Course';
+      const resort  = r.resort || r.resort_name || '';
+      const city    = r.city ? r.city : '';
+      const state   = (r.state || r.region || '').toUpperCase();
+      const rank    = parseRankBadge(r.top_100_ranking || r.top100);
+      const others  = parseOtherCourses(r['Courses on property']);
 
-      const par    = (r.par || '').toString().trim();
-      const yards  = (r['yardage(black_tees)'] || r.yardage || r.yards || '').toString().trim();
-      const arch   = (r.architect || '').toString().trim();
-      const fee    = (r['cost_per_course(green_fee_range_)'] || r.cost_per_course || r.green_fee_range || '').toString().trim();
-      const lodgeY = (r['lodging_on-site(yes_no)'] || r.lodging_on_site || r.lodging || '').toString().trim();
-      const lodgeD = (r.lodging_details || '').toString().trim();
-      const season = (r['peak_season/best_time_to_visit'] || r.peak_season || r.best_time || '').toString().trim();
-      const site   = r.website || r.url || '';
+      const par     = (r.par || '').toString().trim();
+      const yards   = (r['yardage(black_tees)'] || r.yardage || r.yards || '').toString().trim();
+      const arch    = (r.architect || '').toString().trim();
+      const fee     = (r['cost_per_course(green_fee_range_)'] || r.cost_per_course || r.green_fee_range || '').toString().trim();
+      const lodgeY  = (r['lodging_on-site(yes_no)'] || r.lodging_on_site || r.lodging || '').toString().trim();
+      const lodgeD  = (r.lodging_details || '').toString().trim();
+      const season  = (r['peak_season/best_time_to_visit'] || r.peak_season || r.best_time || '').toString().trim();
+      const site    = r.website || r.url || '';
 
-      const othersText = othersOnProperty > 0 ? `${othersOnProperty} other ${othersOnProperty === 1 ? 'course' : 'courses'} on property` : '';
+      const othersText = others > 0 ? `${others} other ${others === 1 ? 'course' : 'courses'} on property` : '';
 
       return `
         <div class="ga-popup">
@@ -260,9 +272,6 @@
       if (Number.isNaN(rawLat) || Number.isNaN(rawLng)) return;
 
       const state = (r.state || r.region || '').toUpperCase();
-      const resortKey = (r.resort || r.resort_name || '').trim().toLowerCase();
-      const totalAtResort = resortKey ? (resortCounts.get(resortKey) || 0) : 0;
-      const othersOnProperty = totalAtResort > 0 ? Math.max(0, totalAtResort - 1) : 0;
 
       let drawLat = rawLat, drawLng = rawLng, isRelocatedHI = false;
       if (SHOW_HI_NEAR_CA && state === 'HI'){
@@ -271,53 +280,42 @@
       }
 
       const marker = L.marker([drawLat, drawLng], { icon: flagIcon })
-        .bindPopup(makePopupHTML(r, {isRelocatedHI, othersOnProperty}), { maxWidth: 320 });
+        .bindPopup(makePopupHTML(r, {isRelocatedHI}), { maxWidth: 320 });
 
       cluster.addLayer(marker);
 
-      // Fit calculation group (exclude AK; include relocated HI)
+      // Fit group: exclude AK; include relocated HI
       if (state !== 'AK') conusGroup.addLayer(marker);
     }
 
-    /*** CSV loading with resort pre-aggregation ***/
+    /*** CSV loading ***/
+    function loadRows(rows){
+      rows.forEach(addRowAsMarker);
+      if (conusGroup.getLayers().length) {
+        map.fitBounds(conusGroup.getBounds().pad(0.05));
+      } else {
+        map.fitBounds(CONUS_BOUNDS, { padding:[20,20] });
+      }
+    }
+
     function loadCSV(url){
-      const addAll = (rows) => {
-        // Pre-aggregate resort counts
-        resortCounts.clear();
-        rows.forEach(r => {
-          const key = (r.resort || r.resort_name || '').trim().toLowerCase();
-          if(key){
-            resortCounts.set(key, (resortCounts.get(key) || 0) + 1);
-          }
-        });
-
-        rows.forEach(addRowAsMarker);
-
-        // Fit to group (non-AK; HI is in-view via relocation)
-        if (conusGroup.getLayers().length) {
-          map.fitBounds(conusGroup.getBounds().pad(0.05));
-        } else {
-          map.fitBounds(CONUS_BOUNDS, { padding:[20,20] });
-        }
-      };
-
       if(!url){
         // Sample if no CSV provided
         const SAMPLE = [
           { course_name:'Pebble Beach', city:'Pebble Beach', state:'CA', lat:36.5678, lng:-121.95,
             website:'https://www.pebblebeach.com', par:'72', 'yardage(black_tees)':'6828',
             architect:'Jack Neville & Douglas Grant', resort:'Pebble Beach Resorts',
-            'cost_per_course(green_fee_range_)':'$595–625', top_100_ranking:'#2' },
+            'cost_per_course(green_fee_range_)':'$595–625', top_100_ranking:'#2', 'Courses on property':'4' },
           { course_name:'Spyglass Hill', city:'Pebble Beach', state:'CA', lat:36.593, lng:-121.964,
             website:'https://www.pebblebeach.com/golf/spyglass-hill-golf-course/', par:'72', 'yardage(black_tees)':'6960',
             architect:'Robert Trent Jones Sr.', resort:'Pebble Beach Resorts',
-            'cost_per_course(green_fee_range_)':'$340–420', top_100_ranking:'Top 100' },
+            'cost_per_course(green_fee_range_)':'$340–420', top_100_ranking:'Top 100', 'Courses on property':'4' },
           { course_name:'Kapalua (Plantation)', city:'Lahaina', state:'HI', lat:20.9969, lng:-156.6530,
             website:'https://golfatkapalua.com', par:'73', 'yardage(black_tees)':'7596',
             architect:'Coore & Crenshaw', resort:'Kapalua',
-            'cost_per_course(green_fee_range_)':'$395–450', top_100_ranking:'#40' }
+            'cost_per_course(green_fee_range_)':'$395–450', top_100_ranking:'#40', 'Courses on property':'2' }
         ];
-        addAll(SAMPLE);
+        loadRows(SAMPLE);
         return;
       }
 
@@ -325,19 +323,12 @@
         download:true,
         header:true,
         skipEmptyLines:true,
-        complete: res => addAll(res.data),
+        complete: res => loadRows(res.data),
         error: err => {
           console.error('CSV load error:', err);
           map.fitBounds(CONUS_BOUNDS, { padding:[20,20] });
         }
       });
-    }
-
-    function csvUrlFromQuery(){
-      try{
-        const u = new URL(window.location.href);
-        return u.searchParams.get('csv') || '';
-      }catch(e){ return ''; }
     }
 
     loadCSV(csvUrlFromQuery());
