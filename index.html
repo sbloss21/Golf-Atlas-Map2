@@ -2,13 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Golf Atlas Map</title>
 
-  <!-- Leaflet core -->
+  <!-- Leaflet -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -26,104 +23,37 @@
   />
 
   <style>
-    :root{
-      --bg:#111716;       /* deep green-black */
-      --fg:#f6f6f6;       /* foreground text */
-      --accent:#d1be6b;   /* gold accent */
-      --ink:#0f1916;      /* dark ink for popups */
-      --card:#ffffff;     /* popup bg */
-    }
-    html, body { height:100%; margin:0; background:var(--bg); color:var(--fg); }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; }
-
-    header {
-      padding: 18px 22px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:16px;
-      border-bottom:1px solid rgba(255,255,255,.05);
-    }
-    .brand { font-weight:800; letter-spacing:.06em; }
-    .tag { color:var(--accent); opacity:.9; }
-
-    .wrap { max-width: 1400px; margin: 0 auto; padding: 18px 22px 0; }
-    .hero {
-      display:grid;
-      grid-template-columns: 1.1fr 1.6fr;
-      gap:28px;
-      align-items:center;
-    }
-    .hero h1 { font-size: clamp(28px, 5vw, 56px); line-height:1.05; margin:10px 0 4px; }
-    .hero p  { font-size: clamp(14px, 2.2vw, 20px); margin: 0; color: var(--accent); }
-
-    .map-wrap {
-      position:relative;
-      height: 70vh;
-      border-radius: 16px;
-      overflow:hidden;
-      box-shadow: 0 8px 24px rgba(0,0,0,.35);
-      background:#0b0f0e;
-    }
+    html, body { height:100%; margin:0; }
     #map { width:100%; height:100%; }
 
-    /* Hawaii inset card */
-    #hawaii-inset{
-      position:absolute;
-      right:16px;
-      bottom:16px;
-      width:220px;
-      height:150px;
-      border-radius:12px;
-      overflow:hidden;
-      box-shadow:0 8px 24px rgba(0,0,0,.35);
-      z-index:500;
-      border:1px solid rgba(255,255,255,.35);
-      background:#0b0f0e;
-    }
-    #hawaii-inset .leaflet-control-container{ display:none; } /* hide inset controls */
-
-    /* Popup styling (white card, dark text) */
+    /* ===== Dark popup style (emerald/charcoal) ===== */
     .leaflet-popup-content-wrapper{
-      background:var(--card);
-      color:var(--ink);
-      border-radius:12px;
-      box-shadow:0 12px 30px rgba(0,0,0,.25);
+      background:#0f1916;                /* deep green-black */
+      color:#e7f2ee;                      /* soft mint text */
+      border-radius:14px;
+      box-shadow:0 14px 36px rgba(0,0,0,.35);
+      border:1px solid rgba(209,190,107,.25); /* faint gold edge */
     }
-    .leaflet-popup-tip{ background:var(--card); }
-    .ga-popup strong{ color:#0e1513; }
-    .ga-popup small{ color:#5c6b66; }
+    .leaflet-popup-tip{ background:#0f1916; border:1px solid rgba(209,190,107,.25); }
+    .ga-popup{ font: 500 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    .ga-popup .title{
+      font-size:16px; font-weight:800; letter-spacing:.2px; margin:0 0 6px;
+      color:#f6fff9;
+    }
+    .ga-popup .line{ margin:2px 0; }
+    .ga-popup a{
+      color:#d1be6b; text-decoration:none; border-bottom:1px dotted rgba(209,190,107,.55);
+    }
+    .ga-popup a:hover{ opacity:.85; }
 
-    /* Cluster tweak: subtle dropshadow */
+    /* Cluster shadow tweak */
     .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large{
       box-shadow:0 2px 8px rgba(0,0,0,.25);
-    }
-
-    @media (max-width: 980px){
-      .hero{ grid-template-columns: 1fr; }
-      .map-wrap{ height: 68vh; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="brand">GOLF ATLAS</div>
-    <div class="tag">Plan, Explore, Experience</div>
-  </header>
-
-  <main class="wrap">
-    <section class="hero">
-      <div>
-        <h1>GOLF ATLAS — YOUR ULTIMATE GOLF TRIP COMPANION</h1>
-        <p>Plan, Explore, and Experience the Best Golf Trips</p>
-      </div>
-
-      <div class="map-wrap">
-        <div id="map" aria-label="Golf Atlas map"></div>
-        <div id="hawaii-inset" aria-label="Hawaii inset map"></div>
-      </div>
-    </section>
-  </main>
+  <div id="map" aria-label="Golf Atlas map"></div>
 
   <!-- JS libs -->
   <script
@@ -135,8 +65,12 @@
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
-    /***** 1) MAP: default to LOWER 48 (CONUS) *****/
-    const conusBounds = L.latLngBounds([24.5, -125],[49.5, -66]); // SW, NE
+    /*** 1) MAP (tight on the lower 48) ***/
+    const CONUS_BOUNDS = L.latLngBounds(
+      [24.396308, -124.848974], // SW
+      [49.384358,  -66.885444]  // NE
+    );
+
     const map = L.map('map', {
       zoomControl: true,
       minZoom: 3,
@@ -144,100 +78,83 @@
       worldCopyJump: true
     });
 
-    // Default view is the continental US
-    map.fitBounds(conusBounds, { padding:[20,20] });
-
-    // Keep panning roughly on North America
-    map.setMaxBounds(L.latLngBounds([10, -170], [72, -50]));
-
-    // Base tiles (swap to your preferred style if needed)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
+    // Light tiles so dark popups pop
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap &copy; CARTO',
+      subdomains: 'abcd',
+      maxZoom: 20
     }).addTo(map);
 
-    // Cluster group for the MAIN map (not used on the inset)
+    // Initial view = lower 48
+    map.fitBounds(CONUS_BOUNDS, { padding:[20,20] });
+
+    // Keep users roughly on North America (prevents zooming way out for HI)
+    map.setMaxBounds(L.latLngBounds([10, -170], [72, -50]));
+    map.options.maxBoundsViscosity = 0.6;
+
+    // Cluster group
     const cluster = L.markerClusterGroup({
       showCoverageOnHover:false,
       spiderfyOnMaxZoom:true,
-      maxClusterRadius: 45
+      maxClusterRadius:45
     }).addTo(map);
 
-    /***** 2) HAWAII INSET *****/
-    const hiMap = L.map('hawaii-inset', {
-      zoomControl:false,
-      attributionControl:false,
-      dragging:false,
-      scrollWheelZoom:false,
-      doubleClickZoom:false,
-      boxZoom:false,
-      touchZoom:false
-    }).setView([20.75, -156.2], 7); // around Maui
+    // Group we use ONLY to fit after load (excludes HI/AK)
+    const conusGroup = L.featureGroup();
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(hiMap);
-
-    /***** 3) CSV LOADER *****/
-    // Expect ?csv=<public-csv-url> (Google Sheets "Publish to web" CSV works great)
-    function getCsvUrl(){
-      const u = new URL(window.location.href);
-      return u.searchParams.get('csv') || '';
-    }
-
-    function parseCurrencyRange(val){
-      if(!val) return '';
-      return String(val).trim();
+    /*** 2) CSV LOADER ***/
+    function csvUrlFromQuery(){
+      try{
+        const u = new URL(window.location.href);
+        return u.searchParams.get('csv') || '';
+      }catch(e){ return ''; }
     }
 
     function makePopupHTML(r){
       const name = r.course_name || r.name || 'Course';
       const city = r.city ? r.city : '';
       const state = r.state || r.region || '';
-      const fee  = parseCurrencyRange(r['cost_per_course(green_fee_range_)'] || r.cost_per_course || r.green_fee_range);
+      const fee  = (r['cost_per_course(green_fee_range_)'] || r.cost_per_course || r.green_fee_range || '').toString().trim();
       const site = r.website || r.url || '';
 
+      // Emojis: ⛳️ name, 📍 location, 💵 fee, 🌐 website
       return `
         <div class="ga-popup">
-          <strong>${name}</strong><br/>
-          ${city ? city + ', ' : ''}${state}
-          ${fee ? `<br/><small>${fee}</small>` : ''}
-          ${site ? `<br/><a href="${site}" target="_blank" rel="noopener">Website</a>` : ''}
+          <div class="title">⛳️ ${name}</div>
+          <div class="line">📍 ${city ? city + ', ' : ''}${state}</div>
+          ${fee ? `<div class="line">💵 ${fee}</div>` : ''}
+          ${site ? `<div class="line">🌐 <a href="${site}" target="_blank" rel="noopener">Website</a></div>` : ''}
         </div>
       `;
     }
 
     function addRowAsMarker(r){
       const lat = parseFloat(r.lat || r.latitude);
-      const lng = parseFloat(r.lng || r.lon || r.longitude);
+      const lng = parseFloat(r.lng || r.longitude || r.lon);
       if (Number.isNaN(lat) || Number.isNaN(lng)) return;
 
-      const popupHTML = makePopupHTML(r);
-      const isHI = ((r.state || r.region || '').toUpperCase() === 'HI');
+      const m = L.marker([lat, lng]).bindPopup(makePopupHTML(r), { maxWidth: 260 });
+      cluster.addLayer(m);
 
-      if(isHI){
-        // Add to the inset
-        const m = L.marker([lat, lng]).bindPopup(popupHTML);
-        m.addTo(hiMap);
-        // Optional: jump the MAIN map to real Hawaii on click
-        m.on('click', () => {
-          map.flyTo([lat, lng], 8, { duration: 0.8 });
-          const ghost = L.marker([lat, lng]).addTo(map).bindPopup(popupHTML);
-          ghost.openPopup();
-          setTimeout(() => map.removeLayer(ghost), 5000);
-        });
-      }else{
-        // Add to the clustered main map
-        const m = L.marker([lat, lng]).bindPopup(popupHTML);
-        cluster.addLayer(m);
-      }
+      const state = (r.state || r.region || '').toUpperCase();
+      if (state !== 'HI' && state !== 'AK') conusGroup.addLayer(m);
     }
 
     function loadCSV(url){
       if(!url){
-        console.warn('No CSV URL provided. Add ?csv=<public-csv-url> to the page URL.');
-        // Still show a couple sample points so the page isn’t empty
+        // No CSV provided—sample pins so page isn't empty
         [
           { course_name:'Pebble Beach', city:'Pebble Beach', state:'CA', lat:36.5678, lng:-121.95, 'cost_per_course(green_fee_range_)':'$595–625', website:'https://www.pebblebeach.com' },
-          { course_name:'Kapalua (Plantation)', city:'Lahaina', state:'HI', lat:20.9969, lng:-156.6530, 'cost_per_course(green_fee_range_)':'$395–450' }
+          { course_name:'Whistling Straits', city:'Sheboygan', state:'WI', lat:43.845, lng:-87.205, 'cost_per_course(green_fee_range_)':'$300–410', website:'https://www.destinationkohler.com/golf/whistling-straits' },
+          { course_name:'Kapalua (Plantation)', city:'Lahaina', state:'HI', lat:20.9969, lng:-156.6530, 'cost_per_course(green_fee_range_)':'$395–450', website:'https://golfatkapalua.com' }
         ].forEach(addRowAsMarker);
+
+        // Fit to CONUS markers only
+        if (conusGroup.getLayers().length) {
+          map.fitBounds(conusGroup.getBounds().pad(0.05));
+        } else {
+          map.fitBounds(CONUS_BOUNDS, { padding:[20,20] });
+        }
         return;
       }
 
@@ -245,16 +162,24 @@
         download:true,
         header:true,
         skipEmptyLines:true,
-        complete: results => {
-          results.data.forEach(addRowAsMarker);
+        complete: res => {
+          res.data.forEach(addRowAsMarker);
+
+          // Critical: fit to CONUS markers only (prevents zooming out for HI/AK)
+          if (conusGroup.getLayers().length) {
+            map.fitBounds(conusGroup.getBounds().pad(0.05));
+          } else {
+            map.fitBounds(CONUS_BOUNDS, { padding:[20,20] });
+          }
         },
         error: err => {
           console.error('CSV load error:', err);
+          map.fitBounds(CONUS_BOUNDS, { padding:[20,20] });
         }
       });
     }
 
-    loadCSV(getCsvUrl());
+    loadCSV(csvUrlFromQuery());
   </script>
 </body>
 </html>
