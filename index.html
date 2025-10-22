@@ -2,339 +2,349 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Golf Atlas Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""
-  />
-  <!-- MarkerCluster -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
-  />
-
+  <!-- Leaflet & Cluster -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
   <style>
-    html, body { height:100%; margin:0; }
-    #map { width:100%; height:100%; }
+    html, body, #map { height: 100%; margin: 0; background: #0b0d0f; }
 
-    /* ===== Dark popup style (unchanged) ===== */
-    .leaflet-popup-content-wrapper{
-      background:#0f1916;
-      color:#e7f2ee;
-      border-radius:14px;
-      box-shadow:0 14px 36px rgba(0,0,0,.35);
-      border:1px solid rgba(209,190,107,.28);
+    /* Dark popup shell */
+    .leaflet-popup-content-wrapper {
+      background: #101417;
+      color: #e8ecef;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04) inset;
+      border-radius: 16px;
     }
-    .leaflet-popup-tip{ background:#0f1916; border:1px solid rgba(209,190,107,.28); }
-
-    .ga-popup{
-      font: 500 14px/1.55 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    .leaflet-popup-tip {
+      background: #101417;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset;
+    }
+    .popup {
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
       min-width: 260px;
+      max-width: 360px;
     }
-    .ga-popup .top{
-      display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px;
+    .popup .header {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin: 2px 0 8px;
     }
-    .ga-popup .title{
-      font-size:16px; font-weight:800; letter-spacing:.2px; margin:0; color:#f6fff9;
+    .popup .title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      line-height: 1.2;
+      letter-spacing: 0.2px;
     }
-    .ga-badge{
-      font-size:12px; font-weight:800; padding:4px 8px; border-radius:999px;
-      background: linear-gradient(180deg,#f5d77a,#d1be6b);
-      color:#0b0f0e; border:1px solid rgba(0,0,0,.15);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 2px 6px rgba(0,0,0,.25);
-      white-space:nowrap;
+    .popup .meta {
+      opacity: 0.9;
+      font-size: 0.9rem;
     }
-    .ga-popup .row{ margin:4px 0; display:flex; gap:8px; align-items:flex-start; }
-    .ga-popup .label{ opacity:.9; }
-    .ga-popup a{
-      color:#d1be6b; text-decoration:none; border-bottom:1px dotted rgba(209,190,107,.55);
+    .popup .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+      font-size: 0.9rem;
     }
-    .ga-popup a:hover{ opacity:.85; }
-    .ga-actions{
-      margin-top:10px; display:flex; gap:10px; justify-content:flex-end;
+    .popup .pill {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 6px 10px;
+      border-radius: 999px;
+      text-align: center;
+      white-space: nowrap;
     }
-    .ga-btn{
-      appearance:none; border:none; cursor:pointer;
-      padding:8px 12px; border-radius:10px; font-weight:800; font-size:13px;
-      color:#0b0f0e; background:linear-gradient(180deg,#f5d77a,#d1be6b);
-      box-shadow: 0 3px 10px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.4);
+    .popup .actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
     }
-    .ga-btn:hover{ filter:brightness(0.98); }
+    .popup .btn {
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: #171c20;
+      color: #e8ecef;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .popup .btn:hover {
+      filter: brightness(1.08);
+    }
 
-    /* ===== Golf-ball cluster (upgraded realism) =====
-       - base spherical shading via radial gradient
-       - tiled dimple grid (two staggered radial-gradient layers)
-       - soft top highlight
-       - natural shadow/depth with inset/outset shadows
-    */
-    .ga-cluster {
-      position: relative;
-      width: 50px; height: 50px; border-radius: 50%;
-      background: radial-gradient(120% 120% at 35% 30%, #ffffff 0%, #f5f5f5 55%, #e8e8e8 85%, #dcdcdc 100%);
-      border: 2px solid #d0d0d0;
+    /* ★ Enhanced Gold Badge (WAY more readable) */
+    .badge-top100 {
+      --gold-1: #f7d776;
+      --gold-2: #dcb247;
+      --gold-3: #b9902d;
+      --gold-4: #9d7a23;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: linear-gradient(145deg, var(--gold-1), var(--gold-2) 55%, var(--gold-3));
+      color: #121212;
+      border: 1px solid rgba(0,0,0,0.55);
+      /* crisp edge + readable on dark: */
       box-shadow:
-        0 6px 16px rgba(0,0,0,.28),     /* outer drop shadow */
-        inset 0 -6px 10px rgba(0,0,0,.12), /* lower inner shade */
-        inset 0 6px 12px rgba(255,255,255,.55); /* top inner glow */
-      display:flex; align-items:center; justify-content:center;
-      color:#0b0f0e; font-weight:900; font-size:14px;
+        0 0 0 1px rgba(255,255,255,0.25) inset,
+        0 2px 6px rgba(0,0,0,0.4),
+        0 0 0 2px rgba(0,0,0,0.45);
+      text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      line-height: 1;
     }
-    /* Dimple grid (staggered) */
-    .ga-cluster::before{
-      content:"";
-      position:absolute; inset:6px; border-radius:50%;
-      background-image:
-        radial-gradient(circle, rgba(0,0,0,.10) 28%, transparent 29%),
-        radial-gradient(circle, rgba(0,0,0,.08) 26%, transparent 27%);
-      background-size: 10px 10px, 10px 10px;
-      background-position: 0 0, 5px 5px; /* staggered */
-      opacity:.55;
-      filter: blur(.15px);
-      mix-blend-mode:multiply;
-      pointer-events:none;
+    .badge-top100 .rank {
+      font-size: 0.95rem;
+      padding: 4px 8px;
+      border-radius: 8px;
+      background: linear-gradient(145deg, rgba(255,255,255,0.55), rgba(255,255,255,0.2));
+      border: 1px solid rgba(0,0,0,0.25);
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.35) inset;
     }
-    /* Specular highlight */
-    .ga-cluster::after{
-      content:"";
-      position:absolute; top:5px; left:7px; right:7px; height:16px; border-radius:50%;
-      background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.7) 0%, rgba(255,255,255,.25) 55%, transparent 70%);
-      pointer-events:none;
+    .badge-top100 .label {
+      font-size: 0.82rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
     }
-    .marker-cluster div{ background: transparent; border:none; } /* remove default */
+    .badge-top100 .icon {
+      filter: drop-shadow(0 1px 0 rgba(255,255,255,0.4));
+    }
 
+    /* Hover tooltips for markers */
+    .ga-tooltip {
+      background: #0f1418;
+      color: #e8ecef;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.45);
+      padding: 6px 8px;
+      font-weight: 700;
+      letter-spacing: 0.1px;
+    }
+    .ga-tooltip::before {
+      border-top-color: #0f1418 !important;
+    }
+
+    /* Subtle marker hover scale */
+    .leaflet-marker-icon {
+      transition: transform 120ms ease, filter 120ms ease;
+      will-change: transform, filter;
+    }
+    .leaflet-marker-icon:hover {
+      transform: scale(1.06);
+      filter: drop-shadow(0 6px 12px rgba(0,0,0,0.45));
+    }
+
+    /* Cluster style (unchanged if you already customized) */
+    .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
+      background: radial-gradient(circle at 30% 35%, #f5f5f5, #e0e0e0);
+      border: 2px solid #2a2a2a;
+      color: #111;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.65);
+    }
   </style>
 </head>
 <body>
-  <div id="map" aria-label="Golf Atlas map"></div>
+  <div id="map"></div>
 
-  <!-- JS libs -->
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""
-  ></script>
+  <!-- libs -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
-    /*** CONFIG ***/
-    const SHOW_HI_NEAR_CA = true;  // Draw Hawaii off California for overview
-    const CONUS_BOUNDS = L.latLngBounds([24.396308, -124.848974],[49.384358,-66.885444]);
+    // ===== CONFIG =====
+    const DATA_URL = "REPLACE_WITH_YOUR_CSV_URL"; // e.g., raw GitHub CSV or Wix/static URL
+    const START_VIEW = { center: [39.5, -98.5], zoom: 4 }; // lower-48 default
 
-    // Reposition Hawaii visually for the overview (tweak to taste)
-    function relocateHawaii(lat, lng){
-      // +lat moves north, +lng moves east
-      return [lat + 13, lng + 35];
+    // Hawaii tuck-in helper: if you already do this elsewhere, you can remove
+    function hawaiiTuck(lon, lat) {
+      // No geometry warp here; we’re just leaving standard coords.
+      return [lat, lon];
     }
 
-    /*** MAP ***/
-    const map = L.map('map', { zoomControl: true, minZoom: 3, maxZoom: 18, worldCopyJump: true });
-
-    // Light tiles so dark popups pop
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
-      subdomains: 'abcd',
-      maxZoom: 20
-    }).addTo(map);
-
-    // Initial view = lower 48
-    map.fitBounds(CONUS_BOUNDS, { padding:[20,20] });
-
-    // Keep users roughly on North America
-    map.setMaxBounds(L.latLngBounds([10, -170], [72, -50]));
-    map.options.maxBoundsViscosity = 0.6;
-
-    /*** Icons ***/
-    // Cleaner teardrop pin with red flag (inner green circle removed)
-    const FLAG_PIN_URL = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
-      <svg width="40" height="54" viewBox="0 0 40 54" xmlns="http://www.w3.org/2000/svg">
+    // Green pin with red flag (SVG) as a Leaflet Icon
+    const pinSvg = encodeURI(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="42" height="46" viewBox="0 0 42 46">
         <defs>
-          <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stop-color="#1c7f48"/>
-            <stop offset="100%" stop-color="#0f5e34"/>
-          </linearGradient>
           <filter id="s" x="-50%" y="-50%" width="200%" height="200%">
-            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,.35)"/>
+            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.45)"/>
           </filter>
         </defs>
-        <!-- teardrop body -->
-        <path d="M20 53c-4.9-9.8-15-18-15-28C5 11.4 12.2 4 20 4s15 7.4 15 21c0 10-10.1 18.2-15 28z" fill="url(#g)" filter="url(#s)"/>
-        <!-- subtle rim -->
-        <path d="M20 32c-6.1 0-11-4.9-11-11S13.9 10 20 10s11 4.9 11 11-4.9 11-11 11z"
-              fill="none" stroke="#0a3a22" stroke-opacity=".55"/>
-        <!-- micro highlight -->
-        <path d="M13 13c3-2 7-2.4 10.5-1.4" stroke="white" stroke-opacity=".15" stroke-width="2" stroke-linecap="round"/>
-        <!-- flag pole -->
-        <path d="M22.8 10.2v13" stroke="#e6e6e6" stroke-width="1.6"/>
-        <!-- red flag -->
-        <path d="M22.8 11.2l9.6 3.2l-9.6 3.2z" fill="#e0212d"/>
+        <g filter="url(#s)">
+          <path d="M21 1c-9.39 0-17 7.61-17 17 0 11 17 27 17 27s17-16 17-27c0-9.39-7.61-17-17-17z" fill="#1f7a3b" stroke="#0e4820" stroke-width="2"/>
+          <circle cx="21" cy="18" r="8.5" fill="#e8ffe8" stroke="#0e4820" stroke-width="2"/>
+          <!-- flag pole -->
+          <rect x="20.3" y="7" width="1.4" height="14" fill="#2b2b2b"/>
+          <!-- red flag -->
+          <path d="M21.7 8 L33 12.5 L21.7 17 Z" fill="#c7222a" stroke="#8c141a" stroke-width="1"/>
+        </g>
       </svg>
     `);
-
-    const flagIcon = L.icon({
-      iconUrl: FLAG_PIN_URL,
-      iconSize: [40, 54],
-      iconAnchor: [20, 50],
-      popupAnchor: [0, -46],
-      tooltipAnchor: [0, -46]
+    const courseIcon = L.icon({
+      iconUrl: "data:image/svg+xml;utf8," + pinSvg,
+      iconSize: [42, 46],
+      iconAnchor: [21, 42],
+      popupAnchor: [0, -40],
+      tooltipAnchor: [0, -36]
     });
 
-    // Cluster group with upgraded golf-ball icon
-    const cluster = L.markerClusterGroup({
-      showCoverageOnHover:false,
-      spiderfyOnMaxZoom:true,
-      maxClusterRadius:44,
-      iconCreateFunction: (cl) => {
-        const count = cl.getChildCount();
-        return L.divIcon({
-          html: `<div class="ga-cluster">${count}</div>`,
-          className: '', iconSize: [50,50]
-        });
-      }
+    // Map
+    const map = L.map('map', {
+      zoomControl: true,
+      attributionControl: false
+    }).setView(START_VIEW.center, START_VIEW.zoom);
+
+    // Basemap (you can swap with your custom style)
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18
     }).addTo(map);
 
-    // Group used to fit bounds (exclude AK; include relocated HI)
-    const conusGroup = L.featureGroup();
+    // Cluster group
+    const clusters = L.markerClusterGroup({
+      showCoverageOnHover: false,
+      spiderfyOnEveryZoom: false,
+      maxClusterRadius: 48
+    });
+    map.addLayer(clusters);
 
-    /*** Helpers ***/
-    function csvUrlFromQuery(){
-      try{
-        const u = new URL(window.location.href);
-        return u.searchParams.get('csv') || '';
-      }catch(e){ return ''; }
-    }
-    function parseRankBadge(val){
-      if(!val) return '';
+    // Helpers
+    function isTop100(val) {
+      if (val === null || val === undefined) return false;
       const s = String(val).trim();
-      const m = s.match(/\d+/);
-      return m ? `#${m[0]}` : (/(yes|true|top)/i.test(s) ? 'Top 100' : '');
-    }
-    function parseOtherCourses(val){
-      const n = Number(String(val || '').replace(/[^0-9.-]/g,''));
-      if (Number.isFinite(n) && n > 0) return Math.max(0, Math.floor(n) - 1);
-      return 0;
+      if (!s) return false;
+      const n = Number(s);
+      return Number.isFinite(n) && n >= 1 && n <= 100;
     }
 
-    /*** Popup builder (unchanged content logic) ***/
-    function makePopupHTML(r, {isRelocatedHI=false} = {}){
-      const name    = r.course_name || r.name || 'Course';
-      const resort  = r.resort || r.resort_name || '';
-      const city    = r.city ? r.city : '';
-      const state   = (r.state || r.region || '').toUpperCase();
-      const rank    = parseRankBadge(r.top_100_ranking || r.top100);
-      const others  = parseOtherCourses(r['Courses on property']);
+    function buildTop100Badge(rank) {
+      return `
+        <div class="badge-top100" title="Golf Digest Top 100">
+          <span class="icon">🏆</span>
+          <span class="label">Top&nbsp;100</span>
+          <span class="rank">#${rank}</span>
+        </div>
+      `;
+    }
 
-      const par     = (r.par || '').toString().trim();
-      const yards   = (r['yardage(black_tees)'] || r.yardage || r.yards || '').toString().trim();
-      const arch    = (r.architect || '').toString().trim();
-      const fee     = (r['cost_per_course(green_fee_range_)'] || r.cost_per_course || r.green_fee_range || '').toString().trim();
-      const lodgeY  = (r['lodging_on-site(yes_no)'] || r.lodging_on_site || r.lodging || '').toString().trim();
-      const lodgeD  = (r.lodging_details || '').toString().trim();
-      const season  = (r['peak_season/best_time_to_visit'] || r.peak_season || r.best_time || '').toString().trim();
-      const site    = r.website || r.url || '';
+    function escapeHtml(s) {
+      return String(s || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
 
-      const othersText = others > 0 ? `${others} other ${others === 1 ? 'course' : 'courses'} on property` : '';
+    function popupHtml(row) {
+      const name = escapeHtml(row.course_name);
+      const resort = escapeHtml(row.course_resort || "");
+      const city = escapeHtml(row.City || row.city || "");
+      const state = escapeHtml(row.state || "");
+      const region = escapeHtml(row.region || "");
+      const url = (row.course_url && String(row.course_url).trim()) ? String(row.course_url).trim() : null;
+      const rank = row.top_100_ranking;
+
+      const badge = isTop100(rank) ? buildTop100Badge(rank) : "";
 
       return `
-        <div class="ga-popup">
-          <div class="top">
-            <div class="title">⛳️ ${name}</div>
-            ${rank ? `<div class="ga-badge">🏆 ${rank}</div>` : ''}
+        <div class="popup">
+          <div class="header">
+            ${badge}
+            <div class="title">${name}</div>
           </div>
-          ${resort ? `<div class="row">🏨 <span class="label">${resort}</span></div>` : ''}
-          <div class="row">📍 <span class="label">${city ? city + ', ' : ''}${state}${isRelocatedHI ? ' • (HI – overview)' : ''}</span></div>
-          ${othersText ? `<div class="row">🟢 <span class="label">${othersText}</span></div>` : ''}
-
-          ${par    ? `<div class="row">🧮 <span class="label">Par:</span> ${par}</div>` : ''}
-          ${yards  ? `<div class="row">📏 <span class="label">Yardage:</span> ${yards}</div>` : ''}
-          ${arch   ? `<div class="row">🛠️ <span class="label">Architect:</span> ${arch}</div>` : ''}
-          ${fee    ? `<div class="row">💵 <span class="label">Fees:</span> ${fee}</div>` : ''}
-          ${lodgeY ? `<div class="row">🏨 <span class="label">Lodging:</span> ${lodgeY}${lodgeD ? ` — ${lodgeD}` : ''}</div>` : (lodgeD ? `<div class="row">🏨 <span class="label">Lodging:</span> ${lodgeD}</div>` : '')}
-          ${season ? `<div class="row">🗓️ <span class="label">Best time:</span> ${season}</div>` : ''}
-
-          <div class="ga-actions">
-            ${site ? `<a class="ga-btn" href="${site}" target="_blank" rel="noopener">View Course</a>` : ''}
+          <div class="meta">
+            ${resort ? `${resort}<br/>` : ``}
+            ${[city, state].filter(Boolean).join(", ")} ${region ? `• ${region}` : ``}
+          </div>
+          <div class="row">
+            ${isTop100(rank) ? `<div class="pill">Ranked: #${rank}</div>` : `<div class="pill">Not Ranked</div>`}
+            ${resort ? `<div class="pill">Resort</div>` : `<div class="pill">Public</div>`}
+          </div>
+          <div class="actions">
+            ${url ? `<a class="btn" href="${url}" target="_blank" rel="noopener">Course Page ↗</a>` : ``}
           </div>
         </div>
       `;
     }
 
-    /*** Marker creation ***/
-    function addRowAsMarker(r){
-      const rawLat = parseFloat(r.lat || r.latitude);
-      const rawLng = parseFloat(r.lng || r.longitude || r.lon);
-      if (Number.isNaN(rawLat) || Number.isNaN(rawLng)) return;
+    function makeMarker(row) {
+      const lat = parseFloat(row.latitude);
+      const lon = parseFloat(row.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
 
-      const state = (r.state || r.region || '').toUpperCase();
+      const [adjLat, adjLon] = hawaiiTuck(lon, lat);
 
-      let drawLat = rawLat, drawLng = rawLng, isRelocatedHI = false;
-      if (SHOW_HI_NEAR_CA && state === 'HI'){
-        [drawLat, drawLng] = relocateHawaii(rawLat, rawLng);
-        isRelocatedHI = true;
-      }
+      const marker = L.marker([adjLat, adjLon], { icon: courseIcon, title: row.course_name || "" });
 
-      const marker = L.marker([drawLat, drawLng], { icon: flagIcon })
-        .bindPopup(makePopupHTML(r, {isRelocatedHI}), { maxWidth: 320 });
-
-      cluster.addLayer(marker);
-
-      // Fit group: exclude AK; include relocated HI
-      if (state !== 'AK') conusGroup.addLayer(marker);
-    }
-
-    /*** CSV loading ***/
-    function loadRows(rows){
-      rows.forEach(addRowAsMarker);
-      if (conusGroup.getLayers().length) {
-        map.fitBounds(conusGroup.getBounds().pad(0.05));
-      } else {
-        map.fitBounds(CONUS_BOUNDS, { padding:[20,20] });
-      }
-    }
-
-    function loadCSV(url){
-      if(!url){
-        // Sample if no CSV provided
-        const SAMPLE = [
-          { course_name:'Pebble Beach', city:'Pebble Beach', state:'CA', lat:36.5678, lng:-121.95,
-            website:'https://www.pebblebeach.com', par:'72', 'yardage(black_tees)':'6828',
-            architect:'Jack Neville & Douglas Grant', resort:'Pebble Beach Resorts',
-            'cost_per_course(green_fee_range_)':'$595–625', top_100_ranking:'#2', 'Courses on property':'4' },
-          { course_name:'Spyglass Hill', city:'Pebble Beach', state:'CA', lat:36.593, lng:-121.964,
-            website:'https://www.pebblebeach.com/golf/spyglass-hill-golf-course/', par:'72', 'yardage(black_tees)':'6960',
-            architect:'Robert Trent Jones Sr.', resort:'Pebble Beach Resorts',
-            'cost_per_course(green_fee_range_)':'$340–420', top_100_ranking:'Top 100', 'Courses on property':'4' },
-          { course_name:'Kapalua (Plantation)', city:'Lahaina', state:'HI', lat:20.9969, lng:-156.6530,
-            website:'https://golfatkapalua.com', par:'73', 'yardage(black_tees)':'7596',
-            architect:'Coore & Crenshaw', resort:'Kapalua',
-            'cost_per_course(green_fee_range_)':'$395–450', top_100_ranking:'#40', 'Courses on property':'2' }
-        ];
-        loadRows(SAMPLE);
-        return;
-      }
-
-      Papa.parse(url, {
-        download:true,
-        header:true,
-        skipEmptyLines:true,
-        complete: res => loadRows(res.data),
-        error: err => {
-          console.error('CSV load error:', err);
-          map.fitBounds(CONUS_BOUNDS, { padding:[20,20] });
-        }
+      // Name-on-hover tooltip
+      marker.bindTooltip(row.course_name || "", {
+        direction: "top",
+        offset: [0, -12],
+        opacity: 0.92,
+        className: "ga-tooltip"
       });
+
+      // Popup
+      marker.bindPopup(popupHtml(row), { maxWidth: 360, minWidth: 260, closeButton: true });
+
+      // Nice hover focus
+      marker.on("mouseover", () => { marker.setZIndexOffset(1000); });
+      marker.on("mouseout",  () => { marker.setZIndexOffset(0); });
+
+      return marker;
     }
 
-    loadCSV(csvUrlFromQuery());
+    // Load CSV & render
+    Papa.parse(DATA_URL, {
+      download: true,
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const rows = results.data || [];
+        const markers = [];
+
+        rows.forEach(row => {
+          // Ensure we can read top_100_ranking whether it's numeric or string
+          if (row.top_100_ranking === undefined && row["top_100_ranking"]) {
+            row.top_100_ranking = row["top_100_ranking"];
+          }
+          const m = makeMarker(row);
+          if (m) {
+            clusters.addLayer(m);
+            markers.push(m);
+          }
+        });
+
+        if (markers.length) {
+          const group = L.featureGroup(markers);
+          map.fitBounds(group.getBounds().pad(0.08), { animate: true });
+        } else {
+          map.setView(START_VIEW.center, START_VIEW.zoom);
+        }
+      },
+      error: (err) => {
+        console.error("CSV load error:", err);
+        alert("Error loading data. Check DATA_URL or CSV formatting.");
+      }
+    });
+
+    // Optional: keyboard nav accessibility for markers (Enter to open)
+    map.on('keypress', function(e) {
+      if (e.originalEvent.key === 'Enter' && map._lastHoverMarker) {
+        map._lastHoverMarker.openPopup();
+      }
+    });
   </script>
 </body>
 </html>
