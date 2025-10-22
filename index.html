@@ -9,17 +9,18 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+
   <style>
     html, body, #map { height: 100%; margin: 0; background: #0b0d0f; }
 
-    /* On-screen status for debugging */
+    /* Debug status (shown only if ?debug=1) */
     #status {
       position: absolute; z-index: 9999; top: 10px; left: 10px;
       background: rgba(16,20,23,0.92); color: #e8ecef;
       border: 1px solid rgba(255,255,255,0.12);
       border-radius: 10px; padding: 8px 10px; font: 12px/1.4 system-ui, sans-serif;
       box-shadow: 0 8px 18px rgba(0,0,0,0.45);
-      max-width: 60vw;
+      max-width: 60vw; display: none;
     }
     #status b { color: #ffd66b; }
 
@@ -35,25 +36,14 @@
       background: #101417;
       box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset;
     }
-    .popup {
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
-      min-width: 260px;
-      max-width: 360px;
-    }
+    .popup { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; min-width: 260px; max-width: 360px; }
     .popup .header { display: flex; gap: 10px; align-items: center; margin: 2px 0 8px; }
     .popup .title { font-weight: 700; font-size: 1.05rem; line-height: 1.2; letter-spacing: 0.2px; }
     .popup .meta { opacity: 0.9; font-size: 0.9rem; }
     .popup .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; font-size: 0.9rem; }
-    .popup .pill {
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.08);
-      padding: 6px 10px; border-radius: 999px; text-align: center; white-space: nowrap;
-    }
+    .popup .pill { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); padding: 6px 10px; border-radius: 999px; text-align: center; white-space: nowrap; }
     .popup .actions { margin-top: 12px; display: flex; gap: 8px; justify-content: flex-end; }
-    .popup .btn {
-      padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
-      background: #171c20; color: #e8ecef; text-decoration: none; font-weight: 600;
-    }
+    .popup .btn { padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: #171c20; color: #e8ecef; text-decoration: none; font-weight: 600; }
     .popup .btn:hover { filter: brightness(1.08); }
 
     /* Enhanced Gold Badge */
@@ -64,7 +54,8 @@
       background: linear-gradient(145deg, var(--gold-1), var(--gold-2) 55%, var(--gold-3));
       color: #121212; border: 1px solid rgba(0,0,0,0.55);
       box-shadow: 0 0 0 1px rgba(255,255,255,0.25) inset, 0 2px 6px rgba(0,0,0,0.4), 0 0 0 2px rgba(0,0,0,0.45);
-      text-shadow: 0 1px 0 rgba(255,255,255,0.35); font-weight: 800; letter-spacing: 0.2px; line-height: 1;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+      font-weight: 800; letter-spacing: 0.2px; line-height: 1;
     }
     .badge-top100 .rank {
       font-size: 0.95rem; padding: 4px 8px; border-radius: 8px;
@@ -97,20 +88,38 @@
   <div id="map"></div>
   <div id="status">Loading…</div>
 
+  <!-- libs -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
     // ===== CONFIG =====
-    const DATA_URL = "REPLACE_WITH_YOUR_CSV_URL"; // e.g. https://raw.githubusercontent.com/.../master.csv
     const START_VIEW = { center: [39.5, -98.5], zoom: 4 };
 
-    const statusEl = document.getElementById('status');
-    function setStatus(html) { statusEl.innerHTML = html; }
-    function okStatus(html) { statusEl.innerHTML = html; statusEl.style.borderColor = "rgba(131,197,91,0.8)"; }
+    // URL params: ?csv=<url-encoded csv url>&debug=1
+    const params = new URLSearchParams(window.location.search);
+    const PARAM_CSV = params.get("csv");
+    const PARAM_DEBUG = params.get("debug");
 
-    // Gold-pin SVG
+    // Default fallback (keeps your old sheet as a backup if no ?csv provided)
+    const DEFAULT_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-nZvG7m9sUkOu0spxVTVGcM311qlgGSjnFgRDQr-l6nfs1cPFNrGBXO0ZDzMIQg/pub?gid=1171293634&single=true&output=csv";
+    const DATA_URL = PARAM_CSV || DEFAULT_CSV;
+
+    const statusEl = document.getElementById('status');
+    if (PARAM_DEBUG === "1") statusEl.style.display = "block";
+    function setStatus(html) { if (PARAM_DEBUG === "1") statusEl.innerHTML = html; }
+    function okStatus(html)  { if (PARAM_DEBUG === "1") { statusEl.innerHTML = html; statusEl.style.borderColor = "rgba(131,197,91,0.8)"; } }
+
+    // Map
+    const map = L.map('map', { zoomControl: true, attributionControl: false }).setView(START_VIEW.center, START_VIEW.zoom);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18 }).addTo(map);
+
+    // Cluster group
+    const clusters = L.markerClusterGroup({ showCoverageOnHover: false, spiderfyOnEveryZoom: false, maxClusterRadius: 48 });
+    map.addLayer(clusters);
+
+    // Green pin with red flag (SVG)
     const pinSvg = encodeURI(`
       <svg xmlns="http://www.w3.org/2000/svg" width="42" height="46" viewBox="0 0 42 46">
         <defs><filter id="s" x="-50%" y="-50%" width="200%" height="200%">
@@ -129,52 +138,27 @@
       iconSize: [42, 46], iconAnchor: [21, 42], popupAnchor: [0, -40], tooltipAnchor: [0, -36]
     });
 
-    const map = L.map('map', { zoomControl: true, attributionControl: false })
-      .setView(START_VIEW.center, START_VIEW.zoom);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18 }).addTo(map);
-
-    const clusters = L.markerClusterGroup({ showCoverageOnHover: false, spiderfyOnEveryZoom: false, maxClusterRadius: 48 });
-    map.addLayer(clusters);
-
-    // -------- Helpers --------
+    // Helpers
     function normalizeHeader(h) {
-      return String(h || "")
-        .replace(/\ufeff/g, "")     // strip BOM
-        .trim()
-        .toLowerCase()
-        .replace(/[\s\-\/]+/g, "_"); // spaces & dashes -> underscore
+      return String(h || "").replace(/\ufeff/g, "").trim().toLowerCase().replace(/[\s\-\/]+/g, "_");
     }
-
     function normalizeRowKeys(row) {
       const out = {};
       Object.keys(row || {}).forEach(k => { out[normalizeHeader(k)] = row[k]; });
       return out;
     }
-
     function getVal(row, keys, def="") {
       for (const k of keys) {
         if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== "") return row[k];
       }
       return def;
     }
-
-    function toNum(v) {
-      const n = parseFloat(v);
-      return Number.isFinite(n) ? n : NaN;
-    }
-
+    function toNum(v) { const n = parseFloat(v); return Number.isFinite(n) ? n : NaN; }
     function isTop100(val) {
-      const s = String(val ?? "").trim();
-      if (!s) return false;
-      const n = Number(s);
-      return Number.isFinite(n) && n >= 1 && n <= 100;
+      const s = String(val ?? "").trim(); if (!s) return false;
+      const n = Number(s); return Number.isFinite(n) && n >= 1 && n <= 100;
     }
-
-    function escapeHtml(s) {
-      return String(s ?? "")
-        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    }
-
+    function escapeHtml(s) { return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
     function buildTop100Badge(rank) {
       return `
         <div class="badge-top100" title="Golf Digest Top 100">
@@ -184,7 +168,6 @@
         </div>
       `;
     }
-
     function popupHtml(row) {
       const name   = escapeHtml(getVal(row, ["course_name","name"]));
       const resort = escapeHtml(getVal(row, ["course_resort","resort"]));
@@ -213,57 +196,46 @@
         </div>
       `;
     }
-
     function makeMarker(row) {
       const lat = toNum(getVal(row, ["latitude","lat","y","_lat"]));
       const lon = toNum(getVal(row, ["longitude","lon","lng","long","x","_lng"]));
       if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
 
       const marker = L.marker([lat, lon], { icon: courseIcon, title: getVal(row, ["course_name","name"], "") });
-
-      marker.bindTooltip(getVal(row, ["course_name","name"], ""), {
-        direction: "top", offset: [0, -12], opacity: 0.92, className: "ga-tooltip"
-      });
+      // Name-on-hover tooltip
+      marker.bindTooltip(getVal(row, ["course_name","name"], ""), { direction: "top", offset: [0, -12], opacity: 0.92, className: "ga-tooltip" });
+      // Popup
       marker.bindPopup(popupHtml(row), { maxWidth: 360, minWidth: 260, closeButton: true });
       marker.on("mouseover", () => marker.setZIndexOffset(1000));
       marker.on("mouseout",  () => marker.setZIndexOffset(0));
       return marker;
     }
 
-    // -------- Load CSV --------
+    // Load CSV & render
     (async function load() {
-      if (!DATA_URL || DATA_URL.includes("REPLACE_WITH_YOUR_CSV_URL")) {
-        setStatus(`<b>Missing DATA_URL.</b> Update the code with your CSV link.`);
+      if (!DATA_URL) {
+        setStatus(`<b>Missing CSV URL.</b> Pass it like ?csv=https%3A%2F%2F...%2Foutput%3Dcsv`);
         return;
       }
       setStatus(`Fetching CSV: <b>${DATA_URL}</b>`);
-      try {
-        // Quick HEAD ping to surface CORS/404 early
-        await fetch(DATA_URL, { method: "HEAD", mode: "cors" });
-      } catch (e) {
-        setStatus(`<b>Fetch problem:</b> CORS/blocked or URL not public.<br/>Put the CSV on GitHub (raw link) or Wix static file and allow public access.`);
-        console.error(e);
-        return;
-      }
-
       Papa.parse(DATA_URL, {
         download: true,
         header: true,
-        dynamicTyping: false,   // we’ll coerce ourselves for reliability
+        dynamicTyping: false,
         skipEmptyLines: true,
         transformHeader: (h) => normalizeHeader(h),
         complete: (results) => {
           const raw = results.data || [];
           const rows = raw.map(normalizeRowKeys);
 
-          // Log field coverage
-          const sample = rows[0] || {};
-          console.log("Headers seen:", Object.keys(sample));
-          console.log("Row count:", rows.length);
+          if (PARAM_DEBUG === "1") {
+            console.log("First row headers:", Object.keys(rows[0] || {}));
+            console.log("Row count:", rows.length);
+          }
 
           let added = 0, skipped = 0;
           const markers = [];
-          rows.forEach((row, i) => {
+          rows.forEach(row => {
             const m = makeMarker(row);
             if (m) { clusters.addLayer(m); markers.push(m); added++; }
             else { skipped++; }
@@ -274,12 +246,12 @@
             map.fitBounds(group.getBounds().pad(0.08), { animate: true });
             okStatus(`Loaded <b>${rows.length}</b> rows · Plotted <b>${added}</b> · Skipped <b>${skipped}</b> (missing/invalid lat/lon)`);
           } else {
-            setStatus(`<b>Loaded ${rows.length} rows but plotted 0.</b><br/>Check column names for lat/lon. Accepted: latitude/lat/y and longitude/lon/lng/long/x.`);
+            setStatus(`<b>Loaded ${rows.length} rows but plotted 0.</b><br/>Check lat/lon columns. Accepted: latitude/lat/y and longitude/lon/lng/long/x.`);
           }
         },
         error: (err) => {
           setStatus(`<b>Papa.parse error:</b> ${err?.message || err}`);
-          console.error("CSV load error:", err);
+          if (PARAM_DEBUG === "1") console.error("CSV load error:", err);
         }
       });
     })();
