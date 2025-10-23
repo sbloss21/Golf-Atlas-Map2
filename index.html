@@ -188,7 +188,7 @@
     }
   }).addTo(map);
 
-  // Course Pin (green teardrop + red flag) — encoded SVG
+  // Course Pin (green teardrop + red flag)
   const pinSvg =
     `<svg xmlns='http://www.w3.org/2000/svg' width='42' height='46' viewBox='0 0 42 46'>
       <path d='M21 1c-9.4 0-17 7.6-17 17 0 11 17 27 17 27s17-16 17-27c0-9.4-7.6-17-17-17z' fill='#1f7a3b' stroke='#0e4820' stroke-width='2'/>
@@ -201,11 +201,24 @@
     iconSize: [42, 46], iconAnchor: [21, 42], popupAnchor: [0, -40], tooltipAnchor: [0, -36]
   });
 
-  // Helpers
+  // ===== Helpers =====
   const esc = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   const toNum = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : NaN; };
   const isTop100 = v => { const n = Number(String(v ?? "").trim()); return Number.isFinite(n) && n >= 1 && n <= 100; };
   const normalize = s => String(s ?? "").toLowerCase();
+
+  // Flexible field resolver: matches keys ignoring case, spaces, underscores, punctuation
+  function pick(obj, aliases){
+    const norm = k => String(k).toLowerCase().replace(/[^a-z0-9]/g,'');
+    const index = {};
+    for (const k in obj) index[norm(k)] = k;
+    for (const a of aliases){
+      const nk = norm(a);
+      if (index[nk] != null) return obj[index[nk]];
+    }
+    return "";
+  }
+
   const safeUrl = (u) => {
     const s = String(u || "").trim();
     if (!s) return "";
@@ -230,10 +243,17 @@
       </div>`;
   }
 
-  // Media block (thumbnail + optional logo badge)
+  // Media block (thumbnail + optional logo badge) with flexible columns
   function mediaBlock(r){
-    const thumb = safeUrl(r["thumbnail_url"] || r["thumbail_url"] || r["image_url"]);
-    const logo  = safeUrl(r["logo_url"]);
+    // Accept many variants: thumbnail_url, thumbail url (typo), image_url, etc.
+    const thumbRaw = pick(r, [
+      "thumbnail_url","thumbnail url","thumb_url","thumb url","thumbail_url","thumbail url",
+      "image_url","image url","image"
+    ]);
+    const logoRaw  = pick(r, ["logo_url","logo url","logo"]);
+
+    const thumb = safeUrl(thumbRaw);
+    const logo  = safeUrl(logoRaw);
 
     if (!thumb && !logo) return "";
 
@@ -260,14 +280,14 @@
   }
 
   function popupHtml(r){
-    const name = esc(r["course_name"]);
-    const resortRaw = String(r["course_resort"] ?? "").trim();
-    const fees = esc(r["cost_per_course(green_fee_range)"]);
-    const coursesOnProp = esc(r["#_of_courses_on_property"]);
-    const lodging = esc(r["lodging_on-site(yes_no)"]);
-    const rank = r["top_100_ranking"];
-    const city = esc(r["City"] || r["city"] || "");
-    const state = esc(r["state"] || "");
+    const name = esc(pick(r, ["course_name","Course Name","course name","name"]) || r["course_name"]);
+    const resortRaw = String(pick(r, ["course_resort","course resort","resort"]) ?? "").trim();
+    const fees = esc(pick(r, ["cost_per_course(green_fee_range)","green fees","green_fee_range","fees"]) || r["cost_per_course(green_fee_range)"]);
+    const coursesOnProp = esc(pick(r, ["#_of_courses_on_property","courses on property","num courses","courses"]) || r["#_of_courses_on_property"]);
+    const lodging = esc(pick(r, ["lodging_on-site(yes_no)","on site lodging","lodging","lodging_on-site"]) || r["lodging_on-site(yes_no)"]);
+    const rank = pick(r, ["top_100_ranking","top 100 ranking","ranking","rank"]) || r["top_100_ranking"];
+    const city = esc(pick(r, ["City","city"]) || r["City"] || r["city"] || "");
+    const state = esc(pick(r, ["state","State"]) || r["state"] || "");
 
     const lines = [];
     lines.push(`<div class="line"><strong>🏌️‍♂️ ${name}</strong></div>`);
@@ -290,7 +310,7 @@
       </div>`;
   }
 
-  // ===== State & rendering =====
+  // ===== Build markers =====
   const markers = [];   // [{ marker, row }]
   let filteredMarkers = [];
 
@@ -301,11 +321,13 @@
 
     [lat, lon] = hawaiiTuck(lat, lon);
 
-    const marker = L.marker([lat, lon], { icon: courseIcon, title: r["course_name"] || "" });
-    marker.bindTooltip(r["course_name"] || "", { direction:"top", offset:[0,-12], opacity:.92, className:"ga-tooltip" });
-    marker.bindPopup(popupHtml(r), { maxWidth: 380, minWidth: 260, closeButton: true });
+    const title = pick(r, ["course_name","Course Name","course name","name"]) || r["course_name"] || "";
+    const marker = L.marker([lat, lon], { icon: courseIcon, title });
 
-    const rank = r["top_100_ranking"];
+    marker.bindTooltip(title, { direction:"top", offset:[0,-12], opacity:.92, className:"ga-tooltip" });
+    marker.bindPopup(() => popupHtml(r), { maxWidth: 380, minWidth: 260, closeButton: true });
+
+    const rank = pick(r, ["top_100_ranking","top 100 ranking","ranking","rank"]) || r["top_100_ranking"];
     marker.on("add", () => {
       if (isTop100(rank) && marker._icon) {
         marker._icon.style.filter = "drop-shadow(0 0 1px #b9902d) drop-shadow(0 0 6px rgba(185,144,45,.55))";
@@ -317,6 +339,7 @@
     return marker;
   }
 
+  // Filtering / search
   function applyFilters(){
     const topOnly = document.getElementById("top100Toggle").checked;
     const q = normalize(document.getElementById("searchBox").value);
@@ -325,8 +348,10 @@
     filteredMarkers = [];
 
     markers.forEach(({marker, row}) => {
-      const matchesTop = !topOnly || isTop100(row["top_100_ranking"]);
-      const hay = `${normalize(row["course_name"])} ${normalize(row["City"] || row["city"])} ${normalize(row["state"])}`;
+      const rank = pick(row, ["top_100_ranking","top 100 ranking","ranking","rank"]) || row["top_100_ranking"];
+      const name = pick(row, ["course_name","Course Name","course name","name"]) || row["course_name"];
+      const hay = `${normalize(name)} ${normalize(row["City"] || row["city"])} ${normalize(row["state"])}`;
+      const matchesTop = !topOnly || isTop100(rank);
       const matchesSearch = !q || hay.includes(q);
       if (matchesTop && matchesSearch) {
         clusterLayer.addLayer(marker);
@@ -343,10 +368,7 @@
   function handleSearchEnter(){
     const q = normalize(document.getElementById("searchBox").value);
     if (!q) return;
-    const first = filteredMarkers.find(({row}) => {
-      const hay = `${normalize(row["course_name"])} ${normalize(row["City"] || row["city"])} ${normalize(row["state"])}`;
-      return hay.includes(q);
-    }) || filteredMarkers[0];
+    const first = filteredMarkers[0];
     if (first) {
       const ll = first.marker.getLatLng();
       map.setView(ll, Math.min(14, Math.max(map.getZoom(), 9)), { animate:true });
@@ -365,7 +387,8 @@
         if (!m) return;
         markers.push({marker:m, row:r});
         clusterLayer.addLayer(m);
-        names.add(r["course_name"]);
+        const nm = pick(r, ["course_name","Course Name","course name","name"]) || r["course_name"];
+        if (nm) names.add(nm);
       });
       // suggestions
       const dl = document.getElementById("courseList");
