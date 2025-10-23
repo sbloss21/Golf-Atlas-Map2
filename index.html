@@ -11,40 +11,76 @@
 
 <style>
   html,body,#map{height:100%;margin:0;background:#052D1F;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
-  /* Soften the basemap slightly so pins/badges pop */
   .leaflet-tile-pane img{ filter: brightness(0.95) contrast(0.95) saturate(0.85); }
 
-  /* Controls stacked under zoom */
-  .control-bar{position:absolute;z-index:9999;top:90px;left:12px;display:flex;flex-direction:column;gap:10px}
-  .control{display:flex;gap:8px;align-items:center;background:rgba(8,52,36,.92);color:#e9f4ef;border:1px solid rgba(0,0,0,.35);border-radius:12px;padding:8px 10px;font:600 13px/1;box-shadow:0 8px 18px rgba(0,0,0,.35)}
+  /* ==== Controls stacked under zoom ==== */
+  .control-bar{
+    position:absolute;z-index:9999;top:90px;left:12px;
+    display:flex;flex-direction:column;align-items:flex-start;gap:10px;
+  }
+  .control{
+    display:flex;gap:8px;align-items:center;
+    background:rgba(8,52,36,.92);color:#e9f4ef;border:1px solid rgba(0,0,0,.35);
+    border-radius:12px;padding:6px 10px;font:600 13px/1 system-ui;
+    box-shadow:0 8px 18px rgba(0,0,0,.35);
+  }
+  /* ✅ Cut the toggle width roughly in half */
+  .control.control--toggle{
+    width:200px;               /* was auto; now compact */
+    justify-content:flex-start;
+    white-space:nowrap;
+  }
   .control input[type="checkbox"]{accent-color:#dcb247;width:18px;height:18px;cursor:pointer}
+  .control label{cursor:pointer}
 
-  /* Search with clear (×) */
-  .search{display:flex;align-items:center;gap:8px;background:rgba(8,52,36,.92);color:#e9f4ef;border:1px solid rgba(0,0,0,.35);border-radius:12px;padding:6px 10px;box-shadow:0 8px 18px rgba(0,0,0,.35);width:400px;max-width:400px;position:relative}
-  .search input{flex:1;border:none;outline:none;background:transparent;color:#e9f4ef;font:600 14px/1.2;padding-right:26px}
+  /* ==== Search with clear (×) ==== */
+  .search{
+    display:flex;align-items:center;gap:8px;
+    background:rgba(8,52,36,.92);color:#e9f4ef;border:1px solid rgba(0,0,0,.35);
+    border-radius:12px;padding:6px 10px;box-shadow:0 8px 18px rgba(0,0,0,.35);
+    width:400px;max-width:400px;position:relative;
+  }
+  .search input{
+    flex:1;border:none;outline:none;background:transparent;
+    color:#e9f4ef;font:600 14px/1.2 system-ui;padding-right:26px;
+  }
   .search input::placeholder{color:#b6d1c7}
-  .search button.clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#b6d1c7;font-size:18px;cursor:pointer;width:22px;height:22px;line-height:18px;border-radius:6px;display:none}
+  .search button.clear{
+    position:absolute;right:8px;top:50%;transform:translateY(-50%);
+    background:none;border:none;color:#b6d1c7;font-size:18px;cursor:pointer;
+    width:22px;height:22px;line-height:18px;border-radius:6px;display:none;
+  }
   .search button.clear:hover{background:rgba(255,255,255,.12);color:#fff}
-  .search.has-text button.clear{display:block}
+  .search.has-text button.clear{display:block;}
 
-  /* Cluster ball */
+  /* ==== New Golf Ball Cluster (20% smaller, with dimples, no green shadow) ==== */
   .marker-cluster{border-radius:50%}
   .marker-cluster div{
-    display:grid;place-items:center;border-radius:50%;width:56px;height:56px;border:2px solid #222;
-    background:url("data:image/svg+xml;utf8,<?xml version='1.0'?><svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><defs><radialGradient id='g' cx='30%' cy='30%'><stop offset='0%' stop-color='%23fff'/><stop offset='100%' stop-color='%23ccc'/></radialGradient></defs><rect width='64' height='64' fill='url(%23g)'/></svg>") no-repeat center/cover;
-    box-shadow:0 6px 14px rgba(0,0,0,.35), inset 0 2px 6px rgba(255,255,255,.25)
+    position:relative;display:grid;place-items:center;border-radius:50%;
+    width:52px;height:52px;  /* ~20% smaller than old medium (was 56px) */
+    border:1px solid rgba(0,0,0,.35);
+    background:
+      /* subtle dimples pattern */
+      url("data:image/svg+xml;utf8,<?xml version='1.0'?><svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><defs><radialGradient id='g' cx='30%' cy='25%'><stop offset='0%' stop-color='%23ffffff'/><stop offset='100%' stop-color='%23dcdcdc'/></radialGradient><pattern id='p' width='6' height='6' patternUnits='userSpaceOnUse'><circle cx='3' cy='3' r='1.2' fill='%23cfcfcf' opacity='0.55'/></pattern></defs><rect width='60' height='60' fill='url(%23g)'/><rect width='60' height='60' fill='url(%23p)' opacity='0.45'/></svg>")
+      no-repeat center/cover;
+    /* remove green-ish glow; keep a minimal neutral shadow */
+    box-shadow: 0 4px 10px rgba(0,0,0,.25), inset 0 1px 2px rgba(255,255,255,.35);
   }
-  .marker-cluster span{color:#111;font:800 16px/1;text-shadow:0 1px 0 rgba(255,255,255,.8)}
-  .marker-cluster-small div{width:48px;height:48px}
-  .marker-cluster-medium div{width:56px;height:56px}
-  .marker-cluster-large div{width:64px;height:64px}
+  .marker-cluster span{
+    color:#111;font:800 15px/1 system-ui;
+    text-shadow:0 1px 0 rgba(255,255,255,.85);
+  }
+  /* scale classes (≈20% smaller overall) */
+  .marker-cluster-small div{ width:40px; height:40px; }
+  .marker-cluster-medium div{ width:52px; height:52px; }
+  .marker-cluster-large div{ width:60px; height:60px; }
 
-  /* Pins: hover halo & tooltip */
+  /* ==== Pins: hover halo & tooltip ==== */
   .leaflet-marker-icon{transition:transform .12s ease, filter .12s ease, box-shadow .12s ease}
   .leaflet-marker-icon:hover{transform:scale(1.06);filter:drop-shadow(0 8px 14px rgba(0,0,0,.45));box-shadow:0 0 0 2px rgba(255,255,255,.9)}
   .ga-tooltip{background:#083424;color:#f1f6f3;border:1px solid rgba(255,255,255,.15);border-radius:8px;box-shadow:0 8px 18px rgba(0,0,0,.45);padding:6px 8px;font-weight:700}
 
-  /* Popup (forest green) */
+  /* ==== Popup (forest green) ==== */
   .leaflet-popup-content-wrapper{background:#052D1F;color:#f2f6f3;border:1px solid rgba(0,0,0,.35);box-shadow:0 12px 28px rgba(0,0,0,.55);border-radius:16px}
   .leaflet-popup-tip{background:#052D1F}
   .popup{min-width:260px;max-width:380px}
@@ -53,17 +89,20 @@
   .btn{padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#083424;color:#fff;text-decoration:none;font-weight:700}
   .btn:hover{filter:brightness(1.08)}
 
-  /* Media (thumb/logo) */
+  /* ==== Media (thumb/logo) ==== */
   .thumb{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.15);margin:6px 0 10px;background:#0c1f18}
-  .thumb img.main{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb img.main{width:100%;height:100%;object-fit:cover;display:block;image-rendering:auto}
   .thumb.logo-only{aspect-ratio:auto;height:140px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid rgba(0,0,0,.12)}
   .thumb img.main.logo-only{width:auto;max-width:100%;max-height:100%;object-fit:contain;padding:8px;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
 
   .logo-badge{position:absolute;right:8px;bottom:8px;width:56px;height:56px;border-radius:50%;overflow:hidden;background:#fff;border:1px solid rgba(255,255,255,.65);box-shadow:0 6px 14px rgba(0,0,0,.35),inset 0 1px 2px rgba(0,0,0,.08)}
   .logo-badge img{width:100%;height:100%;object-fit:contain;background:#fff;display:block;padding:6px}
 
-  /* Top-100 Gold badge */
-  .badge-top100{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:linear-gradient(145deg,#f7d776,#dcb247 55%,#b9902d);color:#111;font-weight:800;box-shadow:0 0 0 1px rgba(255,255,255,.25) inset,0 2px 6px rgba(0,0,0,.4)}
+  .badge-top100{
+    display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;
+    background:linear-gradient(145deg,#f7d776,#dcb247 55%,#b9902d);
+    color:#111;font-weight:800;box-shadow:0 0 0 1px rgba(255,255,255,.25) inset,0 2px 6px rgba(0,0,0,.4)
+  }
   .badge-top100 .rank{background:rgba(255,255,255,.4);padding:3px 6px;border-radius:6px}
 </style>
 </head>
@@ -78,19 +117,18 @@
     <button class="clear" id="clearSearch" aria-label="Clear search">&times;</button>
     <datalist id="courseList"></datalist>
   </div>
-  <div class="control">
+  <div class="control control--toggle">
     <input type="checkbox" id="top100Toggle" />
     <label for="top100Toggle">Show Top-100 Only</label>
   </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<!-- Correct MarkerCluster script -->
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
 <script>
-/* ==== Config / base map ==== */
+/* ===== Config / base map ===== */
 const params = new URLSearchParams(window.location.search);
 const CSV_URL = params.get("csv") || "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-nZvG7m9sUkOu0spxVTVGcM311qlgGSjnFgRDQr-l6nfs1cPFNrGBXO0ZDzMIQg/pub?gid=1171293634&single=true&output=csv";
 
@@ -107,37 +145,41 @@ L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
   attribution: "&copy; OpenStreetMap contributors & CartoDB"
 }).addTo(map);
 
-/* ==== Clusters tuned for close pins & one-click fan-out ==== */
+/* ===== Cluster group (tuned) ===== */
 const clusterLayer = L.markerClusterGroup({
-  showCoverageOnHover: false,
-  maxClusterRadius: 38,           // separate sooner
-  disableClusteringAtZoom: 14,    // keep tiny clusters at 13 so spiderfy can work
-  spiderfyOnMaxZoom: true,
-  spiderfyDistanceMultiplier: 2.1, // wide fan
-  zoomToBoundsOnClick: false,      // we control click behavior manually
-  spiderLegPolylineOptions: { weight:1.2, color:'#083424', opacity:0.45 }
+  showCoverageOnHover:false,
+  maxClusterRadius:38,               // spreads sooner
+  disableClusteringAtZoom:14,        // keep micro-clusters at max zoom for spiderfy
+  spiderfyOnMaxZoom:true,
+  spiderfyDistanceMultiplier:2.1,    // wider fan-out
+  zoomToBoundsOnClick:false,
+  spiderLegPolylineOptions:{weight:1.2,color:'#083424',opacity:0.45},
+  iconCreateFunction: c => {
+    const n = c.getChildCount();
+    let cls = "marker-cluster-medium", size = 52;
+    if (n < 10) { cls = "marker-cluster-small"; size = 40; }
+    else if (n >= 50) { cls = "marker-cluster-large"; size = 60; }
+    // size sets the DivIcon canvas; CSS above sets the inner <div> to match by class
+    return L.divIcon({
+      html: `<div><span>${n}</span></div>`,
+      className: `marker-cluster ${cls}`,
+      iconSize: L.point(size, size)
+    });
+  }
 });
 map.addLayer(clusterLayer);
 
-/* One-click behavior: zoom to a smart level and spiderfy if at 13 */
+/* One-click: zoom smartly to bounds, then spiderfy if at max */
 clusterLayer.on('clusterclick', (e) => {
   const bounds = e.layer.getBounds();
-  const boundsZoom = map.getBoundsZoom(bounds, true, [100,100]); // smart zoom for that cluster footprint
-  const target = Math.min(13, Math.max(map.getZoom()+1, boundsZoom)); // at least one step in, cap to 13
+  const boundsZoom = map.getBoundsZoom(bounds, true, [100,100]);
+  const target = Math.min(13, Math.max(map.getZoom()+1, boundsZoom));
   const center = bounds.getCenter();
-
-  // After we move/zoom, if we're at 13, fan out immediately
-  map.once('moveend', () => {
-    if (map.getZoom() >= 13) {
-      // give tiles/markers a tick to render before spiderfy
-      setTimeout(() => e.layer.spiderfy(), 0);
-    }
-  });
-
+  map.once('moveend', () => { if (map.getZoom() >= 13) setTimeout(() => e.layer.spiderfy(), 0); });
   map.setView(center, target, { animate: true });
 });
 
-/* ==== Pin icon ==== */
+/* ===== Pin icon ===== */
 const pinSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='42' height='46' viewBox='0 0 42 46'>
   <path d='M21 1c-9.4 0-17 7.6-17 17 0 11 17 27 17 27s17-16 17-27c0-9.4-7.6-17-17-17z' fill='#1f7a3b' stroke='#0e4820' stroke-width='2'/>
   <circle cx='21' cy='18' r='8.5' fill='#e8ffe8' stroke='#0e4820' stroke-width='2'/>
@@ -149,27 +191,40 @@ const courseIcon = L.icon({
   iconSize:[42,46], iconAnchor:[21,42], popupAnchor:[0,-40], tooltipAnchor:[0,-36]
 });
 
-/* ==== Helpers ==== */
-const esc=s=>String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-const toNum=v=>{const n=parseFloat(v);return Number.isFinite(n)?n:NaN;};
-const isTop100=v=>{const n=Number(String(v??"").trim());return Number.isFinite(n)&&n>=1&&n<=100;};
-const normalize=s=>String(s??"").toLowerCase();
-const normKey=k=>String(k).toLowerCase().replace(/[^a-z0-9]/g,"");
-const safeUrl=u=>{const s=String(u||"").trim();if(!s||!/^https?:\/\//i.test(s))return"";try{new URL(s);return s;}catch{return"";}};
+/* ===== Helpers ===== */
+const esc  = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const toNum = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : NaN; };
+const isTop100 = v => { const n = Number(String(v ?? "").trim()); return Number.isFinite(n) && n>=1 && n<=100; };
+const normalize = s => String(s ?? "").toLowerCase();
+const normKey = k => String(k).toLowerCase().replace(/[^a-z0-9]/g,"");
+const safeUrl = u => { const s = String(u||"").trim(); if(!s||!/^https?:\/\//i.test(s)) return ""; try { new URL(s); return s; } catch { return ""; } };
 
-function findImage(row, aliases, hint){
-  const idx={}; for(const k in row) idx[normKey(k)]=k;
+function findImage(row, aliases, hintRegex){
+  const idx={}; for(const k in row) idx[normKey(k)] = k;
   for(const a of aliases){ const nk=normKey(a); if(idx[nk]!=null){ const v=safeUrl(row[idx[nk]]); if(v) return v; } }
-  for(const k in row){ if(hint.test(k)){ const v=safeUrl(row[k]); if(v) return v; } }
+  for(const k in row){ if(hintRegex.test(k)){ const v=safeUrl(row[k]); if(v) return v; } }
   return "";
 }
-function hawaiiTuck(lat,lon){ if(lat>=18&&lat<=23&&lon<=-154&&lon>=-162){ return [lat+15.5,lon+37]; } return [lat,lon]; }
-function badge(rank){ return `<div class="badge-top100"><span>Top 100</span><span class="rank">#${rank}</span></div>`; }
+function hawaiiTuck(lat, lon){
+  if(lat>=18 && lat<=23 && lon<=-154 && lon>=-162){ return [lat+15.5, lon+37]; }
+  return [lat,lon];
+}
+function badge(rank){
+  return `<div class="badge-top100"><span>Top 100</span><span class="rank">#${rank}</span></div>`;
+}
 
-/* ==== Media block ==== */
+/* ===== Media block ===== */
 function mediaBlock(r){
-  const thumb = findImage(r, ["thumbnail_url","thumbnail url","thumb_url","thumb url","thumbail_url","thumbail url","image_url","image url","image","thumbnail_url(linked","thumbnail_url(linked)","image_url(linked","image_url(linked)"], /(thumb|image|photo)/i);
-  const logo  = findImage(r, ["logo_url","logo url","logo","logo_url(linked","logo_url(linked)"], /logo/i);
+  const thumb = findImage(
+    r,
+    ["thumbnail_url","thumbnail url","thumb_url","thumb url","thumbail_url","thumbail url","image_url","image url","image","thumbnail_url(linked","thumbnail_url(linked)","image_url(linked","image_url(linked)"],
+    /(thumb|image|photo)/i
+  );
+  const logo  = findImage(
+    r,
+    ["logo_url","logo url","logo","logo_url(linked","logo_url(linked)"],
+    /logo/i
+  );
 
   if (thumb && logo){
     return `<div class="thumb">
@@ -190,12 +245,12 @@ function mediaBlock(r){
   return "";
 }
 
-/* ==== Resort getter ==== */
+/* ===== Resort getter ===== */
 function getResort(row){
   return (row["course_resort"] || row["course resort"] || row["resort"] || "").trim();
 }
 
-/* ==== Popup ==== */
+/* ===== Popup ===== */
 function popupHtml(r){
   const name = r["course_name"] || r["Course Name"] || r["course name"] || r["name"] || "";
   const resort = getResort(r);
@@ -226,7 +281,7 @@ function popupHtml(r){
   </div>`;
 }
 
-/* ==== Markers & load ==== */
+/* ===== Markers & load ===== */
 const markers = [];
 const rowByMarker = new WeakMap();
 
@@ -286,7 +341,7 @@ Papa.parse(CSV_URL, {
   }
 });
 
-/* ==== Filters & search clear ==== */
+/* ===== Filters & search clear ===== */
 function applyFilters(){
   const topOnly = document.getElementById("top100Toggle").checked;
   const q = (document.getElementById("searchBox").value || "").toLowerCase();
@@ -316,7 +371,7 @@ searchBox.addEventListener("input", ()=>{ updateClear(); applyFilters(); });
 searchBox.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); applyFilters(); }});
 clearBtn.addEventListener("click", ()=>{ searchBox.value=""; updateClear(); applyFilters(); });
 
-/* ==== Cluster hover tooltip with resort names ==== */
+/* ===== Cluster hover tooltip with resort names ===== */
 clusterLayer.on("clustermouseover",(e)=>{
   const counts=new Map();
   e.layer.getAllChildMarkers().forEach(m=>{
