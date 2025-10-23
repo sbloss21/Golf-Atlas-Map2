@@ -5,7 +5,6 @@
 <title>Golf Atlas Map</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<!-- Leaflet + Cluster -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
@@ -13,7 +12,7 @@
 <style>
   html, body, #map { height: 100%; margin: 0; background: #052D1F; }
 
-  /* ===== Golf-ball cluster icons (large, shaded, black numbers) ===== */
+  /* Cluster (large golf-ball look) */
   .marker-cluster { border-radius: 50%; }
   .marker-cluster div{
     position:relative; display:grid; place-items:center; border-radius:50%;
@@ -31,7 +30,7 @@
   .marker-cluster-medium div{width:56px;height:56px}
   .marker-cluster-large div{width:64px;height:64px}
 
-  /* ===== Popup styling (forest green) ===== */
+  /* Popup (forest green) */
   .leaflet-popup-content-wrapper{
     background:#052D1F; color:#f2f6f3;
     border:1px solid rgba(0,0,0,.35);
@@ -54,7 +53,7 @@
   }
   .btn:hover{filter:brightness(1.08)}
 
-  /* ===== Gold Top-100 Badge ===== */
+  /* Gold Top-100 Badge */
   .badge-top100{
     --g1:#f7d776; --g2:#dcb247; --g3:#b9902d;
     display:inline-flex;align-items:center;gap:6px;
@@ -66,7 +65,7 @@
   .badge-top100 .rank{font-size:.95rem;padding:3px 6px;border-radius:6px;background:rgba(255,255,255,.4)}
   .badge-top100 .label{font-size:.8rem;font-weight:900;text-transform:uppercase}
 
-  /* ===== Hover tooltips ===== */
+  /* Tooltips */
   .ga-tooltip{
     background:#083424;color:#f1f6f3;border:1px solid rgba(255,255,255,.15);border-radius:8px;
     box-shadow:0 8px 18px rgba(0,0,0,.45);padding:6px 8px;font-weight:700;letter-spacing:.1px;
@@ -74,28 +73,36 @@
   .leaflet-marker-icon{transition:transform .12s ease,filter .12s ease}
   .leaflet-marker-icon:hover{transform:scale(1.06);filter:drop-shadow(0 6px 12px rgba(0,0,0,.45))}
 
-  /* ===== UI: Top-100 Toggle ===== */
-  .toggle-wrap{
+  /* UI: Toggles */
+  .control-bar{
     position:absolute; z-index:9999; top:12px; right:12px;
+    display:flex; flex-wrap:wrap; gap:8px;
+  }
+  .control{
     display:flex; gap:8px; align-items:center;
-    background:rgba(8,52,36,.9); color:#e9f4ef; border:1px solid rgba(0,0,0,.35);
+    background:rgba(8,52,36,.92); color:#e9f4ef; border:1px solid rgba(0,0,0,.35);
     border-radius:12px; padding:8px 10px; font:600 13px/1 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
     box-shadow:0 8px 18px rgba(0,0,0,.35);
   }
-  .toggle-wrap input{accent-color:#dcb247; width:18px; height:18px; cursor:pointer}
-  .toggle-wrap label{cursor:pointer}
+  .control input{accent-color:#dcb247; width:18px; height:18px; cursor:pointer}
+  .control label{cursor:pointer}
 </style>
 </head>
 <body>
 <div id="map"></div>
 
-<!-- Top-100 toggle -->
-<div class="toggle-wrap">
-  <input type="checkbox" id="top100Toggle" />
-  <label for="top100Toggle">Show Top-100 Only</label>
+<!-- Toggles -->
+<div class="control-bar">
+  <div class="control">
+    <input type="checkbox" id="top100Toggle" />
+    <label for="top100Toggle">Show Top-100 Only</label>
+  </div>
+  <div class="control">
+    <input type="checkbox" id="scrollToggle" />
+    <label for="scrollToggle">Enable Scroll Zoom</label>
+  </div>
 </div>
 
-<!-- libs -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
@@ -104,19 +111,29 @@
   // ===== CONFIG =====
   const params = new URLSearchParams(window.location.search);
   const CSV_URL = params.get("csv") || "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-nZvG7m9sUkOu0spxVTVGcM311qlgGSjnFgRDQr-l6nfs1cPFNrGBXO0ZDzMIQg/pub?gid=1171293634&single=true&output=csv";
-  const START_CENTER = [37.5, -105];
-  const START_ZOOM = 4.1;
 
-  // ===== Map (Standard OSM tiles) =====
-  const map = L.map("map", { zoomControl: true, attributionControl: true })
-    .setView(START_CENTER, START_ZOOM);
+  // Map feel: softer, no fling, limited zoom, scroll disabled by default
+  const map = L.map("map", {
+    center: [37.5, -105],
+    zoom: 4.1,
+    minZoom: 3.5,
+    maxZoom: 14,               // cap detail so zoomed-in isn’t “too busy”
+    zoomSnap: 0.5,
+    zoomDelta: 0.5,
+    inertia: false,            // stop momentum flings
+    scrollWheelZoom: false,    // user can enable via toggle
+    doubleClickZoom: false,
+    maxBounds: [[7, -170], [72, -50]], // constrain to US-ish box (incl. HI tuck area)
+    maxBoundsViscosity: 0.8
+  });
 
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 18,
-    attribution: "&copy; OpenStreetMap contributors"
-  }).addTo(map);
+  // Basemap: Carto Positron (clean, less detail/noisy labels)
+  const basePositron = L.tileLayer(
+    "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+    { maxZoom: 18, subdomains: "abcd", maxNativeZoom: 14 } // don’t fetch ultra-detailed tiles
+  ).addTo(map);
 
-  // ===== Clusters (golf-ball look) =====
+  // ===== Clusters (golf ball look) =====
   function clusterIcon(count){
     let sizeClass = "small";
     if(count >= 50) sizeClass = "large";
@@ -136,9 +153,9 @@
     showCoverageOnHover:false, maxClusterRadius:48,
     iconCreateFunction: c => clusterIcon(c.getChildCount())
   });
-  map.addLayer(clustersAll); // default view
+  map.addLayer(clustersAll);
 
-  // ===== Course Pin (green teardrop + red flag) =====
+  // Course Pin (green teardrop + red flag) — robust encoded SVG
   const pinSvg =
     `<svg xmlns='http://www.w3.org/2000/svg' width='42' height='46' viewBox='0 0 42 46'>
       <path d='M21 1c-9.4 0-17 7.6-17 17 0 11 17 27 17 27s17-16 17-27c0-9.4-7.6-17-17-17z' fill='#1f7a3b' stroke='#0e4820' stroke-width='2'/>
@@ -148,16 +165,15 @@
     </svg>`;
   const courseIcon = L.icon({
     iconUrl: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(pinSvg),
-    iconSize: [42, 46], iconAnchor: [21, 42],
-    popupAnchor: [0, -40], tooltipAnchor: [0, -36]
+    iconSize: [42, 46], iconAnchor: [21, 42], popupAnchor: [0, -40], tooltipAnchor: [0, -36]
   });
 
-  // ===== Helpers =====
+  // Helpers
   const esc = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   const toNum = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : NaN; };
   const isTop100 = v => { const n = Number(String(v ?? "").trim()); return Number.isFinite(n) && n >= 1 && n <= 100; };
 
-  // Hawaii tuck: shift markers from HI bounds near SoCal for national view
+  // Hawaii tuck (shift HI into CONUS view)
   function hawaiiTuck(lat, lon){
     if(lat >= 18 && lat <= 23 && lon <= -154 && lon >= -162){
       return [lat + 15.5, lon + 37];
@@ -218,7 +234,7 @@
     return marker;
   }
 
-  // Render both layers so we can toggle quickly
+  // Render rows into two layers (all vs top-100)
   let allMarkers = [], topMarkers = [];
   function renderRows(rows){
     rows.forEach(r=>{
@@ -235,12 +251,11 @@
       const group = L.featureGroup(allMarkers);
       map.fitBounds(group.getBounds().pad(0.08), { animate:true });
     } else {
-      map.setView(START_CENTER, START_ZOOM);
       console.warn("No markers plotted. Check lat/longitude columns and CSV URL.");
     }
   }
 
-  // ===== Load CSV & render =====
+  // Load CSV
   Papa.parse(CSV_URL, {
     download:true, header:true, skipEmptyLines:true,
     complete: res => renderRows(res.data || []),
@@ -250,16 +265,24 @@
     }
   });
 
-  // ===== Top-100 Toggle behavior =====
-  const toggle = document.getElementById("top100Toggle");
-  toggle.addEventListener("change", () => {
-    if (toggle.checked) {
+  // UI: Top-100 Toggle
+  const top100Toggle = document.getElementById("top100Toggle");
+  top100Toggle.addEventListener("change", () => {
+    if (top100Toggle.checked) {
       map.removeLayer(clustersAll);
       map.addLayer(clustersTop);
     } else {
       map.removeLayer(clustersTop);
       map.addLayer(clustersAll);
     }
+  });
+
+  // UI: Scroll Zoom Toggle
+  const scrollToggle = document.getElementById("scrollToggle");
+  scrollToggle.checked = false; // default off
+  scrollToggle.addEventListener("change", () => {
+    if (scrollToggle.checked) map.scrollWheelZoom.enable();
+    else map.scrollWheelZoom.disable();
   });
 </script>
 </body>
