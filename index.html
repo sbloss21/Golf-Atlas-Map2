@@ -13,32 +13,33 @@
 <style>
   html, body, #map { height: 100%; margin: 0; background: #052D1F; }
 
-  /* ===== Golf-ball cluster icons ===== */
+  /* ===== Golf-ball cluster icons (large, shaded, black numbers) ===== */
   .marker-cluster {
     border-radius: 50%;
-    box-shadow: 0 6px 14px rgba(0,0,0,0.35);
   }
   .marker-cluster div {
-    width: 46px; height: 46px; border-radius: 50%;
-    position: relative; display: grid; place-items: center;
+    position: relative;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    width: 56px; height: 56px;
     border: 2px solid #222;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.35), inset 0 2px 6px rgba(255,255,255,0.25);
     background:
-      radial-gradient(circle at 30% 30%, #fff, #f1f1f1 45%, #e0e0e0 70%, #cfcfcf 100%),
-      repeating-radial-gradient(circle at 35% 35%, rgba(0,0,0,0.06) 0 2px, transparent 2px 6px);
+      radial-gradient(120% 120% at 30% 30%, #ffffff 0%, #efefef 55%, #dcdcdc 75%, #cfcfcf 100%),
+      repeating-radial-gradient(circle at 35% 35%, rgba(0,0,0,0.07) 0 2px, rgba(0,0,0,0) 2px 6px);
   }
   .marker-cluster span {
-    color: #111; font: 700 14px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-    text-shadow: 0 1px 0 rgba(255,255,255,0.7);
-    filter: drop-shadow(0 1px 0 rgba(255,255,255,0.5));
+    color: #111; font: 800 16px/1.1 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.8);
   }
-  .marker-cluster-small div { width: 40px; height: 40px; }
-  .marker-cluster-medium div { width: 48px; height: 48px; }
-  .marker-cluster-large div { width: 56px; height: 56px; }
+  .marker-cluster-small div { width: 48px; height: 48px; }
+  .marker-cluster-medium div { width: 56px; height: 56px; }
+  .marker-cluster-large div { width: 64px; height: 64px; }
 
   /* ===== Popup styling (forest green) ===== */
   .leaflet-popup-content-wrapper {
     background: #052D1F; color: #f2f6f3;
-    border: 1px solid rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.10);
     box-shadow: 0 12px 28px rgba(0,0,0,0.55);
     border-radius: 16px;
   }
@@ -51,13 +52,6 @@
   .popup .title { font-weight: 800; font-size: 1.08rem; line-height: 1.2; letter-spacing: .2px; }
   .popup .line { margin: 6px 0; font-size: 0.95rem; }
   .muted { opacity: .95; }
-  .row {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; font-size: .92rem;
-  }
-  .pill {
-    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
-    padding: 6px 10px; border-radius: 999px; text-align: center; white-space: nowrap;
-  }
   .actions { margin-top: 12px; display: flex; justify-content: flex-end; }
   .btn {
     padding: 8px 12px; border-radius: 10px;
@@ -67,7 +61,7 @@
   .btn:hover { filter: brightness(1.08); }
 
   /* ===== Gold Top-100 Badge ===== */
-  .badge-top100 {
+  .badge-top100{
     --g1:#f7d776; --g2:#dcb247; --g3:#b9902d;
     display:inline-flex; align-items:center; gap:6px;
     padding:6px 10px; border-radius:999px;
@@ -75,10 +69,8 @@
     color:#111; font-weight:800; letter-spacing:.2px; line-height:1;
     box-shadow:0 0 0 1px rgba(255,255,255,.25) inset, 0 2px 6px rgba(0,0,0,.4);
   }
-  .badge-top100 .rank {
-    font-size:.95rem; padding:3px 6px; border-radius:6px; background:rgba(255,255,255,.4);
-  }
-  .badge-top100 .label { font-size:.8rem; font-weight:900; text-transform:uppercase; }
+  .badge-top100 .rank{ font-size:.95rem; padding:3px 6px; border-radius:6px; background:rgba(255,255,255,.4); }
+  .badge-top100 .label{ font-size:.8rem; font-weight:900; text-transform:uppercase; }
 
   /* ===== Hover tooltips ===== */
   .ga-tooltip {
@@ -89,6 +81,9 @@
   }
   .leaflet-marker-icon { transition: transform .12s ease, filter .12s ease; }
   .leaflet-marker-icon:hover { transform: scale(1.06); filter: drop-shadow(0 6px 12px rgba(0,0,0,.45)); }
+
+  /* Optional: slightly dim mainland tiles (we’ll keep markers crisp) */
+  .dim-tiles img.leaflet-tile { opacity: 0.85; }
 </style>
 </head>
 <body>
@@ -103,14 +98,22 @@
   // ===== CONFIG =====
   const params = new URLSearchParams(window.location.search);
   const CSV_URL = params.get("csv") || "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-nZvG7m9sUkOu0spxVTVGcM311qlgGSjnFgRDQr-l6nfs1cPFNrGBXO0ZDzMIQg/pub?gid=1171293634&single=true&output=csv";
-  const START_VIEW = { center: [39.5, -98.5], zoom: 4 };
+  const START_CENTER = [37.5, -105];  // continental center
+  const START_ZOOM = 4.1;
 
-  // Map
+  // ===== Map (CartoDB Dark Matter) =====
   const map = L.map("map", { zoomControl: true, attributionControl: false })
-    .setView(START_VIEW.center, START_VIEW.zoom);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18 }).addTo(map);
+    .setView(START_CENTER, START_ZOOM);
 
-  // ===== Cluster group (with custom golf-ball icons) =====
+  const tiles = L.tileLayer(
+    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    { maxZoom: 18, subdomains: "abcd" }
+  ).addTo(map);
+
+  // Dim mainland a touch for contrast
+  tiles.getContainer().classList.add("dim-tiles");
+
+  // ===== Clusters (golf ball look) =====
   const clusters = L.markerClusterGroup({
     showCoverageOnHover: false,
     maxClusterRadius: 48,
@@ -122,23 +125,23 @@
       return L.divIcon({
         html: `<div><span>${count}</span></div>`,
         className: `marker-cluster marker-cluster-${sizeClass}`,
-        iconSize: L.point(48, 48)
+        iconSize: L.point(64, 64)
       });
     }
   });
   map.addLayer(clusters);
 
-  // ===== Marker icon (green teardrop + red flag) =====
-  const pinSvg = encodeURI(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="42" height="46" viewBox="0 0 42 46">
-      <path d="M21 1c-9.4 0-17 7.6-17 17 0 11 17 27 17 27s17-16 17-27c0-9.4-7.6-17-17-17z" fill="#1f7a3b" stroke="#0e4820" stroke-width="2"/>
-      <circle cx="21" cy="18" r="8.5" fill="#e8ffe8" stroke="#0e4820" stroke-width="2"/>
-      <rect x="20.3" y="7" width="1.4" height="14" fill="#2b2b2b"/>
-      <path d="M21.7 8 L33 12.5 L21.7 17 Z" fill="#c7222a" stroke="#8c141a" stroke-width="1"/>
-    </svg>
-  `);
+  // ===== Course Pin (green teardrop + red flag) =====
+  // Robust data-URI (properly encoded SVG) so it renders in all browsers
+  const pinSvg =
+    `<svg xmlns='http://www.w3.org/2000/svg' width='42' height='46' viewBox='0 0 42 46'>
+      <path d='M21 1c-9.4 0-17 7.6-17 17 0 11 17 27 17 27s17-16 17-27c0-9.4-7.6-17-17-17z' fill='#1f7a3b' stroke='#0e4820' stroke-width='2'/>
+      <circle cx='21' cy='18' r='8.5' fill='#e8ffe8' stroke='#0e4820' stroke-width='2'/>
+      <rect x='20.3' y='7' width='1.4' height='14' fill='#2b2b2b'/>
+      <path d='M21.7 8 L33 12.5 L21.7 17 Z' fill='#c7222a' stroke='#8c141a' stroke-width='1'/>
+    </svg>`;
   const courseIcon = L.icon({
-    iconUrl: "data:image/svg+xml;utf8," + pinSvg,
+    iconUrl: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(pinSvg),
     iconSize: [42, 46],
     iconAnchor: [21, 42],
     popupAnchor: [0, -40],
@@ -147,14 +150,18 @@
 
   // ===== Helpers =====
   const esc = (s) => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  const toNum = (v) => {
-    const n = parseFloat(v);
-    return Number.isFinite(n) ? n : NaN;
-  };
-  const isTop100 = (v) => {
-    const n = Number(String(v ?? "").trim());
-    return Number.isFinite(n) && n >= 1 && n <= 100;
-  };
+  const toNum = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : NaN; };
+  const isTop100 = (v) => { const n = Number(String(v ?? "").trim()); return Number.isFinite(n) && n >= 1 && n <= 100; };
+
+  // Hawaii tuck: if point is in Hawaii's typical lon/lat box, shift it near SoCal
+  function hawaiiTuck(lat, lon) {
+    // Hawai'i approx bounds: lat ~ [18,23], lon ~ [-161,-154]
+    if (lat >= 18 && lat <= 23 && lon <= -154 && lon >= -162) {
+      // Shift Hawaii ~ +15.5° lat, +37° lon (near SoCal)
+      return [lat + 15.5, lon + 37];
+    }
+    return [lat, lon];
+  }
 
   function badge(rank) {
     return `
@@ -167,7 +174,7 @@
 
   function popupHtml(r) {
     const name = esc(r["course_name"]);
-    const resort = String(r["course_resort"] ?? "").trim();
+    const resortRaw = String(r["course_resort"] ?? "").trim();
     const fees = esc(r["cost_per_course(green_fee_range)"]);
     const coursesOnProp = esc(r["#_of_courses_on_property"]);
     const lodging = esc(r["lodging_on-site(yes_no)"]);
@@ -176,21 +183,15 @@
     const state = esc(r["state"] || "");
 
     const lines = [];
-    // Title
     lines.push(`<div class="line"><strong>🏌️‍♂️ ${name}</strong></div>`);
-    // Resort (only if present)
-    if (resort) lines.push(`<div class="line muted">🏨 ${esc(resort)}</div>`);
-    // Top 100 (only if valid)
+    if (resortRaw) lines.push(`<div class="line muted">🏨 ${esc(resortRaw)}</div>`);
     if (isTop100(rank)) lines.push(`<div class="line">🏆 Golf Digest Top 100: <strong>#${rank}</strong></div>`);
-    // Fees / Courses on property
     if (fees) lines.push(`<div class="line">💰 Green Fees: ${fees}</div>`);
     if (coursesOnProp) lines.push(`<div class="line">⛳ Courses on Property: ${coursesOnProp}</div>`);
     if (lodging) lines.push(`<div class="line">🛏️ Lodging On-Site: ${lodging}</div>`);
-    // Location
-    const locationBits = [city, state].filter(Boolean).join(", ");
-    if (locationBits) lines.push(`<div class="line">📍 ${locationBits}</div>`);
+    const loc = [city, state].filter(Boolean).join(", ");
+    if (loc) lines.push(`<div class="line">📍 ${loc}</div>`);
 
-    // View Course (safe default: Google search)
     const googleLink = `https://www.google.com/search?q=${encodeURIComponent(name + " golf")}`;
 
     return `
@@ -207,19 +208,23 @@
     `;
   }
 
-  function makeMarker(row) {
-    const lat = toNum(row.latitude);
-    const lon = toNum(row.longitude);
+  function makeMarker(r) {
+    let lat = toNum(r.latitude ?? r.Latitude ?? r.lat);
+    let lon = toNum(r.longitude ?? r.Longitude ?? r.lon ?? r.lng);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
 
-    const marker = L.marker([lat, lon], { icon: courseIcon, title: row["course_name"] || "" });
-    marker.bindTooltip(row["course_name"] || "", {
+    // Tuck Hawaii into the CONUS view
+    const adj = hawaiiTuck(lat, lon);
+    lat = adj[0]; lon = adj[1];
+
+    const marker = L.marker([lat, lon], { icon: courseIcon, title: r["course_name"] || "" });
+    marker.bindTooltip(r["course_name"] || "", {
       direction: "top",
       offset: [0, -12],
       opacity: 0.92,
       className: "ga-tooltip"
     });
-    marker.bindPopup(popupHtml(row), { maxWidth: 380, minWidth: 260, closeButton: true });
+    marker.bindPopup(popupHtml(r), { maxWidth: 380, minWidth: 260, closeButton: true });
     marker.on("mouseover", () => marker.setZIndexOffset(1000));
     marker.on("mouseout",  () => marker.setZIndexOffset(0));
     return marker;
@@ -241,8 +246,7 @@
         const group = L.featureGroup(markers);
         map.fitBounds(group.getBounds().pad(0.08), { animate: true });
       } else {
-        // Fallback view if nothing plotted (helps diagnose)
-        map.setView(START_VIEW.center, START_VIEW.zoom);
+        map.setView(START_CENTER, START_ZOOM);
         console.warn("No markers plotted. Check lat/longitude columns and CSV URL.");
       }
     },
