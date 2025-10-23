@@ -73,24 +73,10 @@
 
   /* ===== Top media ===== */
   .thumb{ position:relative; width:100%; aspect-ratio:16/9; border-radius:12px; overflow:hidden; border:1px solid rgba(255,255,255,.15); margin:6px 0 10px; background:#0c1f18 }
-  .thumb img.main{
-    width:100%; height:100%; object-fit:cover; display:block;
-    image-rendering:auto; /* default for photos */
-  }
+  .thumb img.main{ width:100%; height:100%; object-fit:cover; display:block; image-rendering:auto; }
+  .thumb.logo-only{ aspect-ratio:auto; height:160px; display:flex; align-items:center; justify-content:center; background:#0f221b; }
+  .thumb img.main.logo-only{ width:auto; max-width:100%; max-height:100%; object-fit:contain; padding:10px; image-rendering:-webkit-optimize-contrast; image-rendering:crisp-edges; }
 
-  /* Logo-only mode: shorter height, contain inside box (no stretching) */
-  .thumb.logo-only{
-    aspect-ratio:auto; height:160px; display:flex; align-items:center; justify-content:center;
-    background:#0f221b;
-  }
-  .thumb img.main.logo-only{
-    width:auto; max-width:100%; max-height:100%;
-    object-fit:contain; padding:10px;
-    image-rendering:-webkit-optimize-contrast;
-    image-rendering:crisp-edges; /* fallback */
-  }
-
-  /* Round logo badge when both image + logo exist */
   .logo-badge{ position:absolute; right:8px; bottom:8px; width:56px; height:56px; border-radius:50%; overflow:hidden; background:#fff; border:1px solid rgba(255,255,255,.65); box-shadow:0 6px 14px rgba(0,0,0,.35), inset 0 1px 2px rgba(0,0,0,.08) }
   .logo-badge img{ width:100%; height:100%; object-fit:contain; background:#fff; display:block; padding:6px }
 
@@ -175,92 +161,46 @@
   const isTop100 = v => { const n = Number(String(v ?? "").trim()); return Number.isFinite(n) && n>=1 && n<=100; };
   const normalize = s => String(s ?? "").toLowerCase();
   const normKey = k => String(k).toLowerCase().replace(/[^a-z0-9]/g,"");
+  const safeUrl = u => { const s=String(u||"").trim(); if(!s) return ""; if(!/^https?:\/\//i.test(s)) return ""; try{ new URL(s); return s; }catch{ return ""; } };
 
-  // Accept any http/https; broken images auto-hide
-  function safeUrl(u){
-    const s = String(u||"").trim();
-    if(!s) return "";
-    if(!/^https?:\/\//i.test(s)) return "";
-    try { new URL(s); return s; } catch { return ""; }
-  }
-
-  // Find a field by aliases; if not found, scan headers for hints and pick first URL-looking value
+  // Find image field by aliases or header hints
   function findImage(row, aliases, hintRegex){
-    const idx = {};
-    for(const k in row) idx[normKey(k)] = k;
-
-    // 1) alias or near-alias match
-    for(const a of aliases){
-      const nk = normKey(a);
-      if(idx[nk] != null){
-        const v = safeUrl(row[idx[nk]]);
-        if(v) return v;
-      }
-    }
-    // 2) heuristic on header names
-    for(const k in row){
-      if(hintRegex.test(k)){
-        const v = safeUrl(row[k]);
-        if(v) return v;
-      }
-    }
+    const idx={}; for(const k in row) idx[normKey(k)]=k;
+    for(const a of aliases){ const nk=normKey(a); if(idx[nk]!=null){ const v=safeUrl(row[idx[nk]]); if(v) return v; } }
+    for(const k in row){ if(hintRegex.test(k)){ const v=safeUrl(row[k]); if(v) return v; } }
     return "";
   }
 
   // Hawaii tuck
-  function hawaiiTuck(lat, lon){
-    if(lat>=18 && lat<=23 && lon<=-154 && lon>=-162){ return [lat+15.5, lon+37]; }
-    return [lat,lon];
-  }
+  function hawaiiTuck(lat, lon){ if(lat>=18 && lat<=23 && lon<=-154 && lon>=-162){ return [lat+15.5, lon+37]; } return [lat,lon]; }
 
-  function badge(rank){
-    return `<div class="badge-top100"><span class="label">Top&nbsp;100</span><span class="rank">#${rank}</span></div>`;
-  }
+  function badge(rank){ return `<div class="badge-top100"><span class="label">Top&nbsp;100</span><span class="rank">#${rank}</span></div>`; }
 
   // ===== Media block =====
   function mediaBlock(r){
     const thumb = findImage(
       r,
-      [
-        "thumbnail_url","thumbnail url","thumb_url","thumb url",
-        "thumbail_url","thumbail url",
-        "image_url","image url","image",
-        "thumbnail_url(linked","thumbnail_url(linked)","image_url(linked","image_url(linked)"
-      ],
+      ["thumbnail_url","thumbnail url","thumb_url","thumb url","thumbail_url","thumbail url","image_url","image url","image","thumbnail_url(linked","thumbnail_url(linked)","image_url(linked","image_url(linked)"],
       /(thumb|image|photo)/i
     );
-
     const logo  = findImage(
       r,
-      [
-        "logo_url","logo url","logo",
-        "logo_url(linked","logo_url(linked)"
-      ],
+      ["logo_url","logo url","logo","logo_url(linked","logo_url(linked)"],
       /logo/i
     );
 
-    // Thumbnail + optional logo badge
     if (thumb && logo){
       return `<div class="thumb">
         <img class="main" src="${thumb}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/>
         <div class="logo-badge"><img src="${logo}" alt="" loading="lazy" onerror="this.closest('.logo-badge')?.remove()"/></div>
       </div>`;
     }
-
-    // Only thumbnail -> full photo
     if (thumb){
-      return `<div class="thumb">
-        <img class="main" src="${thumb}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/>
-      </div>`;
+      return `<div class="thumb"><img class="main" src="${thumb}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/></div>`;
     }
-
-    // Only logo -> compact, contain (crisper)
     if (logo){
-      return `<div class="thumb logo-only">
-        <img class="main logo-only" src="${logo}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/>
-      </div>`;
+      return `<div class="thumb logo-only"><img class="main logo-only" src="${logo}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/></div>`;
     }
-
     return "";
   }
 
@@ -295,19 +235,18 @@
   }
 
   // ===== Build markers =====
-  const markers = [];   // [{ marker, row }]
+  const markers = [];                 // [{ marker, row }]
+  const rowByMarker = new WeakMap();  // marker -> row (for cluster tooltips)
   let filteredMarkers = [];
 
   function makeMarker(r){
     let lat = toNum(r.latitude ?? r.Latitude ?? r.lat);
     let lon = toNum(r.longitude ?? r.Longitude ?? r.lon ?? r.lng);
     if(!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
-
     [lat, lon] = hawaiiTuck(lat, lon);
 
     const title = r["course_name"] || r["Course Name"] || r["course name"] || r["name"] || "";
     const m = L.marker([lat, lon], { icon: courseIcon, title });
-
     m.bindTooltip(title, { direction:"top", offset:[0,-12], opacity:.92, className:"ga-tooltip" });
     m.bindPopup(() => popupHtml(r), { maxWidth:380, minWidth:260, closeButton:true });
 
@@ -317,6 +256,7 @@
     m.on("mouseover", () => m.setZIndexOffset(1000));
     m.on("mouseout",  () => m.setZIndexOffset(0));
 
+    rowByMarker.set(m, r);
     return m;
   }
 
@@ -361,11 +301,13 @@
       rows.forEach(r=>{
         const m = makeMarker(r); if(!m) return;
         markers.push({marker:m, row:r});
+        rowByMarker.set(m, r);
         clusterLayer.addLayer(m);
         const nm = r["course_name"] || r["Course Name"] || r["course name"] || r["name"];
         if(nm) names.add(nm);
       });
 
+      // datalist suggestions
       const dl = document.getElementById("courseList");
       dl.innerHTML = "";
       Array.from(names).filter(Boolean).sort().slice(0,2000).forEach(n=>{
@@ -381,6 +323,41 @@
       console.error("CSV load error:", err);
       alert("Error loading data CSV. Check ?csv= link and that it's published as CSV.");
     }
+  });
+
+  // ===== Cluster hover: show resort names =====
+  function resortLabelFromRow(r){
+    const resort = String(r["course_resort"] || r["course resort"] || r["resort"] || "").trim();
+    const course = r["course_name"] || r["Course Name"] || r["course name"] || r["name"] || "";
+    return resort || course || "Course";
+  }
+
+  clusterLayer.on("clustermouseover", (e) => {
+    const childMarkers = e.layer.getAllChildMarkers();
+    const counts = new Map();
+    childMarkers.forEach(m => {
+      const row = rowByMarker.get(m) || {};
+      const label = resortLabelFromRow(row);
+      counts.set(label, (counts.get(label) || 0) + 1);
+    });
+
+    // sort by frequency desc, then alpha
+    const sorted = Array.from(counts.entries()).sort((a,b)=>{
+      if (b[1] !== a[1]) return b[1]-a[1];
+      return a[0].localeCompare(b[0]);
+    }).map(([name])=>name);
+
+    const top = sorted.slice(0,3);
+    const more = Math.max(0, sorted.length - top.length);
+    const text = more > 0 ? `${top.join(", ")} (+${more} more)` : top.join(", ");
+
+    // attach a tooltip to the cluster marker on the fly
+    e.layer.bindTooltip(text, { direction:"top", opacity:.95, className:"ga-tooltip", offset:[0,-2] }).openTooltip();
+  });
+
+  clusterLayer.on("clustermouseout", (e) => {
+    // close but keep the binding so future hovers are instant
+    e.layer.closeTooltip();
   });
 
   // ===== UI bindings =====
