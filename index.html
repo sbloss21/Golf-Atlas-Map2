@@ -125,7 +125,7 @@ const CSV_URL = params.get("csv") || "https://docs.google.com/spreadsheets/d/e/2
 
 const map = L.map("map", {
   center:[37.5,-105], zoom:4.1,
-  minZoom:3.5, maxZoom:13,           // ✅ one level closer
+  minZoom:3.5, maxZoom:13,
   zoomSnap:0.5, zoomDelta:0.5, inertia:false,
   scrollWheelZoom:true, doubleClickZoom:false,
   maxBounds:[[7,-170],[72,-50]], maxBoundsViscosity:0.8
@@ -138,12 +138,20 @@ L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
   attribution: "&copy; OpenStreetMap contributors & CartoDB"
 }).addTo(map);
 
-/* ===== Cluster group (tuned) ===== */
+/* ===== Cluster group (tuned for close pins) ===== */
 const clusterLayer = L.markerClusterGroup({
-  showCoverageOnHover:false,
-  maxClusterRadius:42,             // ✅ spreads a bit sooner
-  disableClusteringAtZoom:13,      // ✅ uncluster at the new max zoom
-  spiderfyDistanceMultiplier:1.2   // ✅ more separation when overlapping
+  showCoverageOnHover: false,
+
+  maxClusterRadius: 38,          // spreads clusters a touch sooner
+  disableClusteringAtZoom: 14,   // keep micro-clusters at max zoom so spiderfy can work
+  spiderfyOnMaxZoom: true,
+  spiderfyDistanceMultiplier: 1.9,  // widen the fan-out; try 2.2 if you want even more
+  zoomToBoundsOnClick: false,       // avoid jumping the map on cluster click
+  spiderLegPolylineOptions: {
+    weight: 1.2,
+    color: '#083424',
+    opacity: 0.45
+  }
 });
 map.addLayer(clusterLayer);
 
