@@ -94,19 +94,14 @@
     width:100%; aspect-ratio:16/9; border-radius:12px; overflow:hidden;
     border:1px solid rgba(255,255,255,.15); margin:6px 0 10px; background:#0c1f18;
   }
-  .thumb img.main{
-    width:100%; height:100%; object-fit:cover; display:block;
-  }
-  /* Circular logo badge overlay (bottom-right) */
+  .thumb img.main{ width:100%; height:100%; object-fit:cover; display:block; }
   .logo-badge{
     position:absolute; right:8px; bottom:8px; width:56px; height:56px;
     border-radius:50%; overflow:hidden; background:#fff;
     border:1px solid rgba(255,255,255,.65);
     box-shadow:0 6px 14px rgba(0,0,0,.35), inset 0 1px 2px rgba(0,0,0,.08);
   }
-  .logo-badge img{
-    width:100%; height:100%; object-fit:contain; background:#fff; display:block; padding:6px;
-  }
+  .logo-badge img{ width:100%; height:100%; object-fit:contain; background:#fff; display:block; padding:6px; }
 
   /* ===== Gold Top-100 Badge ===== */
   .badge-top100{
@@ -129,7 +124,7 @@
   .leaflet-marker-icon:hover{
     transform: scale(1.06);
     filter: drop-shadow(0 8px 14px rgba(0,0,0,.45));
-    box-shadow: 0 0 0 2px rgba(255,255,255,.9); /* crisp halo */
+    box-shadow: 0 0 0 2px rgba(255,255,255,.9);
   }
 </style>
 </head>
@@ -235,15 +230,13 @@
       </div>`;
   }
 
-  // Build the top media block
+  // Media block (thumbnail + optional logo badge)
   function mediaBlock(r){
-    // Support new columns first; fallback to any older ones
     const thumb = safeUrl(r["thumbnail_url"] || r["thumbail_url"] || r["image_url"]);
     const logo  = safeUrl(r["logo_url"]);
 
-    if (!thumb && !logo) return ""; // nothing to render
+    if (!thumb && !logo) return "";
 
-    // If only one exists, render it full-size as the main image
     if (thumb && !logo) {
       return `
         <div class="thumb">
@@ -257,7 +250,6 @@
         </div>`;
     }
 
-    // If both exist, render thumbnail + logo badge overlay
     return `
       <div class="thumb">
         <img class="main" src="${thumb}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()" />
@@ -298,7 +290,10 @@
       </div>`;
   }
 
-  // Build marker
+  // ===== State & rendering =====
+  const markers = [];   // [{ marker, row }]
+  let filteredMarkers = [];
+
   function makeMarker(r){
     let lat = toNum(r.latitude ?? r.Latitude ?? r.lat);
     let lon = toNum(r.longitude ?? r.Longitude ?? r.lon ?? r.lng);
@@ -310,7 +305,6 @@
     marker.bindTooltip(r["course_name"] || "", { direction:"top", offset:[0,-12], opacity:.92, className:"ga-tooltip" });
     marker.bindPopup(popupHtml(r), { maxWidth: 380, minWidth: 260, closeButton: true });
 
-    // Gold rim for Top-100 pins
     const rank = r["top_100_ranking"];
     marker.on("add", () => {
       if (isTop100(rank) && marker._icon) {
@@ -320,14 +314,8 @@
 
     marker.on("mouseover", () => marker.setZIndexOffset(1000));
     marker.on("mouseout",  () => marker.setZIndexOffset(0));
-
     return marker;
   }
-
-  // Filtering / search
-  const normalize = s => String(s ?? "").toLowerCase();
-  const markers = [];
-  let filteredMarkers = [];
 
   function applyFilters(){
     const topOnly = document.getElementById("top100Toggle").checked;
@@ -397,16 +385,12 @@
     }
   });
 
-  // UI handlers
+  // UI
   document.getElementById("top100Toggle").addEventListener("change", applyFilters);
   const searchBox = document.getElementById("searchBox");
   searchBox.addEventListener("input", applyFilters);
   searchBox.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      applyFilters();
-      handleSearchEnter();
-    }
+    if (e.key === "Enter") { e.preventDefault(); applyFilters(); handleSearchEnter(); }
   });
 </script>
 </body>
