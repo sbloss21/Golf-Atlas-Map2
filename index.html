@@ -12,8 +12,14 @@
 <style>
   html, body, #map { height:100%; margin:0; background:#052D1F; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
 
-  /* ===== Top controls ===== */
-  .control-bar{ position:absolute; z-index:9999; top:12px; left:12px; right:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  /* ===== Controls: stacked under zoom, wider search ===== */
+  .control-bar{
+    position:absolute; z-index:9999;
+    top:90px;           /* sits below Leaflet zoom buttons */
+    left:12px; right:auto;
+    display:flex; flex-direction:column; align-items:flex-start;
+    gap:10px; pointer-events:auto;
+  }
   .control{
     display:flex; gap:8px; align-items:center;
     background:rgba(8,52,36,.92); color:#e9f4ef; border:1px solid rgba(0,0,0,.35);
@@ -24,13 +30,22 @@
   .control label{ cursor:pointer }
 
   .search{
-    flex:0 1 auto; display:flex; align-items:center; gap:8px;
+    display:flex; align-items:center; gap:8px;
     background:rgba(8,52,36,.92); color:#e9f4ef; border:1px solid rgba(0,0,0,.35);
     border-radius:12px; padding:6px 10px; box-shadow:0 8px 18px rgba(0,0,0,.35);
-    max-width:320px; min-width:220px;
+    width:400px; max-width:400px; min-width:240px;  /* ~+25% wider */
   }
-  .search input{ width:100%; border:none; outline:none; background:transparent; color:#e9f4ef; font:600 14px/1.2 system-ui; }
+  .search input{
+    width:100%; border:none; outline:none; background:transparent; color:#e9f4ef;
+    font:600 14px/1.2 system-ui;
+  }
   .search input::placeholder{ color:#b6d1c7 }
+
+  /* Responsive: keep tidy on narrow screens */
+  @media (max-width: 560px){
+    .control-bar{ top:88px; left:8px }
+    .search{ width: calc(100vw - 24px); max-width: calc(100vw - 24px); }
+  }
 
   /* ===== Golf-ball clusters ===== */
   .marker-cluster{ border-radius:50% }
@@ -71,7 +86,7 @@
   .btn{ padding:8px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.15); background:#083424; color:#fff; text-decoration:none; font-weight:700 }
   .btn:hover{ filter:brightness(1.08) }
 
-  /* ===== Top media ===== */
+  /* ===== Top media (photo / logo) ===== */
   .thumb{ position:relative; width:100%; aspect-ratio:16/9; border-radius:12px; overflow:hidden; border:1px solid rgba(255,255,255,.15); margin:6px 0 10px; background:#0c1f18 }
   .thumb img.main{ width:100%; height:100%; object-fit:cover; display:block; image-rendering:auto; }
   .thumb.logo-only{ aspect-ratio:auto; height:160px; display:flex; align-items:center; justify-content:center; background:#0f221b; }
@@ -113,258 +128,158 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.js"></script>
 <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
 <script>
-  // ===== CONFIG =====
   const params = new URLSearchParams(window.location.search);
   const CSV_URL = params.get("csv") || "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-nZvG7m9sUkOu0spxVTVGcM311qlgGSjnFgRDQr-l6nfs1cPFNrGBXO0ZDzMIQg/pub?gid=1171293634&single=true&output=csv";
 
   const map = L.map("map", {
-    center:[37.5,-105],
-    zoom:4.1, minZoom:3.5, maxZoom:14,
+    center:[37.5,-105], zoom:4.1, minZoom:3.5, maxZoom:14,
     zoomSnap:0.5, zoomDelta:0.5, inertia:false,
     scrollWheelZoom:true, doubleClickZoom:false,
     maxBounds:[[7,-170],[72,-50]], maxBoundsViscosity:0.8
   });
 
-  // Base: standard OSM
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom:18, attribution:"&copy; OpenStreetMap contributors"
   }).addTo(map);
 
-  // ===== Clusters =====
   const clusterLayer = L.markerClusterGroup({
     showCoverageOnHover:false, maxClusterRadius:48,
     iconCreateFunction:c=>{
-      const n = c.getChildCount(); let cls="small"; if(n>=50) cls="large"; else if(n>=10) cls="medium";
+      const n=c.getChildCount(); let cls="small"; if(n>=50) cls="large"; else if(n>=10) cls="medium";
       return L.divIcon({ html:`<div><span>${n}</span></div>`, className:`marker-cluster marker-cluster-${cls}`, iconSize:L.point(64,64) });
     }
   }).addTo(map);
 
-  // ===== Course pin icon =====
   const pinSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='42' height='46' viewBox='0 0 42 46'>
     <path d='M21 1c-9.4 0-17 7.6-17 17 0 11 17 27 17 27s17-16 17-27c0-9.4-7.6-17-17-17z' fill='#1f7a3b' stroke='#0e4820' stroke-width='2'/>
     <circle cx='21' cy='18' r='8.5' fill='#e8ffe8' stroke='#0e4820' stroke-width='2'/>
     <rect x='20.3' y='7' width='1.4' height='14' fill='#2b2b2b'/>
     <path d='M21.7 8 L33 12.5 L21.7 17 Z' fill='#c7222a' stroke='#8c141a' stroke-width='1'/>
   </svg>`;
-  const courseIcon = L.icon({
-    iconUrl:"data:image/svg+xml;charset=UTF-8,"+encodeURIComponent(pinSvg),
-    iconSize:[42,46], iconAnchor:[21,42], popupAnchor:[0,-40], tooltipAnchor:[0,-36]
-  });
+  const courseIcon = L.icon({ iconUrl:"data:image/svg+xml;charset=UTF-8,"+encodeURIComponent(pinSvg), iconSize:[42,46], iconAnchor:[21,42], popupAnchor:[0,-40], tooltipAnchor:[0,-36] });
 
-  // ===== Helpers =====
-  const esc  = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  const toNum = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : NaN; };
-  const isTop100 = v => { const n = Number(String(v ?? "").trim()); return Number.isFinite(n) && n>=1 && n<=100; };
-  const normalize = s => String(s ?? "").toLowerCase();
-  const normKey = k => String(k).toLowerCase().replace(/[^a-z0-9]/g,"");
-  const safeUrl = u => { const s=String(u||"").trim(); if(!s) return ""; if(!/^https?:\/\//i.test(s)) return ""; try{ new URL(s); return s; }catch{ return ""; } };
+  const esc=s=>String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const toNum=v=>{const n=parseFloat(v); return Number.isFinite(n)?n:NaN};
+  const isTop100=v=>{const n=Number(String(v??"").trim()); return Number.isFinite(n)&&n>=1&&n<=100};
+  const normalize=s=>String(s??"").toLowerCase();
+  const normKey=k=>String(k).toLowerCase().replace(/[^a-z0-9]/g,"");
+  const safeUrl=u=>{const s=String(u||"").trim(); if(!s||!/^https?:\/\//i.test(s)) return ""; try{ new URL(s); return s }catch{ return "" }};
 
-  // Find image field by aliases or header hints
-  function findImage(row, aliases, hintRegex){
+  function findImage(row,aliases,hintRegex){
     const idx={}; for(const k in row) idx[normKey(k)]=k;
     for(const a of aliases){ const nk=normKey(a); if(idx[nk]!=null){ const v=safeUrl(row[idx[nk]]); if(v) return v; } }
     for(const k in row){ if(hintRegex.test(k)){ const v=safeUrl(row[k]); if(v) return v; } }
     return "";
   }
 
-  // Hawaii tuck
-  function hawaiiTuck(lat, lon){ if(lat>=18 && lat<=23 && lon<=-154 && lon>=-162){ return [lat+15.5, lon+37]; } return [lat,lon]; }
+  function hawaiiTuck(lat,lon){ if(lat>=18&&lat<=23&&lon<=-154&&lon>=-162){ return [lat+15.5,lon+37] } return [lat,lon] }
+  const badge=r=>`<div class="badge-top100"><span class="label">Top&nbsp;100</span><span class="rank">#${r}</span></div>`;
 
-  function badge(rank){ return `<div class="badge-top100"><span class="label">Top&nbsp;100</span><span class="rank">#${rank}</span></div>`; }
-
-  // ===== Media block =====
   function mediaBlock(r){
-    const thumb = findImage(
-      r,
-      ["thumbnail_url","thumbnail url","thumb_url","thumb url","thumbail_url","thumbail url","image_url","image url","image","thumbnail_url(linked","thumbnail_url(linked)","image_url(linked","image_url(linked)"],
-      /(thumb|image|photo)/i
-    );
-    const logo  = findImage(
-      r,
-      ["logo_url","logo url","logo","logo_url(linked","logo_url(linked)"],
-      /logo/i
-    );
-
-    if (thumb && logo){
-      return `<div class="thumb">
-        <img class="main" src="${thumb}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/>
-        <div class="logo-badge"><img src="${logo}" alt="" loading="lazy" onerror="this.closest('.logo-badge')?.remove()"/></div>
-      </div>`;
-    }
-    if (thumb){
-      return `<div class="thumb"><img class="main" src="${thumb}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/></div>`;
-    }
-    if (logo){
-      return `<div class="thumb logo-only"><img class="main logo-only" src="${logo}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/></div>`;
-    }
+    const thumb=findImage(r,["thumbnail_url","thumbnail url","thumb_url","thumb url","thumbail_url","thumbail url","image_url","image url","image","thumbnail_url(linked","thumbnail_url(linked)","image_url(linked","image_url(linked)"],/(thumb|image|photo)/i);
+    const logo =findImage(r,["logo_url","logo url","logo","logo_url(linked","logo_url(linked)"],/logo/i);
+    if(thumb&&logo){return `<div class="thumb"><img class="main" src="${thumb}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/><div class="logo-badge"><img src="${logo}" alt="" loading="lazy" onerror="this.closest('.logo-badge')?.remove()"/></div></div>`}
+    if(thumb){return `<div class="thumb"><img class="main" src="${thumb}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/></div>`}
+    if(logo){return `<div class="thumb logo-only"><img class="main logo-only" src="${logo}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/></div>`}
     return "";
   }
 
+  const getResort=row=>(row["course_resort"]||row["course resort"]||row["resort"]||"").trim();
+
   function popupHtml(r){
-    const name = r["course_name"] || r["Course Name"] || r["course name"] || r["name"] || "";
-    const resortRaw = String(r["course_resort"] || r["course resort"] || r["resort"] || "").trim();
-    const fees = r["cost_per_course(green_fee_range)"] || r["green fees"] || r["green_fee_range"] || r["fees"] || "";
-    const coursesOnProp = r["#_of_courses_on_property"] || r["courses on property"] || r["num courses"] || r["courses"] || "";
-    const lodging = r["lodging_on-site(yes_no)"] || r["on site lodging"] || r["lodging_on-site"] || r["lodging"] || "";
-    const rank = r["top_100_ranking"] || r["top 100 ranking"] || r["ranking"] || r["rank"] || "";
-    const city = r["City"] || r["city"] || "";
-    const state = r["state"] || r["State"] || "";
+    const name=r["course_name"]||r["Course Name"]||r["course name"]||r["name"]||"";
+    const resortRaw=getResort(r);
+    const fees=r["cost_per_course(green_fee_range)"]||r["green fees"]||r["green_fee_range"]||r["fees"]||"";
+    const coursesOnProp=r["#_of_courses_on_property"]||r["courses on property"]||r["num courses"]||r["courses"]||"";
+    const lodging=r["lodging_on-site(yes_no)"]||r["on site lodging"]||r["lodging_on-site"]||r["lodging"]||"";
+    const rank=r["top_100_ranking"]||r["top 100 ranking"]||r["ranking"]||r["rank"]||"";
+    const city=r["City"]||r["city"]||""; const state=r["state"]||r["State"]||"";
 
-    const lines = [];
+    const lines=[];
     lines.push(`<div class="line"><strong>🏌️‍♂️ ${esc(name)}</strong></div>`);
-    if (resortRaw) lines.push(`<div class="line muted">🏨 ${esc(resortRaw)}</div>`);
-    if (isTop100(rank)) lines.push(`<div class="line">🏆 Golf Digest Top 100: <strong>#${rank}</strong></div>`);
-    if (fees) lines.push(`<div class="line">💰 Green Fees: ${esc(fees)}</div>`);
-    if (coursesOnProp) lines.push(`<div class="line">⛳ Courses on Property: ${esc(coursesOnProp)}</div>`);
-    if (lodging) lines.push(`<div class="line">🛏️ Lodging On-Site: ${esc(lodging)}</div>`);
-    const loc = [city, state].filter(Boolean).join(", ");
-    if (loc) lines.push(`<div class="line">📍 ${esc(loc)}</div>`);
+    if(resortRaw) lines.push(`<div class="line muted">🏨 ${esc(resortRaw)}</div>`);
+    if(isTop100(rank)) lines.push(`<div class="line">🏆 Golf Digest Top 100: <strong>#${rank}</strong></div>`);
+    if(fees) lines.push(`<div class="line">💰 Green Fees: ${esc(fees)}</div>`);
+    if(coursesOnProp) lines.push(`<div class="line">⛳ Courses on Property: ${esc(coursesOnProp)}</div>`);
+    if(lodging) lines.push(`<div class="line">🛏️ Lodging On-Site: ${esc(lodging)}</div>`);
+    const loc=[city,state].filter(Boolean).join(", "); if(loc) lines.push(`<div class="line">📍 ${esc(loc)}</div>`);
+    const googleLink=`https://www.google.com/search?q=${encodeURIComponent(name+" golf")}`;
 
-    const googleLink = `https://www.google.com/search?q=${encodeURIComponent(name + " golf")}`;
-
-    return `<div class="popup">
-      ${mediaBlock(r)}
-      <div class="header">${isTop100(rank) ? badge(rank) : ""}<div class="title"></div></div>
-      ${lines.join("")}
-      <div class="actions"><a class="btn" href="${googleLink}" target="_blank" rel="noopener">View Course ↗</a></div>
-    </div>`;
+    return `<div class="popup">${mediaBlock(r)}<div class="header">${isTop100(rank)?badge(rank):""}<div class="title"></div></div>${lines.join("")}<div class="actions"><a class="btn" href="${googleLink}" target="_blank" rel="noopener">View Course ↗</a></div></div>`;
   }
 
-  // ===== Build markers =====
-  const markers = [];                 // [{ marker, row }]
-  const rowByMarker = new WeakMap();  // marker -> row (for cluster tooltips)
-  let filteredMarkers = [];
+  const markers=[]; const rowByMarker=new WeakMap(); let filteredMarkers=[];
 
   function makeMarker(r){
-    let lat = toNum(r.latitude ?? r.Latitude ?? r.lat);
-    let lon = toNum(r.longitude ?? r.Longitude ?? r.lon ?? r.lng);
-    if(!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
-    [lat, lon] = hawaiiTuck(lat, lon);
-
-    const title = r["course_name"] || r["Course Name"] || r["course name"] || r["name"] || "";
-    const m = L.marker([lat, lon], { icon: courseIcon, title });
-    m.bindTooltip(title, { direction:"top", offset:[0,-12], opacity:.92, className:"ga-tooltip" });
-    m.bindPopup(() => popupHtml(r), { maxWidth:380, minWidth:260, closeButton:true });
-
-    const rank = r["top_100_ranking"] || r["top 100 ranking"] || r["ranking"] || r["rank"] || "";
-    m.on("add", () => { if(isTop100(rank) && m._icon){ m._icon.style.filter = "drop-shadow(0 0 1px #b9902d) drop-shadow(0 0 6px rgba(185,144,45,.55))"; } });
-
-    m.on("mouseover", () => m.setZIndexOffset(1000));
-    m.on("mouseout",  () => m.setZIndexOffset(0));
-
-    rowByMarker.set(m, r);
+    let lat=toNum(r.latitude??r.Latitude??r.lat); let lon=toNum(r.longitude??r.Longitude??r.lon??r.lng);
+    if(!Number.isFinite(lat)||!Number.isFinite(lon)) return null;
+    [lat,lon]=hawaiiTuck(lat,lon);
+    const title=r["course_name"]||r["Course Name"]||r["course name"]||r["name"]||"";
+    const m=L.marker([lat,lon],{icon:courseIcon,title});
+    m.bindTooltip(title,{direction:"top",offset:[0,-12],opacity:.92,className:"ga-tooltip"});
+    m.bindPopup(()=>popupHtml(r),{maxWidth:380,minWidth:260,closeButton:true});
+    const rank=r["top_100_ranking"]||r["top 100 ranking"]||r["ranking"]||r["rank"]||"";
+    m.on("add",()=>{ if(isTop100(rank)&&m._icon){ m._icon.style.filter="drop-shadow(0 0 1px #b9902d) drop-shadow(0 0 6px rgba(185,144,45,.55))"; }});
+    m.on("mouseover",()=>m.setZIndexOffset(1000));
+    m.on("mouseout",()=>m.setZIndexOffset(0));
+    rowByMarker.set(m,r);
     return m;
   }
 
+  clusterLayer.on("clustermouseover",(e)=>{
+    const counts=new Map();
+    e.layer.getAllChildMarkers().forEach(m=>{
+      const nm=getResort(rowByMarker.get(m)||{});
+      if(nm) counts.set(nm,(counts.get(nm)||0)+1);
+    });
+    let text="";
+    if(counts.size===1){ text=[...counts.keys()][0]; }
+    else if(counts.size>1){
+      const parts=[...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(([n,c])=>`${n} (${c})`);
+      text=parts.join(", "); if(counts.size>3) text+=" …";
+    } else { text=`${e.layer.getChildCount()} courses`; }
+    e.layer.bindTooltip(text,{className:"ga-tooltip",direction:"top",offset:[0,-2],opacity:.95}).openTooltip();
+  });
+  clusterLayer.on("clustermouseout",e=>e.layer.closeTooltip());
+
   function applyFilters(){
-    const topOnly = document.getElementById("top100Toggle").checked;
-    const q = normalize(document.getElementById("searchBox").value);
-
-    clusterLayer.clearLayers();
-    filteredMarkers = [];
-
+    const topOnly=document.getElementById("top100Toggle").checked;
+    const q=normalize(document.getElementById("searchBox").value);
+    clusterLayer.clearLayers(); filteredMarkers=[];
     markers.forEach(({marker,row})=>{
-      const rank = row["top_100_ranking"] || row["top 100 ranking"] || row["ranking"] || row["rank"] || "";
-      const name = row["course_name"] || row["Course Name"] || row["course name"] || row["name"] || "";
-      const hay = `${normalize(name)} ${normalize(row["City"]||row["city"]||"")} ${normalize(row["state"]||row["State"]||"")}`;
-      const okTop = !topOnly || isTop100(rank);
-      const okSearch = !q || hay.includes(q);
-      if(okTop && okSearch){ clusterLayer.addLayer(marker); filteredMarkers.push({marker,row}); }
+      const rank=row["top_100_ranking"]||row["top 100 ranking"]||row["ranking"]||row["rank"]||"";
+      const name=row["course_name"]||row["Course Name"]||row["course name"]||row["name"]||"";
+      const hay=`${normalize(name)} ${normalize(row["City"]||row["city"]||"")} ${normalize(row["state"]||row["State"]||"")}`;
+      const okTop=!topOnly||isTop100(rank); const okSearch=!q||hay.includes(q);
+      if(okTop&&okSearch){ clusterLayer.addLayer(marker); filteredMarkers.push({marker,row}); }
     });
-
-    if(filteredMarkers.length){
-      const group = L.featureGroup(filteredMarkers.map(m=>m.marker));
-      map.fitBounds(group.getBounds().pad(0.08), { animate:true });
-    }
+    if(filteredMarkers.length){ const g=L.featureGroup(filteredMarkers.map(m=>m.marker)); map.fitBounds(g.getBounds().pad(0.08),{animate:true}); }
   }
-
   function handleSearchEnter(){
-    const first = filteredMarkers[0];
-    if(first){
-      const ll = first.marker.getLatLng();
-      map.setView(ll, Math.min(14, Math.max(map.getZoom(), 9)), { animate:true });
-      setTimeout(()=>first.marker.openPopup(), 250);
-    }
+    const first=filteredMarkers[0]; if(first){ const ll=first.marker.getLatLng(); map.setView(ll, Math.min(14, Math.max(map.getZoom(),9)), {animate:true}); setTimeout(()=>first.marker.openPopup(),250); }
   }
 
-  // ===== Load CSV =====
-  Papa.parse(CSV_URL, {
+  Papa.parse(CSV_URL,{
     download:true, header:true, skipEmptyLines:true,
-    complete: res => {
-      const rows = res.data || [];
-      const names = new Set();
-
-      rows.forEach(r=>{
-        const m = makeMarker(r); if(!m) return;
-        markers.push({marker:m, row:r});
-        rowByMarker.set(m, r);
-        clusterLayer.addLayer(m);
-        const nm = r["course_name"] || r["Course Name"] || r["course name"] || r["name"];
-        if(nm) names.add(nm);
-      });
-
-      // datalist suggestions
-      const dl = document.getElementById("courseList");
-      dl.innerHTML = "";
-      Array.from(names).filter(Boolean).sort().slice(0,2000).forEach(n=>{
-        const opt = document.createElement("option"); opt.value = n; dl.appendChild(opt);
-      });
-
-      if(markers.length){
-        const g = L.featureGroup(markers.map(m=>m.marker));
-        map.fitBounds(g.getBounds().pad(0.08), { animate:true });
-      }
+    complete:res=>{
+      const rows=res.data||[]; const names=new Set();
+      rows.forEach(r=>{ const m=makeMarker(r); if(!m) return; markers.push({marker:m,row:r}); rowByMarker.set(m,r); clusterLayer.addLayer(m);
+        const nm=r["course_name"]||r["Course Name"]||r["course name"]||r["name"]; if(nm) names.add(nm); });
+      const dl=document.getElementById("courseList"); dl.innerHTML="";
+      Array.from(names).filter(Boolean).sort().slice(0,2000).forEach(n=>{ const o=document.createElement("option"); o.value=n; dl.appendChild(o); });
+      if(markers.length){ const g=L.featureGroup(markers.map(m=>m.marker)); map.fitBounds(g.getBounds().pad(0.08),{animate:true}); }
     },
-    error: err => {
-      console.error("CSV load error:", err);
-      alert("Error loading data CSV. Check ?csv= link and that it's published as CSV.");
-    }
+    error:err=>{ console.error("CSV load error:",err); alert("Error loading data CSV. Check ?csv= link and that it's published as CSV."); }
   });
 
-  // ===== Cluster hover: show resort names =====
-  function resortLabelFromRow(r){
-    const resort = String(r["course_resort"] || r["course resort"] || r["resort"] || "").trim();
-    const course = r["course_name"] || r["Course Name"] || r["course name"] || r["name"] || "";
-    return resort || course || "Course";
-  }
-
-  clusterLayer.on("clustermouseover", (e) => {
-    const childMarkers = e.layer.getAllChildMarkers();
-    const counts = new Map();
-    childMarkers.forEach(m => {
-      const row = rowByMarker.get(m) || {};
-      const label = resortLabelFromRow(row);
-      counts.set(label, (counts.get(label) || 0) + 1);
-    });
-
-    // sort by frequency desc, then alpha
-    const sorted = Array.from(counts.entries()).sort((a,b)=>{
-      if (b[1] !== a[1]) return b[1]-a[1];
-      return a[0].localeCompare(b[0]);
-    }).map(([name])=>name);
-
-    const top = sorted.slice(0,3);
-    const more = Math.max(0, sorted.length - top.length);
-    const text = more > 0 ? `${top.join(", ")} (+${more} more)` : top.join(", ");
-
-    // attach a tooltip to the cluster marker on the fly
-    e.layer.bindTooltip(text, { direction:"top", opacity:.95, className:"ga-tooltip", offset:[0,-2] }).openTooltip();
-  });
-
-  clusterLayer.on("clustermouseout", (e) => {
-    // close but keep the binding so future hovers are instant
-    e.layer.closeTooltip();
-  });
-
-  // ===== UI bindings =====
   document.getElementById("top100Toggle").addEventListener("change", applyFilters);
-  const searchBox = document.getElementById("searchBox");
+  const searchBox=document.getElementById("searchBox");
   searchBox.addEventListener("input", applyFilters);
-  searchBox.addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); applyFilters(); handleSearchEnter(); }});
+  searchBox.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); applyFilters(); handleSearchEnter(); }});
 </script>
 </body>
 </html>
