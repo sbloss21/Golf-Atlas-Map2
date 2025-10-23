@@ -12,75 +12,40 @@
 <style>
   html,body,#map{height:100%;margin:0;background:#052D1F;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
   .leaflet-tile-pane img{ filter: brightness(0.95) contrast(0.95) saturate(0.85); }
+  /* Hint mobile browsers to reduce unwanted gestures jitter */
+  .leaflet-container{touch-action: pan-x pan-y;}
 
-  /* ==== Controls stacked under zoom ==== */
-  .control-bar{
-    position:absolute;z-index:9999;top:90px;left:12px;
-    display:flex;flex-direction:column;align-items:flex-start;gap:10px;
-  }
-  .control{
-    display:flex;gap:8px;align-items:center;
-    background:rgba(8,52,36,.92);color:#e9f4ef;border:1px solid rgba(0,0,0,.35);
-    border-radius:12px;padding:6px 10px;font:600 13px/1 system-ui;
-    box-shadow:0 8px 18px rgba(0,0,0,.35);
-  }
-  /* ✅ Cut the toggle width roughly in half */
-  .control.control--toggle{
-    width:200px;               /* was auto; now compact */
-    justify-content:flex-start;
-    white-space:nowrap;
-  }
+  /* Controls */
+  .control-bar{position:absolute;z-index:9999;top:90px;left:12px;display:flex;flex-direction:column;gap:10px}
+  .control{display:flex;gap:8px;align-items:center;background:rgba(8,52,36,.92);color:#e9f4ef;border:1px solid rgba(0,0,0,.35);border-radius:12px;padding:6px 10px;font:600 13px/1;box-shadow:0 8px 18px rgba(0,0,0,.35)}
+  .control.control--toggle{width:200px;white-space:nowrap}
   .control input[type="checkbox"]{accent-color:#dcb247;width:18px;height:18px;cursor:pointer}
-  .control label{cursor:pointer}
-
-  /* ==== Search with clear (×) ==== */
-  .search{
-    display:flex;align-items:center;gap:8px;
-    background:rgba(8,52,36,.92);color:#e9f4ef;border:1px solid rgba(0,0,0,.35);
-    border-radius:12px;padding:6px 10px;box-shadow:0 8px 18px rgba(0,0,0,.35);
-    width:400px;max-width:400px;position:relative;
-  }
-  .search input{
-    flex:1;border:none;outline:none;background:transparent;
-    color:#e9f4ef;font:600 14px/1.2 system-ui;padding-right:26px;
-  }
+  .search{display:flex;align-items:center;gap:8px;background:rgba(8,52,36,.92);color:#e9f4ef;border:1px solid rgba(0,0,0,.35);border-radius:12px;padding:6px 10px;box-shadow:0 8px 18px rgba(0,0,0,.35);width:400px;max-width:400px;position:relative}
+  .search input{flex:1;border:none;outline:none;background:transparent;color:#e9f4ef;font:600 14px/1.2;padding-right:26px}
   .search input::placeholder{color:#b6d1c7}
-  .search button.clear{
-    position:absolute;right:8px;top:50%;transform:translateY(-50%);
-    background:none;border:none;color:#b6d1c7;font-size:18px;cursor:pointer;
-    width:22px;height:22px;line-height:18px;border-radius:6px;display:none;
-  }
+  .search button.clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#b6d1c7;font-size:18px;cursor:pointer;width:22px;height:22px;line-height:18px;border-radius:6px;display:none}
   .search button.clear:hover{background:rgba(255,255,255,.12);color:#fff}
-  .search.has-text button.clear{display:block;}
+  .search.has-text button.clear{display:block}
 
-  /* ==== New Golf Ball Cluster (20% smaller, with dimples, no green shadow) ==== */
+  /* Golf-ball clusters (compact, dimples, no green glow) */
   .marker-cluster{border-radius:50%}
   .marker-cluster div{
-    position:relative;display:grid;place-items:center;border-radius:50%;
-    width:52px;height:52px;  /* ~20% smaller than old medium (was 56px) */
-    border:1px solid rgba(0,0,0,.35);
-    background:
-      /* subtle dimples pattern */
-      url("data:image/svg+xml;utf8,<?xml version='1.0'?><svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><defs><radialGradient id='g' cx='30%' cy='25%'><stop offset='0%' stop-color='%23ffffff'/><stop offset='100%' stop-color='%23dcdcdc'/></radialGradient><pattern id='p' width='6' height='6' patternUnits='userSpaceOnUse'><circle cx='3' cy='3' r='1.2' fill='%23cfcfcf' opacity='0.55'/></pattern></defs><rect width='60' height='60' fill='url(%23g)'/><rect width='60' height='60' fill='url(%23p)' opacity='0.45'/></svg>")
-      no-repeat center/cover;
-    /* remove green-ish glow; keep a minimal neutral shadow */
-    box-shadow: 0 4px 10px rgba(0,0,0,.25), inset 0 1px 2px rgba(255,255,255,.35);
+    display:grid;place-items:center;border-radius:50%;
+    width:52px;height:52px;border:1px solid rgba(0,0,0,.35);
+    background:url("data:image/svg+xml;utf8,<?xml version='1.0'?><svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><defs><radialGradient id='g' cx='30%' cy='25%'><stop offset='0%' stop-color='%23ffffff'/><stop offset='100%' stop-color='%23dcdcdc'/></radialGradient><pattern id='p' width='6' height='6' patternUnits='userSpaceOnUse'><circle cx='3' cy='3' r='1.2' fill='%23cfcfcf' opacity='0.55'/></pattern></defs><rect width='60' height='60' fill='url(%23g)'/><rect width='60' height='60' fill='url(%23p)' opacity='0.45'/></svg>") no-repeat center/cover;
+    box-shadow:0 4px 10px rgba(0,0,0,.25), inset 0 1px 2px rgba(255,255,255,.35)
   }
-  .marker-cluster span{
-    color:#111;font:800 15px/1 system-ui;
-    text-shadow:0 1px 0 rgba(255,255,255,.85);
-  }
-  /* scale classes (≈20% smaller overall) */
-  .marker-cluster-small div{ width:40px; height:40px; }
-  .marker-cluster-medium div{ width:52px; height:52px; }
-  .marker-cluster-large div{ width:60px; height:60px; }
+  .marker-cluster span{color:#111;font:800 15px/1;text-shadow:0 1px 0 rgba(255,255,255,.85)}
+  .marker-cluster-small div{width:40px;height:40px}
+  .marker-cluster-medium div{width:52px;height:52px}
+  .marker-cluster-large div{width:60px;height:60px}
 
-  /* ==== Pins: hover halo & tooltip ==== */
+  /* Pins & tooltip */
   .leaflet-marker-icon{transition:transform .12s ease, filter .12s ease, box-shadow .12s ease}
   .leaflet-marker-icon:hover{transform:scale(1.06);filter:drop-shadow(0 8px 14px rgba(0,0,0,.45));box-shadow:0 0 0 2px rgba(255,255,255,.9)}
   .ga-tooltip{background:#083424;color:#f1f6f3;border:1px solid rgba(255,255,255,.15);border-radius:8px;box-shadow:0 8px 18px rgba(0,0,0,.45);padding:6px 8px;font-weight:700}
 
-  /* ==== Popup (forest green) ==== */
+  /* Popup (forest green) */
   .leaflet-popup-content-wrapper{background:#052D1F;color:#f2f6f3;border:1px solid rgba(0,0,0,.35);box-shadow:0 12px 28px rgba(0,0,0,.55);border-radius:16px}
   .leaflet-popup-tip{background:#052D1F}
   .popup{min-width:260px;max-width:380px}
@@ -89,27 +54,22 @@
   .btn{padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#083424;color:#fff;text-decoration:none;font-weight:700}
   .btn:hover{filter:brightness(1.08)}
 
-  /* ==== Media (thumb/logo) ==== */
+  /* Media (thumb/logo) */
   .thumb{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.15);margin:6px 0 10px;background:#0c1f18}
-  .thumb img.main{width:100%;height:100%;object-fit:cover;display:block;image-rendering:auto}
+  .thumb img.main{width:100%;height:100%;object-fit:cover;display:block}
   .thumb.logo-only{aspect-ratio:auto;height:140px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid rgba(0,0,0,.12)}
   .thumb img.main.logo-only{width:auto;max-width:100%;max-height:100%;object-fit:contain;padding:8px;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
 
   .logo-badge{position:absolute;right:8px;bottom:8px;width:56px;height:56px;border-radius:50%;overflow:hidden;background:#fff;border:1px solid rgba(255,255,255,.65);box-shadow:0 6px 14px rgba(0,0,0,.35),inset 0 1px 2px rgba(0,0,0,.08)}
   .logo-badge img{width:100%;height:100%;object-fit:contain;background:#fff;display:block;padding:6px}
 
-  .badge-top100{
-    display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;
-    background:linear-gradient(145deg,#f7d776,#dcb247 55%,#b9902d);
-    color:#111;font-weight:800;box-shadow:0 0 0 1px rgba(255,255,255,.25) inset,0 2px 6px rgba(0,0,0,.4)
-  }
+  .badge-top100{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:linear-gradient(145deg,#f7d776,#dcb247 55%,#b9902d);color:#111;font-weight:800;box-shadow:0 0 0 1px rgba(255,255,255,.25) inset,0 2px 6px rgba(0,0,0,.4)}
   .badge-top100 .rank{background:rgba(255,255,255,.4);padding:3px 6px;border-radius:6px}
 </style>
 </head>
 <body>
 <div id="map"></div>
 
-<!-- Controls -->
 <div class="control-bar">
   <div class="search" id="searchWrapper">
     <span>🔎</span>
@@ -139,44 +99,47 @@ const map = L.map("map", {
   scrollWheelZoom:true, doubleClickZoom:false,
   maxBounds:[[7,-170],[72,-50]], maxBoundsViscosity:0.8
 });
-
 L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-  maxZoom: 20, subdomains: "abcd",
-  attribution: "&copy; OpenStreetMap contributors & CartoDB"
+  maxZoom: 20, subdomains:"abcd", attribution:"&copy; OpenStreetMap contributors & CartoDB"
 }).addTo(map);
 
-/* ===== Cluster group (tuned) ===== */
+/* ===== Helpers ===== */
+const isMobile = L.Browser.mobile || window.matchMedia?.('(pointer:coarse)').matches;
+const esc=s=>String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const toNum=v=>{const n=parseFloat(v);return Number.isFinite(n)?n:NaN;};
+const isTop100=v=>{const n=Number(String(v??"").trim());return Number.isFinite(n)&&n>=1&&n<=100;};
+const normalize=s=>String(s??"").toLowerCase();
+const normKey=k=>String(k).toLowerCase().replace(/[^a-z0-9]/g,"");
+const safeUrl=u=>{const s=String(u||"").trim();if(!s||!/^https?:\/\//i.test(s))return"";try{new URL(s);return s;}catch{return"";}};
+function findImage(row,aliases,hint){const idx={};for(const k in row)idx[normKey(k)]=k;for(const a of aliases){const nk=normKey(a);if(idx[nk]!=null){const v=safeUrl(row[idx[nk]]);if(v)return v;}}for(const k in row){if(hint.test(k)){const v=safeUrl(row[k]);if(v)return v;}}return"";}
+function hawaiiTuck(lat,lon){if(lat>=18&&lat<=23&&lon<=-154&&lon>=-162){return[lat+15.5,lon+37]}return[lat,lon]}
+function badge(rank){return `<div class="badge-top100"><span>Top 100</span><span class="rank">#${rank}</span></div>`;}
+
+/* ===== Clusters (same behavior) ===== */
 const clusterLayer = L.markerClusterGroup({
   showCoverageOnHover:false,
-  maxClusterRadius:38,               // spreads sooner
-  disableClusteringAtZoom:14,        // keep micro-clusters at max zoom for spiderfy
+  maxClusterRadius:38,
+  disableClusteringAtZoom:14,
   spiderfyOnMaxZoom:true,
-  spiderfyDistanceMultiplier:2.1,    // wider fan-out
+  spiderfyDistanceMultiplier:2.1,
   zoomToBoundsOnClick:false,
   spiderLegPolylineOptions:{weight:1.2,color:'#083424',opacity:0.45},
-  iconCreateFunction: c => {
-    const n = c.getChildCount();
-    let cls = "marker-cluster-medium", size = 52;
-    if (n < 10) { cls = "marker-cluster-small"; size = 40; }
-    else if (n >= 50) { cls = "marker-cluster-large"; size = 60; }
-    // size sets the DivIcon canvas; CSS above sets the inner <div> to match by class
-    return L.divIcon({
-      html: `<div><span>${n}</span></div>`,
-      className: `marker-cluster ${cls}`,
-      iconSize: L.point(size, size)
-    });
+  iconCreateFunction:c=>{
+    const n=c.getChildCount(); let cls="marker-cluster-medium", size=52;
+    if(n<10){cls="marker-cluster-small";size=40;} else if(n>=50){cls="marker-cluster-large";size=60;}
+    return L.divIcon({html:`<div><span>${n}</span></div>`,className:`marker-cluster ${cls}`,iconSize:L.point(size,size)});
   }
 });
 map.addLayer(clusterLayer);
 
-/* One-click: zoom smartly to bounds, then spiderfy if at max */
-clusterLayer.on('clusterclick', (e) => {
-  const bounds = e.layer.getBounds();
-  const boundsZoom = map.getBoundsZoom(bounds, true, [100,100]);
-  const target = Math.min(13, Math.max(map.getZoom()+1, boundsZoom));
-  const center = bounds.getCenter();
-  map.once('moveend', () => { if (map.getZoom() >= 13) setTimeout(() => e.layer.spiderfy(), 0); });
-  map.setView(center, target, { animate: true });
+/* One-click cluster: zoom to tap location & spiderfy at max */
+clusterLayer.on('clusterclick', e=>{
+  const target = 13;
+  // Compute a “smart” zoom based on the cluster bounds, but center on the actual tap
+  const boundsZoom = map.getBoundsZoom(e.layer.getBounds(), true, [100,100]);
+  const nextZoom = Math.min(target, Math.max(map.getZoom()+1, boundsZoom));
+  map.once('moveend', ()=>{ if(map.getZoom()>=target){ setTimeout(()=>e.layer.spiderfy(),0); }});
+  map.setView(e.latlng, nextZoom, {animate:true});
 });
 
 /* ===== Pin icon ===== */
@@ -191,185 +154,111 @@ const courseIcon = L.icon({
   iconSize:[42,46], iconAnchor:[21,42], popupAnchor:[0,-40], tooltipAnchor:[0,-36]
 });
 
-/* ===== Helpers ===== */
-const esc  = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-const toNum = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : NaN; };
-const isTop100 = v => { const n = Number(String(v ?? "").trim()); return Number.isFinite(n) && n>=1 && n<=100; };
-const normalize = s => String(s ?? "").toLowerCase();
-const normKey = k => String(k).toLowerCase().replace(/[^a-z0-9]/g,"");
-const safeUrl = u => { const s = String(u||"").trim(); if(!s||!/^https?:\/\//i.test(s)) return ""; try { new URL(s); return s; } catch { return ""; } };
-
-function findImage(row, aliases, hintRegex){
-  const idx={}; for(const k in row) idx[normKey(k)] = k;
-  for(const a of aliases){ const nk=normKey(a); if(idx[nk]!=null){ const v=safeUrl(row[idx[nk]]); if(v) return v; } }
-  for(const k in row){ if(hintRegex.test(k)){ const v=safeUrl(row[k]); if(v) return v; } }
-  return "";
-}
-function hawaiiTuck(lat, lon){
-  if(lat>=18 && lat<=23 && lon<=-154 && lon>=-162){ return [lat+15.5, lon+37]; }
-  return [lat,lon];
-}
-function badge(rank){
-  return `<div class="badge-top100"><span>Top 100</span><span class="rank">#${rank}</span></div>`;
-}
-
-/* ===== Media block ===== */
+/* ===== Media & resort ===== */
 function mediaBlock(r){
-  const thumb = findImage(
-    r,
-    ["thumbnail_url","thumbnail url","thumb_url","thumb url","thumbail_url","thumbail url","image_url","image url","image","thumbnail_url(linked","thumbnail_url(linked)","image_url(linked","image_url(linked)"],
-    /(thumb|image|photo)/i
-  );
-  const logo  = findImage(
-    r,
-    ["logo_url","logo url","logo","logo_url(linked","logo_url(linked)"],
-    /logo/i
-  );
-
-  if (thumb && logo){
-    return `<div class="thumb">
-      <img class="main" src="${thumb}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/>
-      <div class="logo-badge"><img src="${logo}" alt="" loading="lazy" onerror="this.closest('.logo-badge')?.remove()"/></div>
-    </div>`;
-  }
-  if (thumb){
-    return `<div class="thumb">
-      <img class="main" src="${thumb}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/>
-    </div>`;
-  }
-  if (logo){
-    return `<div class="thumb logo-only">
-      <img class="main logo-only" src="${logo}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/>
-    </div>`;
-  }
+  const thumb=findImage(r,["thumbnail_url","thumbnail url","thumb_url","thumb url","thumbail_url","thumbail url","image_url","image url","image","thumbnail_url(linked","thumbnail_url(linked)","image_url(linked","image_url(linked)"],/(thumb|image|photo)/i);
+  const logo =findImage(r,["logo_url","logo url","logo","logo_url(linked","logo_url(linked)"],/logo/i);
+  if(thumb&&logo){return `<div class="thumb"><img class="main" src="${thumb}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/><div class="logo-badge"><img src="${logo}" alt="" loading="lazy" onerror="this.closest('.logo-badge')?.remove()"/></div></div>`;}
+  if(thumb){return `<div class="thumb"><img class="main" src="${thumb}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/></div>`;}
+  if(logo){return `<div class="thumb logo-only"><img class="main logo-only" src="${logo}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/></div>`;}
   return "";
 }
+function getResort(row){return (row["course_resort"]||row["course resort"]||row["resort"]||"").trim();}
 
-/* ===== Resort getter ===== */
-function getResort(row){
-  return (row["course_resort"] || row["course resort"] || row["resort"] || "").trim();
-}
-
-/* ===== Popup ===== */
+/* ===== Popup (with autopan padding so it doesn't hide under UI) ===== */
 function popupHtml(r){
-  const name = r["course_name"] || r["Course Name"] || r["course name"] || r["name"] || "";
-  const resort = getResort(r);
-  const fees = r["cost_per_course(green_fee_range)"] || r["green fees"] || r["green_fee_range"] || r["fees"] || "";
-  const coursesOnProp = r["#_of_courses_on_property"] || r["courses on property"] || r["num courses"] || r["courses"] || "";
-  const lodging = r["lodging_on-site(yes_no)"] || r["on site lodging"] || r["lodging_on-site"] || r["lodging"] || "";
-  const rank = r["top_100_ranking"] || r["top 100 ranking"] || r["ranking"] || r["rank"] || "";
-  const city = r["City"] || r["city"] || "";
-  const state = r["state"] || r["State"] || "";
-
-  const lines = [];
+  const name=r["course_name"]||r["Course Name"]||r["course name"]||r["name"]||"";
+  const resort=getResort(r);
+  const fees=r["cost_per_course(green_fee_range)"]||r["green fees"]||r["green_fee_range"]||r["fees"]||"";
+  const courses=r["#_of_courses_on_property"]||r["courses on property"]||r["num courses"]||r["courses"]||"";
+  const lodging=r["lodging_on-site(yes_no)"]||r["on site lodging"]||r["lodging_on-site"]||r["lodging"]||"";
+  const rank=r["top_100_ranking"]||r["top 100 ranking"]||r["ranking"]||r["rank"]||"";
+  const city=r["City"]||r["city"]||""; const state=r["state"]||r["State"]||"";
+  const lines=[];
   lines.push(`<div class="line"><strong>🏌️‍♂️ ${esc(name)}</strong></div>`);
-  if (resort) lines.push(`<div class="line">🏨 ${esc(resort)}</div>`);
-  if (isTop100(rank)) lines.push(`<div class="line">🏆 Golf Digest Top 100: <strong>#${rank}</strong></div>`);
-  if (fees) lines.push(`<div class="line">💰 Green Fees: ${esc(fees)}</div>`);
-  if (coursesOnProp) lines.push(`<div class="line">⛳ Courses on Property: ${esc(coursesOnProp)}</div>`);
-  if (lodging) lines.push(`<div class="line">🛏️ Lodging On-Site: ${esc(lodging)}</div>`);
-  const loc = [city, state].filter(Boolean).join(", ");
-  if (loc) lines.push(`<div class="line">📍 ${esc(loc)}</div>`);
-
-  const googleLink = `https://www.google.com/search?q=${encodeURIComponent(name + " golf")}`;
-
-  return `<div class="popup">
-    ${mediaBlock(r)}
-    ${isTop100(rank) ? badge(rank) : ""}
-    ${lines.join("")}
-    <div class="actions"><a class="btn" href="${googleLink}" target="_blank" rel="noopener">View Course ↗</a></div>
-  </div>`;
+  if(resort)lines.push(`<div class="line">🏨 ${esc(resort)}</div>`);
+  if(isTop100(rank))lines.push(`<div class="line">🏆 Golf Digest Top 100: <strong>#${rank}</strong></div>`);
+  if(fees)lines.push(`<div class="line">💰 Green Fees: ${esc(fees)}</div>`);
+  if(courses)lines.push(`<div class="line">⛳ Courses on Property: ${esc(courses)}</div>`);
+  if(lodging)lines.push(`<div class="line">🛏️ Lodging On-Site: ${esc(lodging)}</div>`);
+  const loc=[city,state].filter(Boolean).join(", "); if(loc)lines.push(`<div class="line">📍 ${esc(loc)}</div>`);
+  const google=`https://www.google.com/search?q=${encodeURIComponent(name+" golf")}`;
+  return `<div class="popup">${mediaBlock(r)}${isTop100(rank)?badge(rank):""}${lines.join("")}<div class="actions"><a class="btn" href="${google}" target="_blank" rel="noopener">View Course ↗</a></div></div>`;
 }
 
-/* ===== Markers & load ===== */
-const markers = [];
-const rowByMarker = new WeakMap();
+/* ===== Data / markers ===== */
+const markers=[], rowByMarker=new WeakMap();
 
 function makeMarker(r){
-  let lat = toNum(r.latitude ?? r.Latitude ?? r.lat);
-  let lon = toNum(r.longitude ?? r.Longitude ?? r.lon ?? r.lng);
-  if(!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  let lat=toNum(r.latitude??r.Latitude??r.lat);
+  let lon=toNum(r.longitude??r.Longitude??r.lon??r.lng);
+  if(!Number.isFinite(lat)||!Number.isFinite(lon)) return null;
+  [lat,lon]=hawaiiTuck(lat,lon);
 
-  [lat,lon] = hawaiiTuck(lat,lon);
+  const title=r["course_name"]||r["Course Name"]||r["course name"]||r["name"]||"";
+  const m=L.marker([lat,lon],{icon:courseIcon,title});
 
-  const title = r["course_name"] || r["Course Name"] || r["course name"] || r["name"] || "";
-  const m = L.marker([lat,lon], { icon: courseIcon, title });
+  // Popup with generous autopan padding (keeps it clear of left controls & top search)
+  m.bindPopup(()=>popupHtml(r),{
+    maxWidth:380,minWidth:260,closeButton:true,autoPan:true,
+    autoPanPaddingTopLeft: L.point(140,120),   // space for controls/search
+    autoPanPaddingBottomRight: L.point(20,20)
+  });
+  m.bindTooltip(title,{direction:"top",offset:[0,-12],opacity:.92,className:"ga-tooltip"});
 
-  m.bindTooltip(title, { direction:"top", offset:[0,-12], opacity:.92, className:"ga-tooltip" });
-  m.bindPopup(() => popupHtml(r), { maxWidth:380, minWidth:260, closeButton:true });
+  const rank=r["top_100_ranking"]||r["top 100 ranking"]||r["ranking"]||r["rank"]||"";
+  m.on("add",()=>{ if(isTop100(rank)&&m._icon){ m._icon.style.filter="drop-shadow(0 0 1px #b9902d) drop-shadow(0 0 6px rgba(185,144,45,.55))"; } });
 
-  const rank = r["top_100_ranking"] || r["top 100 ranking"] || r["ranking"] || r["rank"] || "";
-  m.on("add", () => { if(isTop100(rank) && m._icon){ m._icon.style.filter = "drop-shadow(0 0 1px #b9902d) drop-shadow(0 0 6px rgba(185,144,45,.55))"; } });
+  // ✅ On mobile, center to the tap point (helps when keyboard/UI shifts viewport)
+  m.on("click",(ev)=>{ if(isMobile){ map.setView(ev.latlng, Math.max(map.getZoom(), 12), {animate:true}); } });
 
-  m.on("mouseover", () => m.setZIndexOffset(1000));
-  m.on("mouseout",  () => m.setZIndexOffset(0));
+  m.on("mouseover",()=>m.setZIndexOffset(1000));
+  m.on("mouseout", ()=>m.setZIndexOffset(0));
 
-  rowByMarker.set(m, r);
+  rowByMarker.set(m,r);
   return m;
 }
 
-Papa.parse(CSV_URL, {
-  download:true, header:true, skipEmptyLines:true,
-  complete: res => {
-    const rows = res.data || [];
-    const names = new Set();
-
+Papa.parse(CSV_URL,{
+  download:true,header:true,skipEmptyLines:true,
+  complete: res=>{
+    const rows=res.data||[], names=new Set();
     rows.forEach(r=>{
-      const m = makeMarker(r); if(!m) return;
-      markers.push({marker:m, row:r});
-      rowByMarker.set(m, r);
+      const m=makeMarker(r); if(!m) return;
+      markers.push({marker:m,row:r}); rowByMarker.set(m,r);
       clusterLayer.addLayer(m);
-
-      const nm = r["course_name"] || r["Course Name"] || r["course name"] || r["name"];
-      if(nm) names.add(nm);
+      const nm=r["course_name"]||r["Course Name"]||r["course name"]||r["name"]; if(nm) names.add(nm);
     });
-
-    const dl = document.getElementById("courseList");
-    dl.innerHTML = "";
-    Array.from(names).filter(Boolean).sort().slice(0,2000).forEach(n=>{
-      const opt = document.createElement("option"); opt.value = n; dl.appendChild(opt);
-    });
-
-    if(markers.length){
-      const g = L.featureGroup(markers.map(m=>m.marker));
-      map.fitBounds(g.getBounds().pad(0.08), { animate:true });
-    }
+    const dl=document.getElementById("courseList"); dl.innerHTML="";
+    Array.from(names).filter(Boolean).sort().slice(0,2000).forEach(n=>{const o=document.createElement("option");o.value=n;dl.appendChild(o);});
+    if(markers.length){const g=L.featureGroup(markers.map(m=>m.marker)); map.fitBounds(g.getBounds().pad(0.08),{animate:true});}
   },
-  error: err => {
-    console.error("CSV load error:", err);
-    alert("Error loading data CSV. Check ?csv= link and that it's published as CSV.");
-  }
+  error: err=>{console.error("CSV load error:",err); alert("Error loading data CSV. Check ?csv= link and that it’s published as CSV.");}
 });
 
 /* ===== Filters & search clear ===== */
 function applyFilters(){
-  const topOnly = document.getElementById("top100Toggle").checked;
-  const q = (document.getElementById("searchBox").value || "").toLowerCase();
-
+  const topOnly=document.getElementById("top100Toggle").checked;
+  const q=(document.getElementById("searchBox").value||"").toLowerCase();
   clusterLayer.clearLayers();
-
   markers.forEach(({marker,row})=>{
-    const rank = row["top_100_ranking"] || row["top 100 ranking"] || row["ranking"] || row["rank"] || "";
-    const name = (row["course_name"] || row["Course Name"] || row["course name"] || row["name"] || "").toLowerCase();
-    const city = (row["City"] || row["city"] || "").toLowerCase();
-    const state = (row["state"] || row["State"] || "").toLowerCase();
-
-    const okTop = !topOnly || isTop100(rank);
-    const okSearch = !q || (name.includes(q) || city.includes(q) || state.includes(q));
-
-    if(okTop && okSearch){ clusterLayer.addLayer(marker); }
+    const rank=row["top_100_ranking"]||row["top 100 ranking"]||row["ranking"]||row["rank"]||"";
+    const name=(row["course_name"]||row["Course Name"]||row["course name"]||row["name"]||"").toLowerCase();
+    const city=(row["City"]||row["city"]||"").toLowerCase();
+    const state=(row["state"]||row["State"]||"").toLowerCase();
+    const okTop=!topOnly||isTop100(rank);
+    const okSearch=!q||(name.includes(q)||city.includes(q)||state.includes(q));
+    if(okTop&&okSearch){ clusterLayer.addLayer(marker); }
   });
 }
 document.getElementById("top100Toggle").addEventListener("change", applyFilters);
-
-const searchBox = document.getElementById("searchBox");
-const searchWrap = document.getElementById("searchWrapper");
-const clearBtn   = document.getElementById("clearSearch");
-
-function updateClear(){ searchWrap.classList.toggle("has-text", !!searchBox.value); }
-searchBox.addEventListener("input", ()=>{ updateClear(); applyFilters(); });
-searchBox.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); applyFilters(); }});
-clearBtn.addEventListener("click", ()=>{ searchBox.value=""; updateClear(); applyFilters(); });
+const searchBox=document.getElementById("searchBox");
+const searchWrap=document.getElementById("searchWrapper");
+const clearBtn=document.getElementById("clearSearch");
+function updateClear(){searchWrap.classList.toggle("has-text", !!searchBox.value);}
+searchBox.addEventListener("input", ()=>{updateClear();applyFilters();});
+searchBox.addEventListener("keydown", e=>{if(e.key==="Enter"){e.preventDefault();applyFilters();}});
+clearBtn.addEventListener("click", ()=>{searchBox.value="";updateClear();applyFilters();});
 
 /* ===== Cluster hover tooltip with resort names ===== */
 clusterLayer.on("clustermouseover",(e)=>{
@@ -379,16 +268,12 @@ clusterLayer.on("clustermouseover",(e)=>{
     const nm=(row["course_resort"]||row["course resort"]||row["resort"]||"").trim();
     if(nm) counts.set(nm,(counts.get(nm)||0)+1);
   });
-
   let text="";
   if(counts.size===1){ text=[...counts.keys()][0]; }
   else if(counts.size>1){
     const parts=[...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(([n,c])=>`${n} (${c})`);
     text=parts.join(", "); if(counts.size>3) text+=" …";
-  } else {
-    text=`${e.layer.getChildCount()} courses`;
-  }
-
+  } else { text=`${e.layer.getChildCount()} courses`; }
   e.layer.bindTooltip(text,{className:"ga-tooltip",direction:"top",offset:[0,-2],opacity:.95}).openTooltip();
 });
 clusterLayer.on("clustermouseout", e=>e.layer.closeTooltip());
