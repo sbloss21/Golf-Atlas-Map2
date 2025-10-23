@@ -65,9 +65,7 @@
   /* ==== Pins: hover halo & tooltip ==== */
   .leaflet-marker-icon{transition:transform .12s ease, filter .12s ease, box-shadow .12s ease}
   .leaflet-marker-icon:hover{transform:scale(1.06);filter:drop-shadow(0 8px 14px rgba(0,0,0,.45));box-shadow:0 0 0 2px rgba(255,255,255,.9)}
-
-  .ga-tooltip{background:#083424;color:#f1f6f3;border:1px solid rgba(255,255,255,.15);
-    border-radius:8px;box-shadow:0 8px 18px rgba(0,0,0,.45);padding:6px 8px;font-weight:700}
+  .ga-tooltip{background:#083424;color:#f1f6f3;border:1px solid rgba(255,255,255,.15);border-radius:8px;box-shadow:0 8px 18px rgba(0,0,0,.45);padding:6px 8px;font-weight:700}
 
   /* ==== Popup (forest green) ==== */
   .leaflet-popup-content-wrapper{background:#052D1F;color:#f2f6f3;border:1px solid rgba(0,0,0,.35);box-shadow:0 12px 28px rgba(0,0,0,.55);border-radius:16px}
@@ -81,8 +79,21 @@
   /* ==== Media (thumb/logo) ==== */
   .thumb{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.15);margin:6px 0 10px;background:#0c1f18}
   .thumb img.main{width:100%;height:100%;object-fit:cover;display:block;image-rendering:auto}
-  .thumb.logo-only{aspect-ratio:auto;height:160px;display:flex;align-items:center;justify-content:center;background:#0f221b}
-  .thumb img.main.logo-only{width:auto;max-width:100%;max-height:100%;object-fit:contain;padding:10px;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
+
+  /* ✅ Logo-only: white background + smaller height + no upscaling (sharper) */
+  .thumb.logo-only{
+    aspect-ratio:auto;height:140px;               /* was 160px */
+    display:flex;align-items:center;justify-content:center;
+    background:#ffffff;                            /* white backing for dark logos */
+    border:1px solid rgba(0,0,0,.12);
+  }
+  .thumb img.main.logo-only{
+    width:auto;max-width:100%;max-height:100%;     /* never upscale beyond natural size */
+    object-fit:contain;padding:8px;
+    image-rendering:-webkit-optimize-contrast;
+    image-rendering:crisp-edges;
+  }
+
   .logo-badge{position:absolute;right:8px;bottom:8px;width:56px;height:56px;border-radius:50%;overflow:hidden;background:#fff;border:1px solid rgba(255,255,255,.65);box-shadow:0 6px 14px rgba(0,0,0,.35),inset 0 1px 2px rgba(0,0,0,.08)}
   .logo-badge img{width:100%;height:100%;object-fit:contain;background:#fff;display:block;padding:6px}
 
@@ -202,6 +213,7 @@ function mediaBlock(r){
     </div>`;
   }
   if (logo){
+    /* logo-only block: white background + reduced height + crisp scaling */
     return `<div class="thumb logo-only">
       <img class="main logo-only" src="${logo}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/>
     </div>`;
@@ -334,9 +346,7 @@ const searchBox = document.getElementById("searchBox");
 const searchWrap = document.getElementById("searchWrapper");
 const clearBtn   = document.getElementById("clearSearch");
 
-function updateClear(){
-  searchWrap.classList.toggle("has-text", !!searchBox.value);
-}
+function updateClear(){ searchWrap.classList.toggle("has-text", !!searchBox.value); }
 searchBox.addEventListener("input", ()=>{ updateClear(); applyFilters(); });
 searchBox.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); applyFilters(); }});
 clearBtn.addEventListener("click", ()=>{ searchBox.value=""; updateClear(); applyFilters(); });
@@ -346,7 +356,8 @@ clusterLayer.on("clustermouseover", (e) => {
   const layer = e.layer;
   const counts = new Map();
   layer.getAllChildMarkers().forEach(m => {
-    const nm = getResort(rowByMarker.get(m) || {});
+    const row = rowByMarker.get(m) || {};
+    const nm = (row["course_resort"] || row["course resort"] || row["resort"] || "").trim();
     if(nm){ counts.set(nm, (counts.get(nm) || 0) + 1); }
   });
 
@@ -354,12 +365,8 @@ clusterLayer.on("clustermouseover", (e) => {
   if (counts.size === 1){
     text = [...counts.keys()][0];
   } else if (counts.size > 1){
-    const parts = [...counts.entries()]
-      .sort((a,b)=>b[1]-a[1])
-      .slice(0,3)
-      .map(([n,c])=>`${n} (${c})`);
-    text = parts.join(", ");
-    if (counts.size > 3) text += " …";
+    const parts = [...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(([n,c])=>`${n} (${c})`);
+    text = parts.join(", "); if (counts.size > 3) text += " …";
   } else {
     text = `${layer.getChildCount()} courses`;
   }
