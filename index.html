@@ -5,7 +5,6 @@
 <title>Golf Atlas Map</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<!-- Leaflet + Cluster -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
@@ -27,30 +26,29 @@
   .control input[type="checkbox"]{accent-color:#dcb247; width:18px; height:18px; cursor:pointer}
   .control label{cursor:pointer}
 
-  /* Search control */
+  /* Search control (compact) */
   .search{
-    flex:1 1 260px; display:flex; align-items:center; gap:8px;
+    flex:0 1 auto; display:flex; align-items:center; gap:8px;
     background:rgba(8,52,36,.92); color:#e9f4ef; border:1px solid rgba(0,0,0,.35);
     border-radius:12px; padding:6px 10px; box-shadow:0 8px 18px rgba(0,0,0,.35);
+    max-width: 320px; min-width: 220px;
   }
   .search input{
-    flex:1; min-width:160px; border:none; outline:none; background:transparent; color:#e9f4ef;
+    width:100%; border:none; outline:none; background:transparent; color:#e9f4ef;
     font:600 14px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
   }
   .search input::placeholder{color:#b6d1c7}
 
-  /* ===== Golf-ball cluster icons (more realistic) ===== */
+  /* ===== Golf-ball clusters (realistic) ===== */
   .marker-cluster { border-radius: 50%; }
   .marker-cluster div{
     position:relative; display:grid; place-items:center; border-radius:50%;
     width:56px; height:56px; border:2px solid #222;
-    /* “photo-like” dimple pattern via layered SVG + gradients */
     background:
-      url("data:image/svg+xml;utf8,<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><defs><radialGradient id='g' cx='30%' cy='30%'><stop offset='0%' stop-color='%23ffffff'/><stop offset='60%' stop-color='%23efefef'/><stop offset='85%' stop-color='%23dcdcdc'/><stop offset='100%' stop-color='%23cfcfcf'/></radialGradient></defs><rect width='64' height='64' fill='url(%23g)'/><g fill='rgba(0,0,0,0.085)'>") no-repeat center/cover,
+      url("data:image/svg+xml;utf8,<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><defs><radialGradient id='g' cx='30%' cy='30%'><stop offset='0%' stop-color='%23ffffff'/><stop offset='60%' stop-color='%23efefef'/><stop offset='85%' stop-color='%23dcdcdc'/><stop offset='100%' stop-color='%23cfcfcf'/></radialGradient></defs><rect width='64' height='64' fill='url(%23g)'/></svg>") no-repeat center/cover,
       radial-gradient(120% 120% at 30% 30%, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.05) 100%);
     box-shadow: 0 6px 14px rgba(0,0,0,.35), inset 0 2px 6px rgba(255,255,255,.25);
   }
-  /* dimple dots (repeating pattern overlaid) */
   .marker-cluster div::after{
     content:"";
     position:absolute; inset:0; border-radius:50%;
@@ -73,7 +71,7 @@
   .marker-cluster-medium div{width:56px;height:56px}
   .marker-cluster-large div{width:64px;height:64px}
 
-  /* ===== Popup styling (forest green) ===== */
+  /* ===== Popup (forest green) ===== */
   .leaflet-popup-content-wrapper{
     background:#052D1F; color:#f2f6f3;
     border:1px solid rgba(0,0,0,.35);
@@ -90,6 +88,15 @@
   .btn{padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#083424;color:#fff;text-decoration:none;font-weight:700;}
   .btn:hover{filter:brightness(1.08)}
 
+  /* ===== Top section thumbnail / logo ===== */
+  .thumb{
+    width:100%; aspect-ratio:16/9; border-radius:12px; overflow:hidden;
+    border:1px solid rgba(255,255,255,.15); margin:6px 0 10px; background:#0c1f18;
+  }
+  .thumb img{
+    width:100%; height:100%; object-fit:cover; display:block;
+  }
+
   /* ===== Gold Top-100 Badge ===== */
   .badge-top100{
     --g1:#f7d776; --g2:#dcb247; --g3:#b9902d;
@@ -102,7 +109,7 @@
   .badge-top100 .rank{font-size:.95rem;padding:3px 6px;border-radius:6px;background:rgba(255,255,255,.4)}
   .badge-top100 .label{font-size:.8rem;font-weight:900;text-transform:uppercase}
 
-  /* ===== Hover tooltips & pin effects ===== */
+  /* ===== Tooltips & pin effects ===== */
   .ga-tooltip{
     background:#083424;color:#f1f6f3;border:1px solid rgba(255,255,255,.15);border-radius:8px;
     box-shadow:0 8px 18px rgba(0,0,0,.45);padding:6px 8px;font-weight:700;letter-spacing:.1px;
@@ -129,17 +136,11 @@
     <input type="checkbox" id="top100Toggle" />
     <label for="top100Toggle">Show Top-100 Only</label>
   </div>
-  <div class="control">
-    <input type="checkbox" id="heatToggle" />
-    <label for="heatToggle">Pin Density Heat</label>
-  </div>
 </div>
 
-<!-- libs -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
-<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
 <script>
   // ===== CONFIG =====
@@ -154,31 +155,25 @@
     zoomSnap: 0.5,
     zoomDelta: 0.5,
     inertia: false,
-    scrollWheelZoom: false,
+    scrollWheelZoom: true,
     doubleClickZoom: false,
     maxBounds: [[7, -170], [72, -50]],
     maxBoundsViscosity: 0.8
   });
 
-  // Base: Carto Positron (clean) + labels-only overlay at mid zooms
-  const basePositron = L.tileLayer(
-    "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-    { maxZoom: 18, subdomains: "abcd", maxNativeZoom: 14 }
-  ).addTo(map);
-  const labelsOnly = L.tileLayer(
-    "https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png",
-    { subdomains: "abcd", opacity: 0 }
-  ).addTo(map);
-  map.on("zoomend", () => labelsOnly.setOpacity(map.getZoom() >= 8 ? 0.85 : 0));
+  // Base: standard OSM
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 18, attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map);
 
-  // Cluster group
-  let clusterLayer = L.markerClusterGroup({
+  // Clusters
+  const clusterLayer = L.markerClusterGroup({
     showCoverageOnHover:false, maxClusterRadius:48,
     iconCreateFunction: c => {
       const count = c.getChildCount();
       let sizeClass = "small";
-      if (count >= 50) sizeClass = "large";
-      else if (count >= 10) sizeClass = "medium";
+      if(count >= 50) sizeClass = "large";
+      else if(count >= 10) sizeClass = "medium";
       return L.divIcon({
         html: `<div><span>${count}</span></div>`,
         className: `marker-cluster marker-cluster-${sizeClass}`,
@@ -187,10 +182,7 @@
     }
   }).addTo(map);
 
-  // Heat layer (initially off)
-  let heatLayer = L.heatLayer([], { radius: 20, blur: 16, maxZoom: 10, minOpacity: 0.35 });
-
-  // Course pin icon (SVG encoded)
+  // Course Pin (green teardrop + red flag) — encoded SVG
   const pinSvg =
     `<svg xmlns='http://www.w3.org/2000/svg' width='42' height='46' viewBox='0 0 42 46'>
       <path d='M21 1c-9.4 0-17 7.6-17 17 0 11 17 27 17 27s17-16 17-27c0-9.4-7.6-17-17-17z' fill='#1f7a3b' stroke='#0e4820' stroke-width='2'/>
@@ -208,8 +200,15 @@
   const toNum = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : NaN; };
   const isTop100 = v => { const n = Number(String(v ?? "").trim()); return Number.isFinite(n) && n >= 1 && n <= 100; };
   const normalize = s => String(s ?? "").toLowerCase();
+  const safeUrl = (u) => {
+    const s = String(u || "").trim();
+    if (!s) return "";
+    try { const url = new URL(s); if (url.protocol === "http:" || url.protocol === "https:") return s; }
+    catch(e) {}
+    return "";
+  };
 
-  // Hawaii tuck (shift HI into CONUS view)
+  // Hawaii tuck
   function hawaiiTuck(lat, lon){
     if(lat >= 18 && lat <= 23 && lon <= -154 && lon >= -162){
       return [lat + 15.5, lon + 37];
@@ -225,6 +224,17 @@
       </div>`;
   }
 
+  function thumbHtml(imgUrl){
+    const u = safeUrl(imgUrl);
+    if (!u) return "";
+    // onerror = remove the wrapper so it collapses cleanly
+    return `
+      <div class="thumb">
+        <img src="${u}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/>
+      </div>
+    `;
+  }
+
   function popupHtml(r){
     const name = esc(r["course_name"]);
     const resortRaw = String(r["course_resort"] ?? "").trim();
@@ -234,6 +244,9 @@
     const rank = r["top_100_ranking"];
     const city = esc(r["City"] || r["city"] || "");
     const state = esc(r["state"] || "");
+
+    // image_url preferred, else logo_url
+    const imgUrl = safeUrl(r["image_url"]) || safeUrl(r["logo_url"]);
 
     const lines = [];
     lines.push(`<div class="line"><strong>🏌️‍♂️ ${name}</strong></div>`);
@@ -249,19 +262,18 @@
 
     return `
       <div class="popup">
+        ${thumbHtml(imgUrl)}
         <div class="header">${isTop100(rank) ? badge(rank) : ""}<div class="title"></div></div>
         ${lines.join("")}
         <div class="actions"><a class="btn" href="${googleLink}" target="_blank" rel="noopener">View Course ↗</a></div>
       </div>`;
   }
 
-  // Global state
-  let rows = [];                 // raw rows from CSV
-  let markers = [];              // [{ marker, row }]
-  let filteredMarkers = [];      // active filtered set
-  let heatData = [];             // [ [lat, lon, weight], ... ]
+  // State
+  let markers = [];      // [{ marker, row }]
+  let filteredMarkers = [];
 
-  // Build marker for a row
+  // Build marker
   function makeMarker(r){
     let lat = toNum(r.latitude ?? r.Latitude ?? r.lat);
     let lon = toNum(r.longitude ?? r.Longitude ?? r.lon ?? r.lng);
@@ -270,14 +282,10 @@
     [lat, lon] = hawaiiTuck(lat, lon);
 
     const marker = L.marker([lat, lon], { icon: courseIcon, title: r["course_name"] || "" });
-
-    // Tooltip
     marker.bindTooltip(r["course_name"] || "", { direction:"top", offset:[0,-12], opacity:.92, className:"ga-tooltip" });
-
-    // Popup
     marker.bindPopup(popupHtml(r), { maxWidth: 380, minWidth: 260, closeButton: true });
 
-    // Top-100 gold rim
+    // Gold rim for Top-100 pins
     const rank = r["top_100_ranking"];
     marker.on("add", () => {
       if (isTop100(rank) && marker._icon) {
@@ -285,33 +293,19 @@
       }
     });
 
-    // Hover z-index
     marker.on("mouseover", () => marker.setZIndexOffset(1000));
     marker.on("mouseout",  () => marker.setZIndexOffset(0));
 
     return marker;
   }
 
-  // Populate search suggestions (datalist)
-  function updateDatalist(samples){
-    const dl = document.getElementById("courseList");
-    dl.innerHTML = "";
-    samples.slice(0, 50).forEach(s => {
-      const opt = document.createElement("option");
-      opt.value = s;
-      dl.appendChild(opt);
-    });
-  }
-
-  // Apply filters (Top-100 toggle + search)
+  // Apply filters
   function applyFilters(){
     const topOnly = document.getElementById("top100Toggle").checked;
     const q = normalize(document.getElementById("searchBox").value);
 
-    // Clear cluster & heat
     clusterLayer.clearLayers();
     filteredMarkers = [];
-    heatData = [];
 
     markers.forEach(({marker, row}) => {
       const matchesTop = !topOnly || isTop100(row["top_100_ranking"]);
@@ -320,14 +314,8 @@
       if (matchesTop && matchesSearch) {
         clusterLayer.addLayer(marker);
         filteredMarkers.push({marker, row});
-        const latlng = marker.getLatLng();
-        heatData.push([latlng.lat, latlng.lng, 0.6]);
       }
     });
-
-    if (heatLayer && map.hasLayer(heatLayer)) {
-      heatLayer.setLatLngs(heatData);
-    }
 
     if (filteredMarkers.length) {
       const group = L.featureGroup(filteredMarkers.map(m => m.marker));
@@ -350,12 +338,11 @@
     }
   }
 
-  // Loading CSV
+  // Load CSV
   Papa.parse(CSV_URL, {
     download:true, header:true, skipEmptyLines:true,
     complete: res => {
-      rows = res.data || [];
-      // Build markers + initial heat data and datalist
+      const rows = res.data || [];
       const names = new Set();
       rows.forEach(r => {
         const m = makeMarker(r);
@@ -364,14 +351,13 @@
         clusterLayer.addLayer(m);
         names.add(r["course_name"]);
       });
-      // Seed heat
-      heatData = markers.map(({marker}) => {
-        const ll = marker.getLatLng(); return [ll.lat, ll.lng, 0.6];
+      // suggestions
+      const dl = document.getElementById("courseList");
+      dl.innerHTML = "";
+      Array.from(names).filter(Boolean).sort().slice(0, 2000).forEach(n => {
+        const opt = document.createElement("option"); opt.value = n; dl.appendChild(opt);
       });
-      // Suggestions: course names (unique)
-      updateDatalist(Array.from(names).filter(Boolean).sort());
-
-      // Fit bounds
+      // fit
       if (markers.length) {
         const group = L.featureGroup(markers.map(m => m.marker));
         map.fitBounds(group.getBounds().pad(0.08), { animate:true });
@@ -383,27 +369,11 @@
     }
   });
 
-  // UI: toggles
+  // UI handlers
   document.getElementById("top100Toggle").addEventListener("change", applyFilters);
 
-  // Heat toggle
-  document.getElementById("heatToggle").addEventListener("change", (e) => {
-    if (e.target.checked) {
-      if (!map.hasLayer(heatLayer)) {
-        heatLayer.setLatLngs(heatData);
-        heatLayer.addTo(map);
-      }
-    } else {
-      if (map.hasLayer(heatLayer)) map.removeLayer(heatLayer);
-    }
-  });
-
-  // Search events
   const searchBox = document.getElementById("searchBox");
-  searchBox.addEventListener("input", () => {
-    // live filter while typing
-    applyFilters();
-  });
+  searchBox.addEventListener("input", applyFilters);
   searchBox.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -414,4 +384,3 @@
 </script>
 </body>
 </html>
-
