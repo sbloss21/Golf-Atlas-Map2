@@ -12,7 +12,7 @@
 <style>
   html,body,#map{height:100%;margin:0;background:#052D1F;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
 
-  /* ==== Controls stacked under zoom buttons ==== */
+  /* ==== Controls stacked under zoom ==== */
   .control-bar{
     position:absolute;z-index:9999;top:90px;left:12px;
     display:flex;flex-direction:column;align-items:flex-start;gap:10px;
@@ -24,8 +24,9 @@
     box-shadow:0 8px 18px rgba(0,0,0,.35);
   }
   .control input[type="checkbox"]{accent-color:#dcb247;width:18px;height:18px;cursor:pointer}
+  .control label{cursor:pointer}
 
-  /* ==== Search Bar with Clear Button ==== */
+  /* ==== Search with clear (×) ==== */
   .search{
     display:flex;align-items:center;gap:8px;
     background:rgba(8,52,36,.92);color:#e9f4ef;border:1px solid rgba(0,0,0,.35);
@@ -34,63 +35,79 @@
   }
   .search input{
     flex:1;border:none;outline:none;background:transparent;
-    color:#e9f4ef;font:600 14px/1.2 system-ui;
+    color:#e9f4ef;font:600 14px/1.2 system-ui;padding-right:26px;
   }
   .search input::placeholder{color:#b6d1c7}
   .search button.clear{
-    position:absolute;right:10px;top:50%;transform:translateY(-50%);
+    position:absolute;right:8px;top:50%;transform:translateY(-50%);
     background:none;border:none;color:#b6d1c7;font-size:18px;cursor:pointer;
+    width:22px;height:22px;line-height:18px;border-radius:6px;
     display:none;
   }
+  .search button.clear:hover{background:rgba(255,255,255,.1);color:#fff}
   .search.has-text button.clear{display:block;}
 
-  /* ==== Cluster styling ==== */
+  /* ==== Cluster ball ==== */
+  .marker-cluster{border-radius:50%}
   .marker-cluster div{
     position:relative;display:grid;place-items:center;border-radius:50%;
     width:56px;height:56px;border:2px solid #222;
     background:
-      url("data:image/svg+xml;utf8,<?xml version='1.0'?><svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><defs><radialGradient id='g'><stop offset='0%' stop-color='%23fff'/><stop offset='100%' stop-color='%23ccc'/></radialGradient></defs><rect width='64' height='64' fill='url(%23g)'/></svg>") no-repeat center/cover;
-    box-shadow:0 6px 14px rgba(0,0,0,.35);
+      url("data:image/svg+xml;utf8,<?xml version='1.0'?><svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><defs><radialGradient id='g' cx='30%' cy='30%'><stop offset='0%' stop-color='%23fff'/><stop offset='100%' stop-color='%23ccc'/></radialGradient></defs><rect width='64' height='64' fill='url(%23g)'/></svg>")
+      no-repeat center/cover;
+    box-shadow:0 6px 14px rgba(0,0,0,.35), inset 0 2px 6px rgba(255,255,255,.25);
   }
-  .marker-cluster span{font:800 16px system-ui;color:#111;}
+  .marker-cluster span{color:#111;font:800 16px/1 system-ui;text-shadow:0 1px 0 rgba(255,255,255,.8)}
+  .marker-cluster-small div{width:48px;height:48px}
+  .marker-cluster-medium div{width:56px;height:56px}
+  .marker-cluster-large div{width:64px;height:64px}
+
+  /* ==== Pins: hover halo & tooltip ==== */
+  .leaflet-marker-icon{transition:transform .12s ease, filter .12s ease, box-shadow .12s ease}
+  .leaflet-marker-icon:hover{transform:scale(1.06);filter:drop-shadow(0 8px 14px rgba(0,0,0,.45));box-shadow:0 0 0 2px rgba(255,255,255,.9)}
+
+  .ga-tooltip{background:#083424;color:#f1f6f3;border:1px solid rgba(255,255,255,.15);
+    border-radius:8px;box-shadow:0 8px 18px rgba(0,0,0,.45);padding:6px 8px;font-weight:700}
 
   /* ==== Popup (forest green) ==== */
-  .leaflet-popup-content-wrapper{background:#052D1F;color:#f2f6f3;border:1px solid rgba(0,0,0,.35);border-radius:16px;}
-  .leaflet-popup-tip{background:#052D1F;}
-  .popup{min-width:260px;max-width:380px;}
-  .popup .line{margin:6px 0;}
-  .actions{margin-top:12px;display:flex;justify-content:flex-end;}
-  .btn{padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#083424;color:#fff;text-decoration:none;font-weight:700;}
-  .btn:hover{filter:brightness(1.1);}
+  .leaflet-popup-content-wrapper{background:#052D1F;color:#f2f6f3;border:1px solid rgba(0,0,0,.35);box-shadow:0 12px 28px rgba(0,0,0,.55);border-radius:16px}
+  .leaflet-popup-tip{background:#052D1F}
+  .popup{min-width:260px;max-width:380px}
+  .popup .line{margin:6px 0}
+  .actions{margin-top:12px;display:flex;justify-content:flex-end}
+  .btn{padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#083424;color:#fff;text-decoration:none;font-weight:700}
+  .btn:hover{filter:brightness(1.08)}
 
-  /* ==== Logo / Thumbnail ==== */
-  .thumb{width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1);margin-bottom:8px;}
-  .thumb img{width:100%;height:100%;object-fit:contain;background:#0c1f18;}
+  /* ==== Media (thumb/logo) ==== */
+  .thumb{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.15);margin:6px 0 10px;background:#0c1f18}
+  .thumb img.main{width:100%;height:100%;object-fit:cover;display:block;image-rendering:auto}
+  .thumb.logo-only{aspect-ratio:auto;height:160px;display:flex;align-items:center;justify-content:center;background:#0f221b}
+  .thumb img.main.logo-only{width:auto;max-width:100%;max-height:100%;object-fit:contain;padding:10px;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
+  .logo-badge{position:absolute;right:8px;bottom:8px;width:56px;height:56px;border-radius:50%;overflow:hidden;background:#fff;border:1px solid rgba(255,255,255,.65);box-shadow:0 6px 14px rgba(0,0,0,.35),inset 0 1px 2px rgba(0,0,0,.08)}
+  .logo-badge img{width:100%;height:100%;object-fit:contain;background:#fff;display:block;padding:6px}
 
-  /* ==== Gold Top-100 Badge ==== */
+  /* ==== Top-100 Gold badge ==== */
   .badge-top100{
     display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;
     background:linear-gradient(145deg,#f7d776,#dcb247 55%,#b9902d);
-    color:#111;font-weight:800;box-shadow:0 0 0 1px rgba(255,255,255,.25) inset,0 2px 6px rgba(0,0,0,.4);
+    color:#111;font-weight:800;box-shadow:0 0 0 1px rgba(255,255,255,.25) inset,0 2px 6px rgba(0,0,0,.4)
   }
-  .badge-top100 .rank{background:rgba(255,255,255,.4);padding:3px 6px;border-radius:6px;}
-
-  .ga-tooltip{background:#083424;color:#f1f6f3;border:1px solid rgba(255,255,255,.15);
-    border-radius:8px;padding:4px 8px;font-weight:700;}
+  .badge-top100 .rank{background:rgba(255,255,255,.4);padding:3px 6px;border-radius:6px}
 </style>
 </head>
 <body>
 <div id="map"></div>
 
+<!-- Controls -->
 <div class="control-bar">
   <div class="search" id="searchWrapper">
     <span>🔎</span>
-    <input id="searchBox" list="courseList" placeholder="Search course, city, or state…">
-    <button class="clear" id="clearSearch">&times;</button>
+    <input id="searchBox" list="courseList" placeholder="Search course, city, or state…" />
+    <button class="clear" id="clearSearch" aria-label="Clear search">&times;</button>
     <datalist id="courseList"></datalist>
   </div>
   <div class="control">
-    <input type="checkbox" id="top100Toggle">
+    <input type="checkbox" id="top100Toggle" />
     <label for="top100Toggle">Show Top-100 Only</label>
   </div>
 </div>
@@ -100,88 +117,256 @@
 <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
 <script>
-const params=new URLSearchParams(window.location.search);
-const CSV_URL=params.get("csv")||"https://docs.google.com/spreadsheets/d/e/2PACX-1vT-nZvG7m9sUkOu0spxVTVGcM311qlgGSjnFgRDQr-l6nfs1cPFNrGBXO0ZDzMIQg/pub?gid=1171293634&single=true&output=csv";
+/* ===== Config / base map ===== */
+const params = new URLSearchParams(window.location.search);
+const CSV_URL = params.get("csv") || "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-nZvG7m9sUkOu0spxVTVGcM311qlgGSjnFgRDQr-l6nfs1cPFNrGBXO0ZDzMIQg/pub?gid=1171293634&single=true&output=csv";
 
-const map=L.map("map",{center:[37.5,-105],zoom:4.1,minZoom:3.5,maxZoom:14,scrollWheelZoom:true});
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18}).addTo(map);
-
-const clusterLayer=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:48,
-  iconCreateFunction:c=>{
-    const n=c.getChildCount();
-    return L.divIcon({html:`<div><span>${n}</span></div>`,className:"marker-cluster",iconSize:L.point(56,56)});
-  }
+const map = L.map("map", {
+  center:[37.5,-105], zoom:4.1, minZoom:3.5, maxZoom:14,
+  zoomSnap:0.5, zoomDelta:0.5, inertia:false,
+  scrollWheelZoom:true, doubleClickZoom:false,
+  maxBounds:[[7,-170],[72,-50]], maxBoundsViscosity:0.8
 });
-map.addLayer(clusterLayer);
 
-const pinSvg=`<svg xmlns='http://www.w3.org/2000/svg' width='42' height='46' viewBox='0 0 42 46'>
-<path d='M21 1c-9.4 0-17 7.6-17 17 0 11 17 27 17 27s17-16 17-27c0-9.4-7.6-17-17-17z' fill="#1f7a3b" stroke="#0e4820" stroke-width="2"/>
-<circle cx="21" cy="18" r="8.5" fill="#e8ffe8" stroke="#0e4820" stroke-width="2"/>
-<rect x="20.3" y="7" width="1.4" height="14" fill="#2b2b2b"/>
-<path d="M21.7 8 L33 12.5 L21.7 17 Z" fill="#c7222a" stroke="#8c141a" stroke-width="1"/>
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom:18, attribution:"&copy; OpenStreetMap contributors"
+}).addTo(map);
+
+/* ===== Cluster group ===== */
+const clusterLayer = L.markerClusterGroup({
+  showCoverageOnHover:false, maxClusterRadius:48,
+  iconCreateFunction:c=>{
+    const n = c.getChildCount(); let cls="small"; if(n>=50) cls="large"; else if(n>=10) cls="medium";
+    return L.divIcon({ html:`<div><span>${n}</span></div>`, className:`marker-cluster marker-cluster-${cls}`, iconSize:L.point(64,64) });
+  }
+}).addTo(map);
+
+/* ===== Pin icon ===== */
+const pinSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='42' height='46' viewBox='0 0 42 46'>
+  <path d='M21 1c-9.4 0-17 7.6-17 17 0 11 17 27 17 27s17-16 17-27c0-9.4-7.6-17-17-17z' fill='#1f7a3b' stroke='#0e4820' stroke-width='2'/>
+  <circle cx='21' cy='18' r='8.5' fill='#e8ffe8' stroke='#0e4820' stroke-width='2'/>
+  <rect x='20.3' y='7' width='1.4' height='14' fill='#2b2b2b'/>
+  <path d='M21.7 8 L33 12.5 L21.7 17 Z' fill='#c7222a' stroke='#8c141a' stroke-width='1'/>
 </svg>`;
-const courseIcon=L.icon({iconUrl:"data:image/svg+xml,"+encodeURIComponent(pinSvg),iconSize:[42,46],iconAnchor:[21,42]});
+const courseIcon = L.icon({
+  iconUrl:"data:image/svg+xml;charset=UTF-8,"+encodeURIComponent(pinSvg),
+  iconSize:[42,46], iconAnchor:[21,42], popupAnchor:[0,-40], tooltipAnchor:[0,-36]
+});
 
-const esc=s=>String(s??"").replace(/[&<>]/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[s]));
-const isTop100=v=>!isNaN(v)&&v>0&&v<=100;
-const safeUrl=u=>/^https?:/i.test(u||"")?u:"";
+/* ===== Helpers ===== */
+const esc  = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const toNum = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : NaN; };
+const isTop100 = v => { const n = Number(String(v ?? "").trim()); return Number.isFinite(n) && n>=1 && n<=100; };
+const normalize = s => String(s ?? "").toLowerCase();
+const normKey = k => String(k).toLowerCase().replace(/[^a-z0-9]/g,"");
+const safeUrl = u => { const s = String(u||"").trim(); if(!s) return ""; if(!/^https?:\/\//i.test(s)) return ""; try { new URL(s); return s; } catch { return ""; } };
 
-function makePopup(r){
-  const name=r["course_name"]||r["Course Name"];
-  const resort=r["course_resort"]||"";
-  const fees=r["cost_per_course(green_fee_range)"]||"";
-  const rank=r["top_100_ranking"]||"";
-  const lodging=r["lodging_on-site(yes_no)"]||"";
-  const city=r["City"]||""; const state=r["State"]||"";
-  const logo=safeUrl(r["logo_url(linked)"]||r["logo_url"]||"");
-  const thumb=safeUrl(r["thumbnail_url(linked)"]||r["thumbnail_url"]||"");
-  const img=thumb||logo;
-  const html=`<div class="popup">
-    ${img?`<div class="thumb"><img src="${img}" alt=""></div>`:""}
-    ${isTop100(rank)?`<div class="badge-top100">Top 100 <span class="rank">#${rank}</span></div>`:""}
-    <div class="line"><b>🏌️‍♂️ ${esc(name)}</b></div>
-    ${resort?`<div class="line">🏨 ${esc(resort)}</div>`:""}
-    ${fees?`<div class="line">💰 ${esc(fees)}</div>`:""}
-    ${lodging?`<div class="line">🛏️ Lodging: ${esc(lodging)}</div>`:""}
-    ${city?`<div class="line">📍 ${esc(city)}, ${esc(state)}</div>`:""}
-    <div class="actions"><a class="btn" href="https://www.google.com/search?q=${encodeURIComponent(name+' golf')}" target="_blank">View Course ↗</a></div>
-  </div>`;
-  return html;
+function findImage(row, aliases, hintRegex){
+  const idx={}; for(const k in row) idx[normKey(k)] = k;
+  for(const a of aliases){ const nk=normKey(a); if(idx[nk]!=null){ const v=safeUrl(row[idx[nk]]); if(v) return v; } }
+  for(const k in row){ if(hintRegex.test(k)){ const v=safeUrl(row[k]); if(v) return v; } }
+  return "";
 }
 
-let markers=[],filteredMarkers=[];
-Papa.parse(CSV_URL,{
-  download:true,header:true,skipEmptyLines:true,
-  complete:res=>{
-    res.data.forEach(r=>{
-      const lat=+r.latitude||+r.Latitude,lon=+r.longitude||+r.Longitude;
-      if(!lat||!lon)return;
-      const m=L.marker([lat,lon],{icon:courseIcon,title:r["course_name"]||""});
-      m.bindPopup(makePopup(r),{maxWidth:380});
+function hawaiiTuck(lat, lon){
+  if(lat>=18 && lat<=23 && lon<=-154 && lon>=-162){ return [lat+15.5, lon+37]; }
+  return [lat,lon];
+}
+
+function badge(rank){
+  return `<div class="badge-top100"><span>Top 100</span><span class="rank">#${rank}</span></div>`;
+}
+
+/* ===== Media block ===== */
+function mediaBlock(r){
+  const thumb = findImage(
+    r,
+    ["thumbnail_url","thumbnail url","thumb_url","thumb url","thumbail_url","thumbail url","image_url","image url","image","thumbnail_url(linked","thumbnail_url(linked)","image_url(linked","image_url(linked)"],
+    /(thumb|image|photo)/i
+  );
+  const logo  = findImage(
+    r,
+    ["logo_url","logo url","logo","logo_url(linked","logo_url(linked)"],
+    /logo/i
+  );
+
+  if (thumb && logo){
+    return `<div class="thumb">
+      <img class="main" src="${thumb}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/>
+      <div class="logo-badge"><img src="${logo}" alt="" loading="lazy" onerror="this.closest('.logo-badge')?.remove()"/></div>
+    </div>`;
+  }
+  if (thumb){
+    return `<div class="thumb">
+      <img class="main" src="${thumb}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/>
+    </div>`;
+  }
+  if (logo){
+    return `<div class="thumb logo-only">
+      <img class="main logo-only" src="${logo}" alt="" loading="lazy" onerror="this.closest('.thumb')?.remove()"/>
+    </div>`;
+  }
+  return "";
+}
+
+/* ===== Resort getter ===== */
+function getResort(row){
+  return (row["course_resort"] || row["course resort"] || row["resort"] || "").trim();
+}
+
+/* ===== Popup ===== */
+function popupHtml(r){
+  const name = r["course_name"] || r["Course Name"] || r["course name"] || r["name"] || "";
+  const resort = getResort(r);
+  const fees = r["cost_per_course(green_fee_range)"] || r["green fees"] || r["green_fee_range"] || r["fees"] || "";
+  const coursesOnProp = r["#_of_courses_on_property"] || r["courses on property"] || r["num courses"] || r["courses"] || "";
+  const lodging = r["lodging_on-site(yes_no)"] || r["on site lodging"] || r["lodging_on-site"] || r["lodging"] || "";
+  const rank = r["top_100_ranking"] || r["top 100 ranking"] || r["ranking"] || r["rank"] || "";
+  const city = r["City"] || r["city"] || "";
+  const state = r["state"] || r["State"] || "";
+
+  const lines = [];
+  lines.push(`<div class="line"><strong>🏌️‍♂️ ${esc(name)}</strong></div>`);
+  if (resort) lines.push(`<div class="line">🏨 ${esc(resort)}</div>`);
+  if (isTop100(rank)) lines.push(`<div class="line">🏆 Golf Digest Top 100: <strong>#${rank}</strong></div>`);
+  if (fees) lines.push(`<div class="line">💰 Green Fees: ${esc(fees)}</div>`);
+  if (coursesOnProp) lines.push(`<div class="line">⛳ Courses on Property: ${esc(coursesOnProp)}</div>`);
+  if (lodging) lines.push(`<div class="line">🛏️ Lodging On-Site: ${esc(lodging)}</div>`);
+  const loc = [city, state].filter(Boolean).join(", ");
+  if (loc) lines.push(`<div class="line">📍 ${esc(loc)}</div>`);
+
+  const googleLink = `https://www.google.com/search?q=${encodeURIComponent(name + " golf")}`;
+
+  return `<div class="popup">
+    ${mediaBlock(r)}
+    ${isTop100(rank) ? badge(rank) : ""}
+    ${lines.join("")}
+    <div class="actions"><a class="btn" href="${googleLink}" target="_blank" rel="noopener">View Course ↗</a></div>
+  </div>`;
+}
+
+/* ===== Markers & load ===== */
+const markers = [];            // [{ marker, row }]
+const rowByMarker = new WeakMap();
+
+function makeMarker(r){
+  let lat = toNum(r.latitude ?? r.Latitude ?? r.lat);
+  let lon = toNum(r.longitude ?? r.Longitude ?? r.lon ?? r.lng);
+  if(!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+
+  [lat,lon] = hawaiiTuck(lat,lon);
+
+  const title = r["course_name"] || r["Course Name"] || r["course name"] || r["name"] || "";
+  const m = L.marker([lat,lon], { icon: courseIcon, title });
+
+  // hover tooltip
+  m.bindTooltip(title, { direction:"top", offset:[0,-12], opacity:.92, className:"ga-tooltip" });
+
+  m.bindPopup(() => popupHtml(r), { maxWidth:380, minWidth:260, closeButton:true });
+
+  // highlight Top 100 pins slightly
+  const rank = r["top_100_ranking"] || r["top 100 ranking"] || r["ranking"] || r["rank"] || "";
+  m.on("add", () => { if(isTop100(rank) && m._icon){ m._icon.style.filter = "drop-shadow(0 0 1px #b9902d) drop-shadow(0 0 6px rgba(185,144,45,.55))"; } });
+
+  m.on("mouseover", () => m.setZIndexOffset(1000));
+  m.on("mouseout",  () => m.setZIndexOffset(0));
+
+  rowByMarker.set(m, r);
+  return m;
+}
+
+let filteredMarkers = [];
+
+Papa.parse(CSV_URL, {
+  download:true, header:true, skipEmptyLines:true,
+  complete: res => {
+    const rows = res.data || [];
+    const names = new Set();
+
+    rows.forEach(r=>{
+      const m = makeMarker(r); if(!m) return;
+      markers.push({marker:m, row:r});
+      rowByMarker.set(m, r);
       clusterLayer.addLayer(m);
-      markers.push({m,r});
+
+      const nm = r["course_name"] || r["Course Name"] || r["course name"] || r["name"];
+      if(nm) names.add(nm);
     });
+
+    // datalist suggestions
+    const dl = document.getElementById("courseList");
+    dl.innerHTML = "";
+    Array.from(names).filter(Boolean).sort().slice(0,2000).forEach(n=>{
+      const opt = document.createElement("option"); opt.value = n; dl.appendChild(opt);
+    });
+
+    if(markers.length){
+      const g = L.featureGroup(markers.map(m=>m.marker));
+      map.fitBounds(g.getBounds().pad(0.08), { animate:true });
+    }
+  },
+  error: err => {
+    console.error("CSV load error:", err);
+    alert("Error loading data CSV. Check ?csv= link and that it's published as CSV.");
   }
 });
 
+/* ===== Filters & search clear ===== */
 function applyFilters(){
-  const q=document.getElementById("searchBox").value.toLowerCase();
-  const topOnly=document.getElementById("top100Toggle").checked;
+  const topOnly = document.getElementById("top100Toggle").checked;
+  const q = normalize(document.getElementById("searchBox").value);
+
   clusterLayer.clearLayers();
-  filteredMarkers=[];
-  markers.forEach(({m,r})=>{
-    const rank=r["top_100_ranking"];
-    const text=(r["course_name"]+" "+r["City"]+" "+r["State"]).toLowerCase();
-    if((!q||text.includes(q))&&(!topOnly||isTop100(rank))){
-      clusterLayer.addLayer(m);filteredMarkers.push({m,r});
-    }
+  filteredMarkers = [];
+
+  markers.forEach(({marker,row})=>{
+    const rank = row["top_100_ranking"] || row["top 100 ranking"] || row["ranking"] || row["rank"] || "";
+    const name = row["course_name"] || row["Course Name"] || row["course name"] || row["name"] || "";
+    const hay = `${normalize(name)} ${normalize(row["City"]||row["city"]||"")} ${normalize(row["state"]||row["State"]||"")}`;
+    const okTop = !topOnly || isTop100(rank);
+    const okSearch = !q || hay.includes(q);
+    if(okTop && okSearch){ clusterLayer.addLayer(marker); filteredMarkers.push({marker,row}); }
   });
 }
-document.getElementById("top100Toggle").onchange=applyFilters;
-const searchBox=document.getElementById("searchBox");
-const clearBtn=document.getElementById("clearSearch");
-searchBox.oninput=()=>{applyFilters();document.getElementById("searchWrapper").classList.toggle("has-text",!!searchBox.value);}
-clearBtn.onclick=()=>{searchBox.value="";applyFilters();document.getElementById("searchWrapper").classList.remove("has-text");}
+document.getElementById("top100Toggle").addEventListener("change", applyFilters);
+
+const searchBox = document.getElementById("searchBox");
+const searchWrap = document.getElementById("searchWrapper");
+const clearBtn   = document.getElementById("clearSearch");
+
+function updateClear(){
+  searchWrap.classList.toggle("has-text", !!searchBox.value);
+}
+searchBox.addEventListener("input", ()=>{ updateClear(); applyFilters(); });
+searchBox.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); applyFilters(); }});
+clearBtn.addEventListener("click", ()=>{ searchBox.value=""; updateClear(); applyFilters(); });
+
+/* ===== Cluster hover: show resort names/counts ===== */
+clusterLayer.on("clustermouseover", (e) => {
+  const layer = e.layer;
+  const counts = new Map();
+  layer.getAllChildMarkers().forEach(m => {
+    const nm = getResort(rowByMarker.get(m) || {});
+    if(nm){ counts.set(nm, (counts.get(nm) || 0) + 1); }
+  });
+
+  let text = "";
+  if (counts.size === 1){
+    text = [...counts.keys()][0];
+  } else if (counts.size > 1){
+    const parts = [...counts.entries()]
+      .sort((a,b)=>b[1]-a[1])
+      .slice(0,3)
+      .map(([n,c])=>`${n} (${c})`);
+    text = parts.join(", ");
+    if (counts.size > 3) text += " …";
+  } else {
+    text = `${layer.getChildCount()} courses`;
+  }
+
+  layer.bindTooltip(text, { className:"ga-tooltip", direction:"top", offset:[0,-2], opacity:.95 }).openTooltip();
+});
+clusterLayer.on("clustermouseout", (e) => e.layer.closeTooltip());
 </script>
 </body>
 </html>
