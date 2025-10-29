@@ -1,97 +1,103 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<title>Golf Atlas Map</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+function makeMarker(r){
+let lat=toNum(r.latitude??r.Latitude??r.lat);
+let lon=toNum(r.longitude??r.Longitude??r.lon??r.lng);
+if(!Number.isFinite(lat)||!Number.isFinite(lon)) return null;
+[lat,lon]=hawaiiTuck(lat,lon);
 
 
-<style>
-html,body,#map{height:100%;margin:0;background:#052D1F;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
-.leaflet-tile-pane img{ filter: brightness(0.95) contrast(0.95) saturate(0.85); }
-/* Hint mobile browsers to reduce unwanted gestures jitter */
-.leaflet-container{touch-action: pan-x pan-y;}
+const title=r["course_name"]||r["Course Name"]||r["course name"]||r["name"]||"";
+const m=L.marker([lat,lon],{icon:courseIcon,title});
 
 
-/* Controls */
-.control-bar{position:absolute;z-index:9999;top:90px;left:12px;display:flex;flex-direction:column;gap:10px}
-.control{display:flex;gap:8px;align-items:center;background:rgba(8,52,36,.92);color:#e9f4ef;border:1px solid rgba(0,0,0,.35);border-radius:12px;padding:6px 10px;font:600 13px/1;box-shadow:0 8px 18px rgba(0,0,0,.35)}
-.control.control--toggle{width:200px;white-space:nowrap}
-.control input[type="checkbox"]{accent-color:#dcb247;width:18px;height:18px;cursor:pointer}
-.search{display:flex;align-items:center;gap:8px;background:rgba(8,52,36,.92);color:#e9f4ef;border:1px solid rgba(0,0,0,.35);border-radius:12px;padding:6px 10px;box-shadow:0 8px 18px rgba(0,0,0,.35);width:400px;max-width:400px;position:relative}
-.search input{flex:1;border:none;outline:none;background:transparent;color:#e9f4ef;font:600 14px/1.2;padding-right:26px}
-.search input::placeholder{color:#b6d1c7}
-.search button.clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#b6d1c7;font-size:18px;cursor:pointer;width:22px;height:22px;line-height:18px;border-radius:6px;display:none}
-.search button.clear:hover{background:rgba(255,255,255,.12);color:#fff}
-.search.has-text button.clear{display:block}
+// Popup with generous autopan padding (keeps it clear of left controls & top search)
+m.bindPopup(()=>popupHtml(r),{
+maxWidth:380,minWidth:260,closeButton:true,autoPan:true,
+autoPanPaddingTopLeft: L.point(140,120), // space for controls/search
+autoPanPaddingBottomRight: L.point(20,20)
+});
+m.bindTooltip(title,{direction:"top",offset:[0,-12],opacity:.92,className:"ga-tooltip"});
 
 
-/* Golf-ball clusters (compact, dimples, no green glow) */
-.marker-cluster{border-radius:50%}
-.marker-cluster div{
-display:grid;place-items:center;border-radius:50%;
-width:52px;height:52px;border:1px solid rgba(0,0,0,.35);
-background:url("data:image/svg+xml;utf8,<?xml version='1.0'?><svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><defs><radialGradient id='g' cx='30%' cy='25%'><stop offset='0%' stop-color='%23ffffff'/><stop offset='100%' stop-color='%23dcdcdc'/></radialGradient><pattern id='p' width='6' height='6' patternUnits='userSpaceOnUse'><circle cx='3' cy='3' r='1.2' fill='%23cfcfcf' opacity='0.55'/></pattern></defs><rect width='60' height='60' fill='url(%23g)'/><rect width='60' height='60' fill='url(%23p)' opacity='0.45'/></svg>") no-repeat center/cover;
-box-shadow:0 4px 10px rgba(0,0,0,.25), inset 0 1px 2px rgba(255,255,255,.35)
+const rank=r["top_100_ranking"]||r["top 100 ranking"]||r["ranking"]||r["rank"]||"";
+m.on("add",()=>{ if(isTop100(rank)&&m._icon){ m._icon.style.filter="drop-shadow(0 0 1px #b9902d) drop-shadow(0 0 6px rgba(185,144,45,.55))"; } });
+
+
+// ✅ On mobile, center to the tap point (helps when keyboard/UI shifts viewport)
+m.on("click",(ev)=>{ if(isMobile){ map.setView(ev.latlng, Math.max(map.getZoom(), 12), {animate:true}); } });
+
+
+m.on("mouseover",()=>m.setZIndexOffset(1000));
+m.on("mouseout", ()=>m.setZIndexOffset(0));
+
+
+rowByMarker.set(m,r);
+return m;
 }
-.marker-cluster span{color:#111;font:800 15px/1;text-shadow:0 1px 0 rgba(255,255,255,.85)}
-.marker-cluster-small div{width:40px;height:40px}
-.marker-cluster-medium div{width:52px;height:52px}
-.marker-cluster-large div{width:60px;height:60px}
 
 
-/* Pins & tooltip */
-.leaflet-marker-icon{transition:transform .12s ease, filter .12s ease, box-shadow .12s ease}
-.leaflet-marker-icon:hover{transform:scale(1.06);filter:drop-shadow(0 8px 14px rgba(0,0,0,.45));box-shadow:0 0 0 2px rgba(255,255,255,.9)}
-.ga-tooltip{background:#083424;color:#f1f6f3;border:1px solid rgba(255,255,255,.15);border-radius:8px;box-shadow:0 8px 18px rgba(0,0,0,.45);padding:6px 8px;font-weight:700}
+Papa.parse(CSV_URL,{
+download:true,header:true,skipEmptyLines:true,
+complete: res=>{
+const rows=res.data||[], names=new Set();
+rows.forEach(r=>{
+const m=makeMarker(r); if(!m) return;
+markers.push({marker:m,row:r}); rowByMarker.set(m,r);
+clusterLayer.addLayer(m);
+const nm=r["course_name"]||r["Course Name"]||r["course name"]||r["name"]; if(nm) names.add(nm);
+});
+const dl=document.getElementById("courseList"); dl.innerHTML="";
+Array.from(names).filter(Boolean).sort().slice(0,2000).forEach(n=>{const o=document.createElement("option");o.value=n;dl.appendChild(o);});
+if(markers.length){const g=L.featureGroup(markers.map(m=>m.marker)); map.fitBounds(g.getBounds().pad(0.08),{animate:true});}
+},
+error: err=>{console.error("CSV load error:",err); alert("Error loading data CSV. Check ?csv= link and that it’s published as CSV.");}
+});
 
 
-/* Popup (forest green) */
-.leaflet-popup-content-wrapper{background:#052D1F;color:#f2f6f3;border:1px solid rgba(0,0,0,.35);box-shadow:0 12px 28px rgba(0,0,0,.55);border-radius:16px}
-.leaflet-popup-tip{background:#052D1F}
-.popup{min-width:260px;max-width:380px}
-.popup .line{margin:6px 0}
-.actions{margin-top:12px;display:flex;justify-content:flex-end}
-.btn{padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#083424;color:#fff;text-decoration:none;font-weight:700}
-.btn:hover{filter:brightness(1.08)}
+/* ===== Filters & search clear ===== */
+function applyFilters(){
+const topOnly=document.getElementById("top100Toggle").checked;
+const q=(document.getElementById("searchBox").value||"").toLowerCase();
+clusterLayer.clearLayers();
+markers.forEach(({marker,row})=>{
+const rank=row["top_100_ranking"]||row["top 100 ranking"]||row["ranking"]||row["rank"]||"";
+const name=(row["course_name"]||row["Course Name"]||row["course name"]||row["name"]||"").toLowerCase();
+const city=(row["City"]||row["city"]||"").toLowerCase();
+const state=(row["state"]||row["State"]||"").toLowerCase();
+const okTop=!topOnly||isTop100(rank);
+const okSearch=!q||(name.includes(q)||city.includes(q)||state.includes(q));
+if(okTop&&okSearch){ clusterLayer.addLayer(marker); }
+});
+}
+document.getElementById("top100Toggle").addEventListener("change", applyFilters);
+const searchBox=document.getElementById("searchBox");
+const searchWrap=document.getElementById("searchWrapper");
+const clearBtn=document.getElementById("clearSearch");
+function updateClear(){searchWrap.classList.toggle("has-text", !!searchBox.value);}
+searchBox.addEventListener("input", ()=>{updateClear();applyFilters();});
+searchBox.addEventListener("keydown", e=>{if(e.key==="Enter"){e.preventDefault();applyFilters();}});
+clearBtn.addEventListener("click", ()=>{searchBox.value="";updateClear();applyFilters();});
 
 
-/* Media (thumb/logo) */
-.thumb{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.15);margin:6px 0 10px;background:#0c1f18}
-.thumb img.main{width:100%;height:100%;object-fit:cover;display:block}
-.thumb.logo-only{aspect-ratio:auto;height:140px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid rgba(0,0,0,.12)}
-.thumb img.main.logo-only{width:auto;max-width:100%;max-height:100%;object-fit:contain;padding:8px;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
-
-
-.logo-badge{position:absolute;right:8px;bottom:8px;width:56px;height:56px;border-radius:50%;overflow:hidden;background:#fff;border:1px solid rgba(255,255,255,.65);box-shadow:0 6px 14px rgba(0,0,0,.35),inset 0 1px 2px rgba(0,0,0,.08)}
-.logo-badge img{width:100%;height:100%;object-fit:contain;background:#fff;display:block;padding:6px}
-
-
-.badge-top100{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:linear-gradient(145deg,#f7d776,#dcb247 55%,#b9902d);color:#111;font-weight:800;box-shadow:0 0 0 1px rgba(255,255,255,.25) inset,0 2px 6px rgba(0,0,0,.4)}
-.badge-top100 .rank{background:rgba(255,255,255,.4);padding:3px 6px;border-radius:6px}
-</style>
-</head>
-<body>
-<div id="map"></div>
-
-
-<div class="control-bar">
-<div class="search" id="searchWrapper">
-<span>🔎</span>
-<input id="searchBox" list="courseList" placeholder="Search course, city, or state…" />
-<button class="clear" id="clearSearch" aria-label="Clear search">&times;</button>
-<datalist id="courseList"></datalist>
-</div>
-<div class="control control--toggle">
-<input type="checkbox" id="top100Toggle" />
-<label for="top100Toggle">Show Top-100 Only</label>
-</div>
-</div>
-
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+/* ===== Cluster hover tooltip with resort names ===== */
+clusterLayer.on("clustermouseover",(e)=>{
+const counts=new Map();
+e.layer.getAllChildMarkers().forEach(m=>{
+const row=rowByMarker.get(m)||{};
+const nm=(row["course_resort"]||row["course resort"]||row["resort"]||"").trim();
+if(nm) counts.set(nm,(counts.get(nm)||0)+1);
+});
+let text="";
+if(counts.size===1){ text=[...counts.keys()][0]; }
+else if(counts.size>1){
+const parts=[...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(([n,c])=>`${n} (${c})`);
+text=parts.join(", "); if(counts.size>3) text+=" …";
+} else { text=`${e.layer.getChildCount()} courses`; }
+e.layer.bindTooltip(text,{className:"ga-tooltip",direction:"top",offset:[0,-2],opacity:.95}).openTooltip();
+});
+clusterLayer.on("clustermouseout", e=>e.layer.closeTooltip());
+</script>
+</body>
+</html>
