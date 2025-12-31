@@ -18,8 +18,8 @@
 
   <style>
     :root{
-      --ga-forest:#052D1F;          /* your baseline popup background */
-      --ga-forest-2:#132822;        /* deep green used in panels */
+      --ga-forest:#052D1F;
+      --ga-forest-2:#132822;
       --ga-forest-3:#1a3a2e;
       --ga-cream:#B7C4BD;
       --ga-gold:#d4af37;
@@ -217,7 +217,7 @@
       box-shadow: var(--shadow);
       border:1px solid rgba(183,196,189,.18);
       user-select:none;
-      width: 200px; /* baseline compact-ish width */
+      width: 200px;
       justify-content:space-between;
     }
     .filter-chip:hover{background:rgba(26,58,46,.92)}
@@ -363,7 +363,6 @@
       position:relative;
       overflow:hidden;
     }
-    /* dimples */
     .ga-cluster:before{
       content:"";
       position:absolute;
@@ -400,7 +399,7 @@
     .ga-tooltip ul{margin:6px 0 0 16px;padding:0}
     .ga-tooltip li{margin:2px 0}
 
-    /* Popup styling (baseline vibe) */
+    /* Popup styling */
     .leaflet-popup-content-wrapper{
       background: var(--ga-forest);
       color:#fff;
@@ -497,6 +496,23 @@
     .popup-btn:hover{filter:brightness(1.06)}
     .popup-btn:active{transform:translateY(1px)}
 
+    /* Debug box */
+    .debug {
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
+      z-index: 1200;
+      background: rgba(5,45,31,.92);
+      border: 1px solid rgba(183,196,189,.18);
+      border-radius: 14px;
+      padding: 10px 12px;
+      box-shadow: var(--shadow);
+      font-size: 12px;
+      color: rgba(255,255,255,.9);
+      max-width: 360px;
+    }
+    .debug b{color:var(--ga-gold)}
+
     /* Responsive */
     @media (max-width: 1024px){
       .hero{grid-template-columns:1fr}
@@ -508,6 +524,7 @@
       nav{gap:16px}
       header{padding:16px 18px}
       .logo{letter-spacing:5px}
+      .debug { position: static; margin: 14px 22px 0; }
     }
   </style>
 </head>
@@ -537,7 +554,6 @@
         <button class="icon-btn" id="clearSearch" title="Clear">×</button>
         <button class="icon-btn secondary" id="goSearch" title="Search">🔍</button>
       </div>
-      <!-- lightweight typeahead -->
       <div id="typeahead" style="display:none; position:absolute; left:0; right:0; top:52px; background:#fff; border-radius:12px; box-shadow:var(--shadow); overflow:hidden; border:1px solid rgba(0,0,0,.08); z-index:50;"></div>
     </div>
 
@@ -570,6 +586,7 @@
     </div>
 
     <div id="map"></div>
+    <div class="debug" id="debugBox">Loading…</div>
   </div>
 </div>
 
@@ -578,7 +595,7 @@
     <div class="section-label">Trip Inspiration</div>
     <h2 class="section-title">Featured Resorts & Buddy-Trip Picks</h2>
     <p class="section-description">
-      A rotating set pulled straight from your CSV — Top-100 courses and “buddy-trip hotspot” resorts rise to the top automatically.
+      A rotating set pulled straight from your sheet — Top-100 courses and “buddy-trip hotspot” resorts rise to the top automatically.
     </p>
   </div>
   <div class="resort-grid" id="resortGrid"></div>
@@ -588,8 +605,8 @@
   /**********************
    * CONFIG
    **********************/
-  const CSV_URL = "courses.csv"; // <-- Put your CSV next to index.html with this name (or update this)
-  const DEFAULT_VIEW = { lat: 39.8283, lng: -98.5795, zoom: 5 }; // USA center
+  const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-nZvG7m9sUkOu0spxVTVGcM311qlgGSjnFgRDQr-l6nfs1cPFNrGBXO0ZDzMIQg/pub?gid=1171293634&single=true&output=csv";
+  const DEFAULT_VIEW = { lat: 39.8283, lng: -98.5795, zoom: 5 };
   const MAX_ZOOM_BASELINE = 13;
 
   /**********************
@@ -620,7 +637,7 @@
   };
 
   const toNum = (v) => {
-    const n = parseFloat(String(v).replace(/[^0-9.\-]/g,""));
+    const n = parseFloat(String(v ?? "").replace(/[^0-9.\-]/g,""));
     return Number.isFinite(n) ? n : null;
   };
 
@@ -637,6 +654,11 @@
     return (a+"|"+b+"|"+c+"|"+d).toLowerCase();
   }
 
+  function setDebug(html){
+    const box = document.getElementById("debugBox");
+    if (box) box.innerHTML = html;
+  }
+
   /**********************
    * MAP INIT (baseline-ish)
    **********************/
@@ -651,11 +673,11 @@
 
     clusterLayer = L.markerClusterGroup({
       maxZoom: MAX_ZOOM_BASELINE,
-      disableClusteringAtZoom: 14,          // baseline note
+      disableClusteringAtZoom: 14,
       spiderfyOnMaxZoom: true,
       spiderfyDistanceMultiplier: 2.1,
       showCoverageOnHover: false,
-      zoomToBoundsOnClick: false,           // baseline: clusterclick zoom-to-bounds then spiderfy
+      zoomToBoundsOnClick: false,
       iconCreateFunction: (cluster) => {
         const count = cluster.getChildCount();
         return L.divIcon({
@@ -669,14 +691,12 @@
     clusterLayer.on("clusterclick", (e) => {
       const cluster = e.layer;
       const bounds = cluster.getBounds();
-      // zoom-to-bounds first, then spiderfy
       map.fitBounds(bounds, { padding:[50,50] });
       setTimeout(() => {
         if (map.getZoom() >= 14) cluster.spiderfy();
       }, 220);
     });
 
-    // Hover tooltip with names/counts (baseline flavor)
     clusterLayer.on("clustermouseover", (e) => {
       const cluster = e.layer;
       const children = cluster.getAllChildMarkers();
@@ -695,7 +715,7 @@
           ${extra ? `<div class="muted" style="margin-top:6px;">+${extra} more…</div>` : ""}
         </div>
       `;
-      cluster.bindTooltip(html, { sticky:true, direction:"top", opacity:1, className:"", });
+      cluster.bindTooltip(html, { sticky:true, direction:"top", opacity:1, className:"" });
       cluster.openTooltip();
     });
 
@@ -706,19 +726,21 @@
    * CSV LOAD + NORMALIZE
    **********************/
   async function loadCourses(){
+    setDebug("Fetching <b>Google Sheets CSV</b>…");
     const res = await fetch(CSV_URL, { cache:"no-store" });
-    if (!res.ok) throw new Error(`Could not fetch ${CSV_URL} (${res.status})`);
+    if (!res.ok) throw new Error(`Could not fetch CSV (${res.status})`);
     const text = await res.text();
 
+    setDebug("Parsing CSV…");
     const parsed = Papa.parse(text, { header:true, skipEmptyLines:true });
     const rows = parsed.data || [];
+    const firstHeaders = parsed.meta?.fields || [];
 
     // Normalize each row keys -> create a consistent object
     allCourses = rows.map((row) => {
       const normalized = {};
       for (const [k,v] of Object.entries(row)) normalized[normKey(k)] = v;
 
-      // Map common fields from your sheet(s)
       const latitude  = toNum(pickFirst(normalized, ["latitude","lat","course_latitude"], null));
       const longitude = toNum(pickFirst(normalized, ["longitude","lng","lon","long","course_longitude"], null));
 
@@ -754,6 +776,16 @@
     .filter(c => Number.isFinite(c.latitude) && Number.isFinite(c.longitude) && c.course_name);
 
     filteredCourses = [...allCourses];
+
+    // Debug summary
+    const top100Count = allCourses.filter(c => c.__isTop100).length;
+    setDebug(`Loaded <b>${allCourses.length}</b> courses • Top-100: <b>${top100Count}</b><br/><span style="opacity:.75">If 0 loaded, your sheet likely uses different lat/lng column names.</span>`);
+
+    // If nothing loaded, show header hints
+    if (!allCourses.length){
+      console.warn("CSV fields:", firstHeaders);
+      setDebug(`Loaded <b>0</b> courses.<br/>Open console to see CSV headers (likely lat/lng field mismatch).`);
+    }
   }
 
   /**********************
@@ -827,11 +859,11 @@
 
       m.bindPopup(createPopupContent(c), { maxWidth: 320, closeButton:true });
 
-      // Hover halo + tooltip (baseline-ish)
       m.on("mouseover", () => {
         const el = m.getElement()?.querySelector(".pin");
         if (el) el.classList.add("hovered");
-        m.bindTooltip(`<div class="ga-tooltip"><b>${escapeHtml(c.course_name)}</b><div class="muted">${escapeHtml([c.city,c.state].filter(Boolean).join(", "))}</div></div>`,
+        m.bindTooltip(
+          `<div class="ga-tooltip"><b>${escapeHtml(c.course_name)}</b><div class="muted">${escapeHtml([c.city,c.state].filter(Boolean).join(", "))}</div></div>`,
           { direction:"top", opacity:1, sticky:true, className:"" }
         );
         m.openTooltip();
@@ -843,7 +875,6 @@
       });
 
       m.on("popupopen", () => {
-        // optional: keep hover style when popup open
         const el = m.getElement()?.querySelector(".pin");
         if (el) el.classList.add("hovered");
       });
@@ -863,12 +894,10 @@
   function renderResortCards(){
     const grid = document.getElementById("resortGrid");
 
-    // Featured: buddy hotspots or top100 first
     const featured = [...filteredCourses]
       .sort((a,b) => {
         const aScore = (a.__isBuddyHotspot ? 2 : 0) + (a.__isTop100 ? 1 : 0);
         const bScore = (b.__isBuddyHotspot ? 2 : 0) + (b.__isTop100 ? 1 : 0);
-        // If both top100, lower rank number first
         if (a.__isTop100 && b.__isTop100) {
           const ar = toNum(a.top_100_ranking) ?? 9999;
           const br = toNum(b.top_100_ranking) ?? 9999;
@@ -910,7 +939,6 @@
   function focusCourse(courseId){
     const marker = markersById.get(courseId);
     if (!marker) return;
-
     const ll = marker.getLatLng();
     map.setView(ll, Math.min(13, MAX_ZOOM_BASELINE));
     setTimeout(() => marker.openPopup(), 180);
@@ -937,11 +965,13 @@
 
     renderMarkers();
     renderResortCards();
+
+    // Debug update
+    setDebug(`Loaded <b>${allCourses.length}</b> • Showing <b>${filteredCourses.length}</b>${lastTop100Only ? " • Top-100 only" : ""}`);
   }
 
   function setSearchTerm(term){
     lastSearchTerm = term || "";
-    // sync both inputs
     document.getElementById("searchInput").value = lastSearchTerm;
     document.getElementById("mapSearch").value = lastSearchTerm;
     applyFilters();
@@ -957,7 +987,6 @@
       return;
     }
 
-    // suggestions from course + resort + city/state combos
     const suggestions = [];
     for (const c of allCourses){
       const cn = (c.course_name||"");
@@ -988,10 +1017,14 @@
 
   window.__pickSuggestion = (s) => {
     setSearchTerm(s);
+    hideTypeahead();
+  };
+
+  function hideTypeahead(){
     const ta = document.getElementById("typeahead");
     ta.style.display = "none";
     ta.innerHTML = "";
-  };
+  }
 
   /**********************
    * Fit bounds helpers
@@ -1028,14 +1061,12 @@
     const mapSearch = document.getElementById("mapSearch");
     const top100Check = document.getElementById("top100Check");
 
-    // hero search -> map
     searchInput.addEventListener("input", () => { renderTypeahead(); });
     searchInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") setSearchTerm(searchInput.value);
       if (e.key === "Escape") { setSearchTerm(""); hideTypeahead(); }
     });
 
-    // overlay search
     mapSearch.addEventListener("keydown", (e) => {
       if (e.key === "Enter") setSearchTerm(mapSearch.value);
       if (e.key === "Escape") setSearchTerm("");
@@ -1045,24 +1076,20 @@
     document.getElementById("clearSearch").addEventListener("click", () => setSearchTerm(""));
     document.getElementById("mapClear").addEventListener("click", () => setSearchTerm(""));
 
-    // sync typing between search bars (without filtering until Enter/click)
     mapSearch.addEventListener("input", () => { searchInput.value = mapSearch.value; });
     searchInput.addEventListener("input", () => { mapSearch.value = searchInput.value; });
 
-    // top100 toggle
     top100Check.addEventListener("change", () => {
       lastTop100Only = top100Check.checked;
       document.getElementById("top100Chip").classList.toggle("active", lastTop100Only);
       applyFilters();
     });
 
-    // filter panel toggle
     const panel = document.getElementById("filtersPanel");
     document.getElementById("filterToggle").addEventListener("click", () => {
       panel.classList.toggle("show");
     });
 
-    // fit buttons
     document.getElementById("fitUSA").addEventListener("click", () => {
       map.setView([DEFAULT_VIEW.lat, DEFAULT_VIEW.lng], DEFAULT_VIEW.zoom);
     });
@@ -1070,18 +1097,11 @@
       fitToCourses(filteredCourses);
     });
 
-    // click outside typeahead to close
     document.addEventListener("click", (e) => {
       const ta = document.getElementById("typeahead");
       if (!ta) return;
       if (!ta.contains(e.target) && e.target !== searchInput) hideTypeahead();
     });
-  }
-
-  function hideTypeahead(){
-    const ta = document.getElementById("typeahead");
-    ta.style.display = "none";
-    ta.innerHTML = "";
   }
 
   /**********************
@@ -1095,13 +1115,11 @@
       await loadCourses();
       applyFilters();
       renderResortCards();
-
-      // Optional: fit to all courses once loaded
-      // fitToCourses(allCourses);
-
+      // fitToCourses(allCourses); // optional
     }catch(err){
       console.error(err);
-      alert("Could not load courses.csv. Make sure index.html and courses.csv are in the same folder in your GitHub repo.");
+      setDebug(`Error: <b>${escapeHtml(err.message || String(err))}</b><br/>Open console for details.`);
+      alert("Could not load Google Sheets CSV. Open console for details.");
     }
   })();
 </script>
