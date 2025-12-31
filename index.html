@@ -1,729 +1,1109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Golf Atlas - Plan Your Ultimate Golf Trip</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Golf Atlas — Plan Your Ultimate Golf Trip</title>
 
-        body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            background-color: #0a1f1a;
-            color: #ffffff;
-        }
+  <!-- Leaflet + MarkerCluster -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 
-        /* Header */
-        header {
-            background-color: #132822;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #1f4037;
-        }
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
 
-        .logo {
-            font-size: 32px;
-            font-weight: 900;
-            letter-spacing: 8px;
-            color: #ffffff;
-        }
+  <!-- PapaParse for robust CSV parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
-        nav {
-            display: flex;
-            gap: 40px;
-        }
+  <style>
+    :root{
+      --ga-forest:#052D1F;          /* your baseline popup background */
+      --ga-forest-2:#132822;        /* deep green used in panels */
+      --ga-forest-3:#1a3a2e;
+      --ga-cream:#B7C4BD;
+      --ga-gold:#d4af37;
+      --ga-moss:#2d5a4a;
+      --ga-text:#ffffff;
+      --ga-muted:#8ba89a;
+      --ga-muted2:#6b8f7f;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
 
-        nav a {
-            color: #ffffff;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 600;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            transition: color 0.3s;
-        }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background:#0a1f1a;
+      color:var(--ga-text);
+    }
 
-        nav a:hover {
-            color: #d4af37;
-        }
+    /* Header */
+    header{
+      background:var(--ga-forest-2);
+      padding:18px 34px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      border-bottom:1px solid rgba(183,196,189,.15);
+      position:sticky;
+      top:0;
+      z-index:2000;
+      backdrop-filter:saturate(1.2);
+    }
+    .logo{
+      font-size:28px;
+      font-weight:900;
+      letter-spacing:7px;
+      color:#fff;
+      user-select:none;
+    }
+    nav{display:flex;gap:28px;flex-wrap:wrap}
+    nav a{
+      color:#fff;
+      text-decoration:none;
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:2px;
+      text-transform:uppercase;
+      transition:color .2s ease;
+      opacity:.95;
+    }
+    nav a:hover{color:var(--ga-gold)}
 
-        /* Hero Section */
-        .hero {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            min-height: calc(100vh - 80px);
-            background-color: #0f2822;
-        }
+    /* Hero */
+    .hero{
+      display:grid;
+      grid-template-columns: 1fr 1.25fr;
+      min-height: calc(100vh - 70px);
+      background:#0f2822;
+    }
+    .hero-content{
+      padding:70px 54px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      gap:20px;
+    }
+    .hero h1{
+      font-size:54px;
+      font-weight:300;
+      line-height:1.12;
+      margin-bottom:10px;
+    }
+    .hero .highlight{color:var(--ga-gold);font-weight:450}
+    .hero-sub{
+      color:var(--ga-cream);
+      opacity:.9;
+      line-height:1.55;
+      max-width:520px;
+      font-size:15px;
+    }
 
-        .hero-content {
-            padding: 80px 60px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
+    .search-box{
+      position:relative;
+      width:100%;
+      max-width:560px;
+      margin-top:10px;
+    }
+    .search-box input{
+      width:100%;
+      padding:16px 96px 16px 18px;
+      background:#fff;
+      border:none;
+      border-radius:10px;
+      font-size:14px;
+      color:var(--ga-forest-2);
+      outline:none;
+      box-shadow: var(--shadow);
+    }
+    .search-box input::placeholder{color:#6b8f7f}
+    .search-actions{
+      position:absolute;
+      right:10px;
+      top:50%;
+      transform:translateY(-50%);
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    .icon-btn{
+      border:none;
+      background:var(--ga-forest-2);
+      color:#fff;
+      width:34px;height:34px;
+      border-radius:10px;
+      cursor:pointer;
+      display:grid;
+      place-items:center;
+      box-shadow: 0 8px 18px rgba(0,0,0,.25);
+      transition:transform .12s ease, background .12s ease;
+      user-select:none;
+    }
+    .icon-btn:hover{transform:translateY(-1px);background:var(--ga-forest)}
+    .icon-btn:active{transform:translateY(0px)}
+    .icon-btn.secondary{background:var(--ga-moss)}
+    .filter-toggle{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      width:max-content;
+      border:1px solid rgba(183,196,189,.28);
+      color:#fff;
+      padding:12px 16px;
+      border-radius:12px;
+      cursor:pointer;
+      background:transparent;
+      transition:all .2s ease;
+    }
+    .filter-toggle:hover{
+      background:rgba(26,58,46,.65);
+      border-color:rgba(212,175,55,.55);
+    }
 
-        .hero h1 {
-            font-size: 56px;
-            font-weight: 300;
-            line-height: 1.2;
-            margin-bottom: 40px;
-        }
+    /* Map Container */
+    .map-container{
+      position:relative;
+      background:#1a2f28;
+      border-left:1px solid rgba(183,196,189,.12);
+    }
+    #map{width:100%;height:100%;min-height:600px}
+    .map-controls{
+      position:absolute;
+      top:18px;
+      left:18px;
+      z-index:1000;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      max-width: 420px;
+    }
 
-        .hero h1 .highlight {
-            color: #d4af37;
-            font-weight: 400;
-        }
+    /* Overlay search (compact) */
+    .map-search{
+      background:rgba(5,45,31,.92);
+      padding:11px 14px;
+      border-radius:16px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      box-shadow: var(--shadow);
+      border:1px solid rgba(183,196,189,.18);
+    }
+    .map-search input{
+      background:transparent;
+      border:none;
+      color:white;
+      font-size:13px;
+      width: 320px;
+      outline:none;
+    }
+    .map-search input::placeholder{color:rgba(183,196,189,.75)}
+    .chip-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+    }
+    .filter-chip{
+      background:rgba(5,45,31,.92);
+      padding:10px 14px;
+      border-radius:999px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:12px;
+      cursor:pointer;
+      transition:all .18s ease;
+      box-shadow: var(--shadow);
+      border:1px solid rgba(183,196,189,.18);
+      user-select:none;
+      width: 200px; /* baseline compact-ish width */
+      justify-content:space-between;
+    }
+    .filter-chip:hover{background:rgba(26,58,46,.92)}
+    .filter-chip.active{
+      background:rgba(45,90,74,.9);
+      border:1px solid rgba(212,175,55,.9);
+    }
+    .filter-chip label{cursor:pointer; flex:1}
+    .filter-chip input{width:16px;height:16px;cursor:pointer}
 
-        .search-box {
-            position: relative;
-            margin-bottom: 30px;
-        }
+    .panel{
+      background:rgba(5,45,31,.92);
+      border:1px solid rgba(183,196,189,.18);
+      border-radius:16px;
+      padding:12px;
+      box-shadow: var(--shadow);
+      display:none;
+    }
+    .panel.show{display:block}
+    .panel .hint{
+      color:rgba(183,196,189,.8);
+      font-size:12px;
+      line-height:1.4;
+      margin-top:8px;
+    }
 
-        .search-box input {
-            width: 100%;
-            padding: 18px 50px 18px 20px;
-            background-color: #ffffff;
-            border: none;
-            border-radius: 4px;
-            font-size: 15px;
-            color: #132822;
-        }
+    /* Resorts Section */
+    .resorts-section{
+      padding:72px 54px;
+      background:#0a1f1a;
+    }
+    .section-header{text-align:center;margin-bottom:46px}
+    .section-label{
+      font-size:12px;
+      letter-spacing:3px;
+      color:var(--ga-muted2);
+      text-transform:uppercase;
+      margin-bottom:14px;
+    }
+    .section-title{
+      font-size:40px;
+      font-weight:300;
+      margin-bottom:16px;
+    }
+    .section-description{
+      font-size:15px;
+      color:var(--ga-muted);
+      max-width:740px;
+      margin:0 auto;
+      line-height:1.65;
+    }
 
-        .search-box input::placeholder {
-            color: #6b8f7f;
-        }
+    .resort-grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+      gap:26px;
+      margin-top:34px;
+    }
+    .resort-card{
+      background:var(--ga-forest-2);
+      border-radius:18px;
+      overflow:hidden;
+      transition:transform .2s ease, box-shadow .2s ease;
+      cursor:pointer;
+      border:1px solid rgba(183,196,189,.12);
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+    }
+    .resort-card:hover{
+      transform:translateY(-5px);
+      box-shadow: 0 18px 40px rgba(0,0,0,.35);
+    }
+    .resort-image{width:100%;height:220px;object-fit:cover;display:block}
+    .resort-info{padding:20px 20px 22px}
+    .resort-name{
+      font-size:16px;
+      font-weight:800;
+      letter-spacing:2px;
+      text-transform:uppercase;
+      color:var(--ga-gold);
+      margin-bottom:10px;
+    }
+    .resort-courses{
+      font-size:13px;
+      color:rgba(183,196,189,.9);
+      margin-bottom:14px;
+      line-height:1.5;
+    }
+    .resort-meta{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      font-size:12px;
+      color:rgba(183,196,189,.75);
+      margin-bottom:16px;
+    }
+    .resort-meta-item{display:flex;align-items:center;gap:8px}
+    .meta-dot{width:10px;height:10px;background:var(--ga-moss);border-radius:50%}
+    .learn-more-btn{
+      background:var(--ga-moss);
+      color:#fff;
+      padding:11px 16px;
+      border:none;
+      border-radius:999px;
+      font-size:12px;
+      letter-spacing:2px;
+      text-transform:uppercase;
+      cursor:pointer;
+      transition:filter .15s ease, transform .1s ease;
+      width:100%;
+    }
+    .learn-more-btn:hover{filter:brightness(1.06)}
+    .learn-more-btn:active{transform:translateY(1px)}
 
-        .search-icon {
-            position: absolute;
-            right: 18px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 20px;
-            height: 20px;
-            background-color: #132822;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 12px;
-        }
+    /* Marker + Hover Halo */
+    .pin {
+      width: 14px;
+      height: 14px;
+      background: var(--ga-moss);
+      border: 2px solid var(--ga-gold);
+      border-radius: 50%;
+      box-shadow: 0 0 0 0 rgba(212,175,55,0);
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .pin.top100{
+      background: var(--ga-gold);
+      border-color:#fff;
+    }
+    .pin.hovered{
+      transform: scale(1.15);
+      box-shadow: 0 0 0 10px rgba(212,175,55,.18);
+    }
 
-        .filter-toggle {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background-color: transparent;
-            border: 1px solid #2d5a4a;
-            color: #ffffff;
-            padding: 12px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
+    /* Custom “golf ball” cluster */
+    .ga-cluster{
+      width: 38px;
+      height: 38px;
+      border-radius: 999px;
+      background: #f7f7f7;
+      border: 3px solid rgba(5,45,31,.55);
+      display:grid;
+      place-items:center;
+      box-shadow: 0 10px 20px rgba(0,0,0,.25);
+      position:relative;
+      overflow:hidden;
+    }
+    /* dimples */
+    .ga-cluster:before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background:
+        radial-gradient(circle at 20% 25%, rgba(0,0,0,.08) 0 2px, transparent 3px),
+        radial-gradient(circle at 55% 30%, rgba(0,0,0,.08) 0 2px, transparent 3px),
+        radial-gradient(circle at 35% 60%, rgba(0,0,0,.08) 0 2px, transparent 3px),
+        radial-gradient(circle at 70% 65%, rgba(0,0,0,.08) 0 2px, transparent 3px),
+        radial-gradient(circle at 18% 70%, rgba(0,0,0,.08) 0 2px, transparent 3px);
+      opacity:.9;
+    }
+    .ga-cluster span{
+      position:relative;
+      font-weight:900;
+      font-size:13px;
+      color: var(--ga-forest);
+      z-index:1;
+    }
 
-        .filter-toggle:hover {
-            background-color: #1a3a2e;
-            border-color: #d4af37;
-        }
+    /* Tooltip */
+    .ga-tooltip{
+      background: rgba(5,45,31,.96);
+      color:#fff;
+      border:1px solid rgba(183,196,189,.22);
+      border-radius:12px;
+      padding:10px 12px;
+      box-shadow: var(--shadow);
+      font-size:12px;
+      line-height:1.35;
+    }
+    .ga-tooltip b{color:var(--ga-gold)}
+    .ga-tooltip .muted{color:rgba(183,196,189,.8)}
+    .ga-tooltip ul{margin:6px 0 0 16px;padding:0}
+    .ga-tooltip li{margin:2px 0}
 
-        /* Map Container */
-        .map-container {
-            position: relative;
-            background-color: #1a2f28;
-        }
+    /* Popup styling (baseline vibe) */
+    .leaflet-popup-content-wrapper{
+      background: var(--ga-forest);
+      color:#fff;
+      border-radius:16px;
+      padding:0;
+      border:1px solid rgba(183,196,189,.15);
+      overflow:hidden;
+    }
+    .leaflet-popup-tip{background: var(--ga-forest)}
+    .leaflet-popup-content{
+      margin:0;
+      width: 320px !important;
+    }
+    .popup-head{
+      background: #ffffff;
+      padding:12px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .ga-badge{
+      background: var(--ga-gold);
+      color: #1a1a1a;
+      font-weight:900;
+      font-size:11px;
+      padding:6px 8px;
+      border-radius:999px;
+      letter-spacing:1px;
+      text-transform:uppercase;
+      white-space:nowrap;
+    }
+    .popup-logo{
+      font-weight:900;
+      letter-spacing:4px;
+      font-size:12px;
+      color: var(--ga-forest);
+      user-select:none;
+    }
+    .popup-body{padding:14px 14px 12px}
+    .popup-title{
+      font-size:16px;
+      font-weight:800;
+      color:#fff;
+      margin-bottom:6px;
+      line-height:1.2;
+    }
+    .popup-sub{
+      font-size:12px;
+      color:rgba(183,196,189,.85);
+      margin-bottom:12px;
+    }
+    .popup-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .popup-pill{
+      background: rgba(26,58,46,.85);
+      border:1px solid rgba(183,196,189,.12);
+      padding:10px 8px;
+      border-radius:12px;
+      text-align:center;
+    }
+    .pill-val{font-size:15px;font-weight:900;color:var(--ga-gold)}
+    .pill-lab{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:rgba(183,196,189,.75);margin-top:2px}
+    .popup-lines{
+      font-size:12px;
+      color:rgba(183,196,189,.9);
+      line-height:1.5;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      margin-top:8px;
+    }
+    .popup-actions{
+      display:flex;
+      gap:10px;
+      margin-top:12px;
+    }
+    .popup-btn{
+      flex:1;
+      border:none;
+      border-radius:12px;
+      padding:10px 10px;
+      font-weight:800;
+      font-size:12px;
+      cursor:pointer;
+      transition:filter .15s ease, transform .1s ease;
+    }
+    .popup-btn.primary{background: var(--ga-moss); color:#fff}
+    .popup-btn.ghost{background: rgba(255,255,255,.1); color:#fff; border:1px solid rgba(183,196,189,.18)}
+    .popup-btn:hover{filter:brightness(1.06)}
+    .popup-btn:active{transform:translateY(1px)}
 
-        #map {
-            width: 100%;
-            height: 100%;
-            min-height: 600px;
-        }
-
-        .map-controls {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .map-search {
-            background-color: #132822;
-            padding: 12px 20px;
-            border-radius: 50px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-
-        .map-search input {
-            background: transparent;
-            border: none;
-            color: white;
-            font-size: 14px;
-            width: 300px;
-            outline: none;
-        }
-
-        .map-search input::placeholder {
-            color: #6b8f7f;
-        }
-
-        .filter-chip {
-            background-color: #132822;
-            padding: 10px 20px;
-            border-radius: 50px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-
-        .filter-chip:hover {
-            background-color: #1a3a2e;
-        }
-
-        .filter-chip.active {
-            background-color: #2d5a4a;
-            border: 1px solid #d4af37;
-        }
-
-        .filter-chip input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-        }
-
-        /* Resort Cards Section */
-        .resorts-section {
-            padding: 80px 60px;
-            background-color: #0a1f1a;
-        }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 50px;
-        }
-
-        .section-label {
-            font-size: 13px;
-            letter-spacing: 3px;
-            color: #6b8f7f;
-            text-transform: uppercase;
-            margin-bottom: 15px;
-        }
-
-        .section-title {
-            font-size: 42px;
-            font-weight: 300;
-            margin-bottom: 20px;
-        }
-
-        .section-description {
-            font-size: 16px;
-            color: #8ba89a;
-            max-width: 700px;
-            margin: 0 auto;
-            line-height: 1.6;
-        }
-
-        .resort-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 30px;
-            margin-top: 40px;
-        }
-
-        .resort-card {
-            background-color: #132822;
-            border-radius: 8px;
-            overflow: hidden;
-            transition: transform 0.3s;
-            cursor: pointer;
-        }
-
-        .resort-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .resort-image {
-            width: 100%;
-            height: 240px;
-            object-fit: cover;
-        }
-
-        .resort-info {
-            padding: 25px;
-        }
-
-        .resort-name {
-            font-size: 20px;
-            font-weight: 600;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: #d4af37;
-            margin-bottom: 12px;
-        }
-
-        .resort-courses {
-            font-size: 14px;
-            color: #8ba89a;
-            margin-bottom: 15px;
-            line-height: 1.6;
-        }
-
-        .resort-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            font-size: 13px;
-            color: #6b8f7f;
-            margin-bottom: 20px;
-        }
-
-        .resort-meta-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .meta-icon {
-            width: 12px;
-            height: 12px;
-            background-color: #2d5a4a;
-            border-radius: 50%;
-        }
-
-        .learn-more-btn {
-            background-color: #2d5a4a;
-            color: #ffffff;
-            padding: 12px 30px;
-            border: none;
-            border-radius: 50px;
-            font-size: 13px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .learn-more-btn:hover {
-            background-color: #3a7058;
-        }
-
-        /* Custom Leaflet Popup */
-        .leaflet-popup-content-wrapper {
-            background-color: #132822;
-            color: white;
-            border-radius: 8px;
-            padding: 0;
-        }
-
-        .leaflet-popup-content {
-            margin: 0;
-            width: 320px !important;
-        }
-
-        .popup-content {
-            padding: 20px;
-        }
-
-        .popup-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #d4af37;
-            margin-bottom: 8px;
-        }
-
-        .popup-location {
-            font-size: 13px;
-            color: #8ba89a;
-            margin-bottom: 15px;
-        }
-
-        .popup-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 15px;
-        }
-
-        .popup-detail {
-            background-color: #1a3a2e;
-            padding: 10px;
-            border-radius: 4px;
-            text-align: center;
-        }
-
-        .popup-detail-value {
-            font-size: 16px;
-            font-weight: 600;
-            color: #d4af37;
-        }
-
-        .popup-detail-label {
-            font-size: 11px;
-            color: #6b8f7f;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .popup-info {
-            font-size: 13px;
-            color: #8ba89a;
-            line-height: 1.5;
-            margin-top: 10px;
-        }
-
-        .popup-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .popup-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .popup-btn-primary {
-            background-color: #2d5a4a;
-            color: white;
-        }
-
-        .popup-btn-primary:hover {
-            background-color: #3a7058;
-        }
-
-        /* Custom marker styles */
-        .custom-marker {
-            background-color: #2d5a4a;
-            border: 3px solid #d4af37;
-            border-radius: 50% 50% 50% 0;
-            width: 30px;
-            height: 30px;
-            transform: rotate(-45deg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .custom-marker.top100 {
-            background-color: #d4af37;
-            border-color: #fff;
-        }
-
-        @media (max-width: 1024px) {
-            .hero {
-                grid-template-columns: 1fr;
-            }
-            
-            .map-container {
-                min-height: 500px;
-            }
-        }
-    </style>
+    /* Responsive */
+    @media (max-width: 1024px){
+      .hero{grid-template-columns:1fr}
+      .map-container{min-height:520px;border-left:none;border-top:1px solid rgba(183,196,189,.12)}
+      .hero-content{padding:56px 22px}
+      .resorts-section{padding:56px 22px}
+      .map-search input{width:240px}
+      .filter-chip{width: 220px}
+      nav{gap:16px}
+      header{padding:16px 18px}
+      .logo{letter-spacing:5px}
+    }
+  </style>
 </head>
-<body>
-    <!-- Header -->
-    <header>
-        <div class="logo">GOLF ATLAS</div>
-        <nav>
-            <a href="#map">MAP</a>
-            <a href="#resorts">RESORTS</a>
-            <a href="#planner">TRIP PLANNER</a>
-            <a href="#about">ABOUT</a>
-            <a href="#blog">BLOG</a>
-        </nav>
-    </header>
 
-    <!-- Hero Section -->
-    <div class="hero">
-        <div class="hero-content">
-            <h1>Plan Your <span class="highlight">Ultimate<br>Golf Trip</span></h1>
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Search courses, resorts, or destinations">
-                <div class="search-icon">🔍</div>
-            </div>
-            <button class="filter-toggle" id="filterToggle">
-                ⚙️ Show Filters
-            </button>
-        </div>
-        <div class="map-container">
-            <div class="map-controls">
-                <div class="map-search">
-                    <span>🔍</span>
-                    <input type="text" id="mapSearch" placeholder="Search course, city, or state...">
-                </div>
-                <div class="filter-chip" id="top100Filter">
-                    <input type="checkbox" id="top100Check">
-                    <label for="top100Check">Show Top-100 Only</label>
-                </div>
-            </div>
-            <div id="map"></div>
-        </div>
+<body>
+<header>
+  <div class="logo">GOLF ATLAS</div>
+  <nav>
+    <a href="#map">MAP</a>
+    <a href="#resorts">RESORTS</a>
+    <a href="#planner" onclick="return false;">TRIP PLANNER</a>
+    <a href="#about" onclick="return false;">ABOUT</a>
+    <a href="#blog" onclick="return false;">BLOG</a>
+  </nav>
+</header>
+
+<div class="hero">
+  <div class="hero-content">
+    <h1>Plan Your <span class="highlight">Ultimate<br/>Golf Trip</span></h1>
+    <div class="hero-sub">
+      Explore courses across America, toggle the Top-100, and build the kind of buddy-trip map that turns into a tradition.
     </div>
 
-    <!-- Resorts Section -->
-    <section class="resorts-section" id="resorts">
-        <div class="section-header">
-            <div class="section-label">Trip Inspiration</div>
-            <h2 class="section-title">Top Golf Resorts in America</h2>
-            <p class="section-description">
-                Bucket-list destinations every golfer should experience.<br>
-                Complete with world-class courses, on-site lodging,<br>
-                and unforgettable views.
-            </p>
+    <div class="search-box">
+      <input id="searchInput" type="text" placeholder="Search courses, resorts, or destinations…" autocomplete="off" />
+      <div class="search-actions">
+        <button class="icon-btn" id="clearSearch" title="Clear">×</button>
+        <button class="icon-btn secondary" id="goSearch" title="Search">🔍</button>
+      </div>
+      <!-- lightweight typeahead -->
+      <div id="typeahead" style="display:none; position:absolute; left:0; right:0; top:52px; background:#fff; border-radius:12px; box-shadow:var(--shadow); overflow:hidden; border:1px solid rgba(0,0,0,.08); z-index:50;"></div>
+    </div>
+
+    <button class="filter-toggle" id="filterToggle">⚙️ Filters</button>
+  </div>
+
+  <div class="map-container">
+    <div class="map-controls">
+      <div class="map-search">
+        <span style="opacity:.95">🔍</span>
+        <input id="mapSearch" type="text" placeholder="Search course, city, or state…" autocomplete="off" />
+        <button class="icon-btn" id="mapClear" style="width:30px;height:30px;border-radius:10px" title="Clear">×</button>
+      </div>
+
+      <div class="chip-row">
+        <div class="filter-chip" id="top100Chip" title="Toggle Top-100">
+          <input type="checkbox" id="top100Check"/>
+          <label for="top100Check">Show Top-100 Only</label>
+          <span style="opacity:.85">🏆</span>
         </div>
-        <div class="resort-grid" id="resortGrid"></div>
-    </section>
+      </div>
 
-    <script>
-        let map, markersLayer;
-        let allCourses = [];
-        let filteredCourses = [];
+      <div class="panel" id="filtersPanel">
+        <div style="display:flex; gap:10px; flex-wrap:wrap">
+          <button class="popup-btn ghost" id="fitUSA" style="flex:unset; padding:10px 12px;">Fit to USA</button>
+          <button class="popup-btn ghost" id="fitResults" style="flex:unset; padding:10px 12px;">Fit Results</button>
+        </div>
+        <div class="hint">Tip: Search + Top-100 together for a fast “where should we go next?” scan.</div>
+      </div>
+    </div>
 
-        // Initialize map
-        function initMap() {
-            map = L.map('map', {
-                zoomControl: true,
-                scrollWheelZoom: true
-            }).setView([39.8283, -98.5795], 5);
+    <div id="map"></div>
+  </div>
+</div>
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 18
-            }).addTo(map);
+<section class="resorts-section" id="resorts">
+  <div class="section-header">
+    <div class="section-label">Trip Inspiration</div>
+    <h2 class="section-title">Featured Resorts & Buddy-Trip Picks</h2>
+    <p class="section-description">
+      A rotating set pulled straight from your CSV — Top-100 courses and “buddy-trip hotspot” resorts rise to the top automatically.
+    </p>
+  </div>
+  <div class="resort-grid" id="resortGrid"></div>
+</section>
 
-            markersLayer = L.markerClusterGroup({
-                maxClusterRadius: 50,
-                iconCreateFunction: function(cluster) {
-                    return L.divIcon({
-                        html: '<div style="background-color:#2d5a4a;color:white;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:3px solid #d4af37;">' + cluster.getChildCount() + '</div>',
-                        className: 'custom-cluster-icon',
-                        iconSize: L.point(40, 40)
-                    });
-                }
-            });
+<script>
+  /**********************
+   * CONFIG
+   **********************/
+  const CSV_URL = "courses.csv"; // <-- Put your CSV next to index.html with this name (or update this)
+  const DEFAULT_VIEW = { lat: 39.8283, lng: -98.5795, zoom: 5 }; // USA center
+  const MAX_ZOOM_BASELINE = 13;
 
-            map.addLayer(markersLayer);
-        }
+  /**********************
+   * STATE
+   **********************/
+  let map, clusterLayer;
+  let allCourses = [];
+  let filteredCourses = [];
+  let markersById = new Map();
+  let lastSearchTerm = "";
+  let lastTop100Only = false;
 
-        // Load and parse CSV
-        async function loadCourses() {
-            try {
-                const data = await window.fs.readFile('Golf_Atlas_Build_Progress_Tracker 1.xlsx  Course_Data 12.csv', { encoding: 'utf8' });
-                const lines = data.split('\n');
-                const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-                
-                allCourses = lines.slice(1)
-                    .filter(line => line.trim())
-                    .map(line => {
-                        const values = [];
-                        let current = '';
-                        let inQuotes = false;
-                        
-                        for (let char of line) {
-                            if (char === '"') {
-                                inQuotes = !inQuotes;
-                            } else if (char === ',' && !inQuotes) {
-                                values.push(current.trim().replace(/"/g, ''));
-                                current = '';
-                            } else {
-                                current += char;
-                            }
-                        }
-                        values.push(current.trim().replace(/"/g, ''));
-                        
-                        const course = {};
-                        headers.forEach((header, i) => {
-                            course[header] = values[i] || '';
-                        });
-                        return course;
-                    })
-                    .filter(course => course.latitude && course.longitude && 
-                            !isNaN(parseFloat(course.latitude)) && !isNaN(parseFloat(course.longitude)));
+  /**********************
+   * UTILITIES
+   **********************/
+  const normKey = (k="") =>
+    String(k).trim().toLowerCase()
+      .replace(/\uFEFF/g,"")
+      .replace(/[\s\-\/]+/g, "_")
+      .replace(/[()]/g, "")
+      .replace(/[^a-z0-9_]/g, "");
 
-                filteredCourses = [...allCourses];
-                displayMarkers();
-                displayResortCards();
-            } catch (error) {
-                console.error('Error loading courses:', error);
-            }
-        }
+  const pickFirst = (obj, keys, fallback="") => {
+    for (const k of keys) {
+      if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== "") return obj[k];
+    }
+    return fallback;
+  };
 
-        // Display markers on map
-        function displayMarkers() {
-            markersLayer.clearLayers();
+  const toNum = (v) => {
+    const n = parseFloat(String(v).replace(/[^0-9.\-]/g,""));
+    return Number.isFinite(n) ? n : null;
+  };
 
-            filteredCourses.forEach(course => {
-                const lat = parseFloat(course.latitude);
-                const lng = parseFloat(course.longitude);
-                
-                if (isNaN(lat) || isNaN(lng)) return;
+  function isTruthyYes(v){
+    const s = String(v||"").trim().toLowerCase();
+    return s === "yes" || s === "y" || s === "true" || s === "1";
+  }
 
-                const isTop100 = course.top_100_ranking && course.top_100_ranking.trim() !== '';
-                
-                const icon = L.divIcon({
-                    className: 'custom-div-icon',
-                    html: `<div class="custom-marker ${isTop100 ? 'top100' : ''}"></div>`,
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 30]
-                });
+  function makeId(course){
+    const a = course.course_name || "";
+    const b = course.city || "";
+    const c = course.state || "";
+    const d = (course.latitude ?? "") + "," + (course.longitude ?? "");
+    return (a+"|"+b+"|"+c+"|"+d).toLowerCase();
+  }
 
-                const marker = L.marker([lat, lng], { icon: icon });
-                
-                const popupContent = createPopupContent(course);
-                marker.bindPopup(popupContent, {
-                    maxWidth: 320,
-                    className: 'custom-popup'
-                });
+  /**********************
+   * MAP INIT (baseline-ish)
+   **********************/
+  function initMap(){
+    map = L.map("map", { zoomControl:true, scrollWheelZoom:true }).setView([DEFAULT_VIEW.lat, DEFAULT_VIEW.lng], DEFAULT_VIEW.zoom);
 
-                markersLayer.addLayer(marker);
-            });
-        }
+    // Baseline tiles: Carto Light
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+      maxZoom: MAX_ZOOM_BASELINE
+    }).addTo(map);
 
-        // Create popup content
-        function createPopupContent(course) {
-            return `
-                <div class="popup-content">
-                    <div class="popup-title">${course.course_name || 'Course Name'}</div>
-                    <div class="popup-location">${course.City || ''}, ${course.state || ''}</div>
-                    
-                    <div class="popup-details">
-                        ${course.par ? `
-                            <div class="popup-detail">
-                                <div class="popup-detail-value">${course.par}</div>
-                                <div class="popup-detail-label">Par</div>
-                            </div>
-                        ` : ''}
-                        ${course['yardage(black_tees)'] ? `
-                            <div class="popup-detail">
-                                <div class="popup-detail-value">${course['yardage(black_tees)']}</div>
-                                <div class="popup-detail-label">Yards</div>
-                            </div>
-                        ` : ''}
-                        ${course.top_100_ranking ? `
-                            <div class="popup-detail">
-                                <div class="popup-detail-value">#${course.top_100_ranking}</div>
-                                <div class="popup-detail-label">Top 100</div>
-                            </div>
-                        ` : ''}
-                        ${course['Player Reviews (Avg Rating)'] ? `
-                            <div class="popup-detail">
-                                <div class="popup-detail-value">${course['Player Reviews (Avg Rating)']}</div>
-                                <div class="popup-detail-label">Rating</div>
-                            </div>
-                        ` : ''}
-                    </div>
-                    
-                    ${course.architect ? `<div class="popup-info">🏗️ ${course.architect}</div>` : ''}
-                    ${course['cost_per_course(green_fee_range)'] ? `<div class="popup-info">💰 ${course['cost_per_course(green_fee_range)']}</div>` : ''}
-                    
-                    <div class="popup-actions">
-                        ${course.website_url ? `<button class="popup-btn popup-btn-primary" onclick="window.open('${course.website_url}', '_blank')">Visit Website</button>` : ''}
-                        ${course.phone ? `<button class="popup-btn popup-btn-primary" onclick="window.open('tel:${course.phone}')">Call</button>` : ''}
-                    </div>
-                </div>
-            `;
-        }
-
-        // Display resort cards
-        function displayResortCards() {
-            const resortGrid = document.getElementById('resortGrid');
-            const featured = filteredCourses
-                .filter(c => c['buddies_trip_hotspot (yes_no)'] === 'Yes' || c.top_100_ranking)
-                .slice(0, 4);
-
-            let html = '';
-            featured.forEach(course => {
-                const imgSrc = course.thumbnail_url || 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=800';
-                const name = course.course_resort || course.course_name;
-                const courseName = course.course_name;
-                const lat = course.latitude;
-                const lng = course.longitude;
-                
-                html += '<div class="resort-card">';
-                html += '<img src="' + imgSrc + '" alt="' + courseName + '" class="resort-image" onerror="this.src=\'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=800\'">';
-                html += '<div class="resort-info">';
-                html += '<div class="resort-name">' + name + '</div>';
-                html += '<div class="resort-courses">' + courseName + '</div>';
-                html += '<div class="resort-meta">';
-                
-                if (course['lodging_on-site(yes_no)'] === 'Yes') {
-                    html += '<div class="resort-meta-item"><span class="meta-icon"></span> On-site Lodging</div>';
-                }
-                if (course['peak_season/best_time_to_visit']) {
-                    html += '<div class="resort-meta-item"><span class="meta-icon"></span> Best: ' + course['peak_season/best_time_to_visit'] + '</div>';
-                }
-                if (course['cost_per_course(green_fee_range)']) {
-                    html += '<div class="resort-meta-item"><span class="meta-icon"></span> ' + course['cost_per_course(green_fee_range)'] + '</div>';
-                }
-                
-                html += '</div>';
-                html += '<button class="learn-more-btn" onclick="focusCourse(' + lat + ', ' + lng + ')">Learn More</button>';
-                html += '</div>';
-                html += '</div>';
-            });
-            
-            resortGrid.innerHTML = html;
-        }
-
-        // Focus on specific course
-        function focusCourse(lat, lng) {
-            map.setView([lat, lng], 13);
-            document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        // Search functionality
-        document.getElementById('mapSearch').addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            filteredCourses = allCourses.filter(course => 
-                course.course_name?.toLowerCase().includes(term) ||
-                course.City?.toLowerCase().includes(term) ||
-                course.state?.toLowerCase().includes(term) ||
-                course.region?.toLowerCase().includes(term)
-            );
-            displayMarkers();
+    clusterLayer = L.markerClusterGroup({
+      maxZoom: MAX_ZOOM_BASELINE,
+      disableClusteringAtZoom: 14,          // baseline note
+      spiderfyOnMaxZoom: true,
+      spiderfyDistanceMultiplier: 2.1,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: false,           // baseline: clusterclick zoom-to-bounds then spiderfy
+      iconCreateFunction: (cluster) => {
+        const count = cluster.getChildCount();
+        return L.divIcon({
+          html: `<div class="ga-cluster"><span>${count}</span></div>`,
+          className: "ga-cluster-wrap",
+          iconSize: L.point(38, 38)
         });
+      }
+    });
 
-        // Top 100 filter
-        document.getElementById('top100Check').addEventListener('change', (e) => {
-            if (e.target.checked) {
-                filteredCourses = allCourses.filter(course => course.top_100_ranking && course.top_100_ranking.trim() !== '');
-            } else {
-                filteredCourses = [...allCourses];
-            }
-            displayMarkers();
-        });
+    clusterLayer.on("clusterclick", (e) => {
+      const cluster = e.layer;
+      const bounds = cluster.getBounds();
+      // zoom-to-bounds first, then spiderfy
+      map.fitBounds(bounds, { padding:[50,50] });
+      setTimeout(() => {
+        if (map.getZoom() >= 14) cluster.spiderfy();
+      }, 220);
+    });
 
-        // Initialize
-        initMap();
-        loadCourses();
-    </script>
+    // Hover tooltip with names/counts (baseline flavor)
+    clusterLayer.on("clustermouseover", (e) => {
+      const cluster = e.layer;
+      const children = cluster.getAllChildMarkers();
+      const names = children
+        .map(m => m?.options?.__courseName || "")
+        .filter(Boolean);
+
+      const unique = Array.from(new Set(names)).slice(0, 6);
+      const extra = Math.max(0, names.length - unique.length);
+
+      const html = `
+        <div class="ga-tooltip">
+          <div><b>${cluster.getChildCount()}</b> courses here</div>
+          ${unique.length ? `<div class="muted" style="margin-top:6px;">Sample:</div>
+          <ul>${unique.map(n => `<li>${escapeHtml(n)}</li>`).join("")}</ul>` : ""}
+          ${extra ? `<div class="muted" style="margin-top:6px;">+${extra} more…</div>` : ""}
+        </div>
+      `;
+      cluster.bindTooltip(html, { sticky:true, direction:"top", opacity:1, className:"", });
+      cluster.openTooltip();
+    });
+
+    map.addLayer(clusterLayer);
+  }
+
+  /**********************
+   * CSV LOAD + NORMALIZE
+   **********************/
+  async function loadCourses(){
+    const res = await fetch(CSV_URL, { cache:"no-store" });
+    if (!res.ok) throw new Error(`Could not fetch ${CSV_URL} (${res.status})`);
+    const text = await res.text();
+
+    const parsed = Papa.parse(text, { header:true, skipEmptyLines:true });
+    const rows = parsed.data || [];
+
+    // Normalize each row keys -> create a consistent object
+    allCourses = rows.map((row) => {
+      const normalized = {};
+      for (const [k,v] of Object.entries(row)) normalized[normKey(k)] = v;
+
+      // Map common fields from your sheet(s)
+      const latitude  = toNum(pickFirst(normalized, ["latitude","lat","course_latitude"], null));
+      const longitude = toNum(pickFirst(normalized, ["longitude","lng","lon","long","course_longitude"], null));
+
+      const course = {
+        course_name: pickFirst(normalized, ["course_name","course","name","golf_course","coursefullname"], ""),
+        course_resort: pickFirst(normalized, ["course_resort","resort","resort_name","property","destination"], ""),
+        city: pickFirst(normalized, ["city","town"], ""),
+        state: pickFirst(normalized, ["state","st","province"], ""),
+        region: pickFirst(normalized, ["region"], ""),
+        latitude,
+        longitude,
+        par: pickFirst(normalized, ["par"], ""),
+        yardage_black_tees: pickFirst(normalized, ["yardageblack_tees","yardage_black_tees","yardage_black","yardage"], ""),
+        top_100_ranking: pickFirst(normalized, ["top_100_ranking","top100_ranking","top_100","top100"], ""),
+        avg_rating: pickFirst(normalized, ["player_reviews_avg_rating","player_reviews_avg","avg_rating","rating"], ""),
+        buddies_trip_hotspot: pickFirst(normalized, ["buddies_trip_hotspot_yes_no","buddies_trip_hotspot","buddy_trip_hotspot"], ""),
+        lodging_on_site: pickFirst(normalized, ["lodging_on_siteyes_no","lodging_on_site","lodging"], ""),
+        best_time: pickFirst(normalized, ["peak_seasonbest_time_to_visit","best_time_to_visit","peak_season"], ""),
+        cost_range: pickFirst(normalized, ["cost_per_coursegreen_fee_range","green_fee_range","cost_range","price_range"], ""),
+        architect: pickFirst(normalized, ["architect","designer"], ""),
+        phone: pickFirst(normalized, ["phone","phone_number","contact_phone"], ""),
+        website_url: pickFirst(normalized, ["website_url","website","url","course_website"], ""),
+        thumbnail_url: pickFirst(normalized, ["thumbnail_url","thumbnail","image","image_url","photo_url"], ""),
+        __raw: normalized
+      };
+
+      course.__id = makeId(course);
+      course.__isTop100 = String(course.top_100_ranking||"").trim() !== "";
+      course.__isBuddyHotspot = isTruthyYes(course.buddies_trip_hotspot);
+
+      return course;
+    })
+    .filter(c => Number.isFinite(c.latitude) && Number.isFinite(c.longitude) && c.course_name);
+
+    filteredCourses = [...allCourses];
+  }
+
+  /**********************
+   * MARKERS + POPUPS
+   **********************/
+  function pinIcon(isTop100){
+    return L.divIcon({
+      className: "ga-pin-wrap",
+      html: `<div class="pin ${isTop100 ? "top100" : ""}"></div>`,
+      iconSize: [14,14],
+      iconAnchor: [7,7]
+    });
+  }
+
+  function createPopupContent(c){
+    const loc = [c.city, c.state].filter(Boolean).join(", ");
+    const badge = c.__isTop100 ? `<span class="ga-badge">Top-100</span>` : `<span style="opacity:.6;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:rgba(5,45,31,.6)">Golf Atlas</span>`;
+
+    const pills = [];
+    if (c.par) pills.push(pill(c.par, "Par"));
+    if (c.yardage_black_tees) pills.push(pill(c.yardage_black_tees, "Yards"));
+    if (c.__isTop100) pills.push(pill("#"+String(c.top_100_ranking).trim(), "Top 100"));
+    if (c.avg_rating) pills.push(pill(c.avg_rating, "Rating"));
+
+    const lines = [];
+    if (c.course_resort) lines.push(`🏨 ${escapeHtml(c.course_resort)}`);
+    if (c.architect) lines.push(`🏗️ ${escapeHtml(c.architect)}`);
+    if (c.cost_range) lines.push(`💰 ${escapeHtml(c.cost_range)}`);
+    if (c.best_time) lines.push(`🗓️ Best: ${escapeHtml(c.best_time)}`);
+
+    const btnWebsite = c.website_url ? `<button class="popup-btn primary" onclick="openLink('${escapeAttr(c.website_url)}')">Website</button>` : "";
+    const btnCall = c.phone ? `<button class="popup-btn ghost" onclick="openLink('tel:${escapeAttr(c.phone)}')">Call</button>` : "";
+
+    return `
+      <div>
+        <div class="popup-head">
+          <div class="popup-logo">GOLF ATLAS</div>
+          ${badge}
+        </div>
+        <div class="popup-body">
+          <div class="popup-title">${escapeHtml(c.course_name || "Course")}</div>
+          <div class="popup-sub">${escapeHtml(loc || c.region || "")}</div>
+
+          ${pills.length ? `<div class="popup-grid">${pills.slice(0,4).join("")}</div>` : ""}
+
+          ${lines.length ? `<div class="popup-lines">${lines.map(l => `<div>${l}</div>`).join("")}</div>` : ""}
+
+          ${(btnWebsite || btnCall) ? `<div class="popup-actions">${btnWebsite}${btnCall}</div>` : ""}
+        </div>
+      </div>
+    `;
+  }
+
+  function pill(val, lab){
+    return `
+      <div class="popup-pill">
+        <div class="pill-val">${escapeHtml(String(val))}</div>
+        <div class="pill-lab">${escapeHtml(String(lab))}</div>
+      </div>
+    `;
+  }
+
+  function renderMarkers(){
+    clusterLayer.clearLayers();
+    markersById.clear();
+
+    filteredCourses.forEach((c) => {
+      const m = L.marker([c.latitude, c.longitude], { icon: pinIcon(c.__isTop100) });
+      m.options.__courseId = c.__id;
+      m.options.__courseName = c.course_name;
+
+      m.bindPopup(createPopupContent(c), { maxWidth: 320, closeButton:true });
+
+      // Hover halo + tooltip (baseline-ish)
+      m.on("mouseover", () => {
+        const el = m.getElement()?.querySelector(".pin");
+        if (el) el.classList.add("hovered");
+        m.bindTooltip(`<div class="ga-tooltip"><b>${escapeHtml(c.course_name)}</b><div class="muted">${escapeHtml([c.city,c.state].filter(Boolean).join(", "))}</div></div>`,
+          { direction:"top", opacity:1, sticky:true, className:"" }
+        );
+        m.openTooltip();
+      });
+      m.on("mouseout", () => {
+        const el = m.getElement()?.querySelector(".pin");
+        if (el) el.classList.remove("hovered");
+        m.closeTooltip();
+      });
+
+      m.on("popupopen", () => {
+        // optional: keep hover style when popup open
+        const el = m.getElement()?.querySelector(".pin");
+        if (el) el.classList.add("hovered");
+      });
+      m.on("popupclose", () => {
+        const el = m.getElement()?.querySelector(".pin");
+        if (el) el.classList.remove("hovered");
+      });
+
+      clusterLayer.addLayer(m);
+      markersById.set(c.__id, m);
+    });
+  }
+
+  /**********************
+   * RESORT CARDS
+   **********************/
+  function renderResortCards(){
+    const grid = document.getElementById("resortGrid");
+
+    // Featured: buddy hotspots or top100 first
+    const featured = [...filteredCourses]
+      .sort((a,b) => {
+        const aScore = (a.__isBuddyHotspot ? 2 : 0) + (a.__isTop100 ? 1 : 0);
+        const bScore = (b.__isBuddyHotspot ? 2 : 0) + (b.__isTop100 ? 1 : 0);
+        // If both top100, lower rank number first
+        if (a.__isTop100 && b.__isTop100) {
+          const ar = toNum(a.top_100_ranking) ?? 9999;
+          const br = toNum(b.top_100_ranking) ?? 9999;
+          if (ar !== br) return ar - br;
+        }
+        return bScore - aScore;
+      })
+      .slice(0, 8);
+
+    const fallbackImg = "https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=1200&q=80&auto=format&fit=crop";
+
+    grid.innerHTML = featured.map(c => {
+      const img = c.thumbnail_url || fallbackImg;
+      const name = (c.course_resort || c.course_name || "").trim();
+      const sub = c.course_resort ? c.course_name : ([c.city,c.state].filter(Boolean).join(", ") || "");
+      const meta = [];
+      if (isTruthyYes(c.lodging_on_site)) meta.push("On-site lodging");
+      if (c.best_time) meta.push("Best: " + c.best_time);
+      if (c.cost_range) meta.push(c.cost_range);
+      if (c.__isTop100) meta.unshift(`Top-100 (#${String(c.top_100_ranking).trim()})`);
+
+      return `
+        <div class="resort-card" onclick="focusCourse('${escapeAttr(c.__id)}')">
+          <img class="resort-image" src="${escapeAttr(img)}" alt="${escapeAttr(c.course_name)}"
+               onerror="this.src='${escapeAttr(fallbackImg)}'"/>
+          <div class="resort-info">
+            <div class="resort-name">${escapeHtml(name)}</div>
+            <div class="resort-courses">${escapeHtml(sub)}</div>
+            <div class="resort-meta">
+              ${meta.slice(0,3).map(t => `<div class="resort-meta-item"><span class="meta-dot"></span>${escapeHtml(t)}</div>`).join("")}
+            </div>
+            <button class="learn-more-btn" onclick="event.stopPropagation(); focusCourse('${escapeAttr(c.__id)}')">Zoom & Open</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function focusCourse(courseId){
+    const marker = markersById.get(courseId);
+    if (!marker) return;
+
+    const ll = marker.getLatLng();
+    map.setView(ll, Math.min(13, MAX_ZOOM_BASELINE));
+    setTimeout(() => marker.openPopup(), 180);
+    document.getElementById("map").scrollIntoView({ behavior:"smooth", block:"start" });
+  }
+
+  /**********************
+   * FILTERING + SEARCH
+   **********************/
+  function applyFilters(){
+    const term = lastSearchTerm.trim().toLowerCase();
+    const top100Only = lastTop100Only;
+
+    filteredCourses = allCourses.filter(c => {
+      if (top100Only && !c.__isTop100) return false;
+      if (!term) return true;
+
+      const hay = [
+        c.course_name, c.course_resort, c.city, c.state, c.region
+      ].filter(Boolean).join(" ").toLowerCase();
+
+      return hay.includes(term);
+    });
+
+    renderMarkers();
+    renderResortCards();
+  }
+
+  function setSearchTerm(term){
+    lastSearchTerm = term || "";
+    // sync both inputs
+    document.getElementById("searchInput").value = lastSearchTerm;
+    document.getElementById("mapSearch").value = lastSearchTerm;
+    applyFilters();
+    renderTypeahead();
+  }
+
+  function renderTypeahead(){
+    const ta = document.getElementById("typeahead");
+    const q = (document.getElementById("searchInput").value || "").trim().toLowerCase();
+    if (!q || q.length < 2){
+      ta.style.display = "none";
+      ta.innerHTML = "";
+      return;
+    }
+
+    // suggestions from course + resort + city/state combos
+    const suggestions = [];
+    for (const c of allCourses){
+      const cn = (c.course_name||"");
+      const rn = (c.course_resort||"");
+      const cs = [c.city,c.state].filter(Boolean).join(", ");
+      if (cn.toLowerCase().includes(q)) suggestions.push(cn);
+      if (rn && rn.toLowerCase().includes(q)) suggestions.push(rn);
+      if (cs && cs.toLowerCase().includes(q)) suggestions.push(cs);
+      if (suggestions.length > 14) break;
+    }
+
+    const uniq = Array.from(new Set(suggestions)).slice(0, 10);
+    if (!uniq.length){
+      ta.style.display = "none";
+      ta.innerHTML = "";
+      return;
+    }
+
+    ta.style.display = "block";
+    ta.innerHTML = uniq.map(s => `
+      <div style="padding:10px 12px; cursor:pointer; font-size:13px; color:var(--ga-forest); border-bottom:1px solid rgba(0,0,0,.06)"
+           onmouseover="this.style.background='rgba(0,0,0,.04)'" onmouseout="this.style.background='transparent'"
+           onclick="window.__pickSuggestion('${escapeAttr(s)}')">
+        ${escapeHtml(s)}
+      </div>
+    `).join("") + `<div style="padding:9px 12px; font-size:12px; color:#6b8f7f">Press Enter to search</div>`;
+  }
+
+  window.__pickSuggestion = (s) => {
+    setSearchTerm(s);
+    const ta = document.getElementById("typeahead");
+    ta.style.display = "none";
+    ta.innerHTML = "";
+  };
+
+  /**********************
+   * Fit bounds helpers
+   **********************/
+  function fitToCourses(list){
+    if (!list.length) return;
+    const latlngs = list.map(c => [c.latitude, c.longitude]);
+    const bounds = L.latLngBounds(latlngs);
+    map.fitBounds(bounds, { padding:[60,60] });
+  }
+
+  /**********************
+   * Safety: escaping for HTML injection
+   **********************/
+  function escapeHtml(str){
+    return String(str ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function escapeAttr(str){ return escapeHtml(str).replaceAll("`","&#096;"); }
+
+  function openLink(url){
+    try { window.open(url, "_blank", "noopener,noreferrer"); } catch(e){}
+  }
+
+  /**********************
+   * UI WIRING
+   **********************/
+  function wireUI(){
+    const searchInput = document.getElementById("searchInput");
+    const mapSearch = document.getElementById("mapSearch");
+    const top100Check = document.getElementById("top100Check");
+
+    // hero search -> map
+    searchInput.addEventListener("input", () => { renderTypeahead(); });
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") setSearchTerm(searchInput.value);
+      if (e.key === "Escape") { setSearchTerm(""); hideTypeahead(); }
+    });
+
+    // overlay search
+    mapSearch.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") setSearchTerm(mapSearch.value);
+      if (e.key === "Escape") setSearchTerm("");
+    });
+
+    document.getElementById("goSearch").addEventListener("click", () => setSearchTerm(searchInput.value));
+    document.getElementById("clearSearch").addEventListener("click", () => setSearchTerm(""));
+    document.getElementById("mapClear").addEventListener("click", () => setSearchTerm(""));
+
+    // sync typing between search bars (without filtering until Enter/click)
+    mapSearch.addEventListener("input", () => { searchInput.value = mapSearch.value; });
+    searchInput.addEventListener("input", () => { mapSearch.value = searchInput.value; });
+
+    // top100 toggle
+    top100Check.addEventListener("change", () => {
+      lastTop100Only = top100Check.checked;
+      document.getElementById("top100Chip").classList.toggle("active", lastTop100Only);
+      applyFilters();
+    });
+
+    // filter panel toggle
+    const panel = document.getElementById("filtersPanel");
+    document.getElementById("filterToggle").addEventListener("click", () => {
+      panel.classList.toggle("show");
+    });
+
+    // fit buttons
+    document.getElementById("fitUSA").addEventListener("click", () => {
+      map.setView([DEFAULT_VIEW.lat, DEFAULT_VIEW.lng], DEFAULT_VIEW.zoom);
+    });
+    document.getElementById("fitResults").addEventListener("click", () => {
+      fitToCourses(filteredCourses);
+    });
+
+    // click outside typeahead to close
+    document.addEventListener("click", (e) => {
+      const ta = document.getElementById("typeahead");
+      if (!ta) return;
+      if (!ta.contains(e.target) && e.target !== searchInput) hideTypeahead();
+    });
+  }
+
+  function hideTypeahead(){
+    const ta = document.getElementById("typeahead");
+    ta.style.display = "none";
+    ta.innerHTML = "";
+  }
+
+  /**********************
+   * BOOT
+   **********************/
+  (async function boot(){
+    initMap();
+    wireUI();
+
+    try{
+      await loadCourses();
+      applyFilters();
+      renderResortCards();
+
+      // Optional: fit to all courses once loaded
+      // fitToCourses(allCourses);
+
+    }catch(err){
+      console.error(err);
+      alert("Could not load courses.csv. Make sure index.html and courses.csv are in the same folder in your GitHub repo.");
+    }
+  })();
+</script>
 </body>
 </html>
