@@ -438,7 +438,26 @@
       font-size:12px;
       color: var(--ga-forest);
       user-select:none;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 190px;
     }
+
+    /* NEW: course/resort logo in popup header */
+    .popup-brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+    }
+    .popup-course-logo{
+      height: 26px;
+      max-width: 180px;
+      object-fit: contain;
+      display:block;
+    }
+
     .popup-body{padding:14px 14px 12px}
     .popup-title{
       font-size:16px;
@@ -665,7 +684,6 @@
   function initMap(){
     map = L.map("map", { zoomControl:true, scrollWheelZoom:true }).setView([DEFAULT_VIEW.lat, DEFAULT_VIEW.lng], DEFAULT_VIEW.zoom);
 
-    // Baseline tiles: Carto Light
     L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
       attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
       maxZoom: MAX_ZOOM_BASELINE
@@ -736,7 +754,6 @@
     const rows = parsed.data || [];
     const firstHeaders = parsed.meta?.fields || [];
 
-    // Normalize each row keys -> create a consistent object
     allCourses = rows.map((row) => {
       const normalized = {};
       for (const [k,v] of Object.entries(row)) normalized[normKey(k)] = v;
@@ -764,6 +781,18 @@
         phone: pickFirst(normalized, ["phone","phone_number","contact_phone"], ""),
         website_url: pickFirst(normalized, ["website_url","website","url","course_website"], ""),
         thumbnail_url: pickFirst(normalized, ["thumbnail_url","thumbnail","image","image_url","photo_url"], ""),
+
+        /* NEW: from column header logo_url(linked) -> normalized key logo_urllinked */
+        logo_url: pickFirst(normalized, [
+          "logo_urllinked",
+          "logo_url",
+          "course_logo_url",
+          "course_logo",
+          "logo",
+          "logo_link",
+          "course_logo_link"
+        ], ""),
+
         __raw: normalized
       };
 
@@ -777,11 +806,9 @@
 
     filteredCourses = [...allCourses];
 
-    // Debug summary
     const top100Count = allCourses.filter(c => c.__isTop100).length;
-    setDebug(`Loaded <b>${allCourses.length}</b> courses • Top-100: <b>${top100Count}</b><br/><span style="opacity:.75">If 0 loaded, your sheet likely uses different lat/lng column names.</span>`);
+    setDebug(`Loaded <b>${allCourses.length}</b> courses • Top-100: <b>${top100Count}</b>`);
 
-    // If nothing loaded, show header hints
     if (!allCourses.length){
       console.warn("CSV fields:", firstHeaders);
       setDebug(`Loaded <b>0</b> courses.<br/>Open console to see CSV headers (likely lat/lng field mismatch).`);
@@ -819,12 +846,20 @@
     const btnWebsite = c.website_url ? `<button class="popup-btn primary" onclick="openLink('${escapeAttr(c.website_url)}')">Website</button>` : "";
     const btnCall = c.phone ? `<button class="popup-btn ghost" onclick="openLink('tel:${escapeAttr(c.phone)}')">Call</button>` : "";
 
+    const brandText = escapeHtml(c.course_resort || c.course_name || "GOLF ATLAS");
+    const hasLogo = !!(c.logo_url && String(c.logo_url).trim());
+
     return `
       <div>
         <div class="popup-head">
-          <div class="popup-logo">GOLF ATLAS</div>
+          <div class="popup-brand">
+            ${hasLogo ? `<img class="popup-course-logo" src="${escapeAttr(c.logo_url)}" alt="Logo"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />` : ``}
+            <div class="popup-logo" style="${hasLogo ? "display:none;" : ""}">${brandText}</div>
+          </div>
           ${badge}
         </div>
+
         <div class="popup-body">
           <div class="popup-title">${escapeHtml(c.course_name || "Course")}</div>
           <div class="popup-sub">${escapeHtml(loc || c.region || "")}</div>
@@ -966,7 +1001,6 @@
     renderMarkers();
     renderResortCards();
 
-    // Debug update
     setDebug(`Loaded <b>${allCourses.length}</b> • Showing <b>${filteredCourses.length}</b>${lastTop100Only ? " • Top-100 only" : ""}`);
   }
 
