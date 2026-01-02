@@ -276,6 +276,8 @@
       gap:26px;
       margin-top:34px;
     }
+
+    /* Card */
     .resort-card{
       background:var(--ga-forest-2);
       border-radius:18px;
@@ -284,13 +286,33 @@
       cursor:pointer;
       border:1px solid rgba(183,196,189,.12);
       box-shadow: 0 12px 30px rgba(0,0,0,.25);
+
+      /* NEW: ensure consistent layout so buttons align */
+      display:flex;
+      flex-direction:column;
     }
     .resort-card:hover{
       transform:translateY(-5px);
       box-shadow: 0 18px 40px rgba(0,0,0,.35);
     }
-    .resort-image{width:100%;height:220px;object-fit:cover;display:block}
-    .resort-info{padding:20px 20px 22px}
+    .resort-image{
+      width:100%;
+      height:220px;
+      object-fit:cover;
+      display:block;
+
+      /* NEW: keep image from stretching in flex layout */
+      flex:0 0 auto;
+    }
+
+    .resort-info{
+      padding:20px 20px 22px;
+
+      /* NEW: stack + push button to bottom */
+      flex:1 1 auto;
+      display:flex;
+      flex-direction:column;
+    }
     .resort-name{
       font-size:16px;
       font-weight:800;
@@ -315,6 +337,7 @@
     }
     .resort-meta-item{display:flex;align-items:center;gap:8px}
     .meta-dot{width:10px;height:10px;background:var(--ga-moss);border-radius:50%}
+
     .learn-more-btn{
       background:var(--ga-moss);
       color:#fff;
@@ -327,6 +350,9 @@
       cursor:pointer;
       transition:filter .15s ease, transform .1s ease;
       width:100%;
+
+      /* NEW: align all buttons to same baseline */
+      margin-top:auto;
     }
     .learn-more-btn:hover{filter:brightness(1.06)}
     .learn-more-btn:active{transform:translateY(1px)}
@@ -444,7 +470,7 @@
       max-width: 190px;
     }
 
-    /* NEW: course/resort logo in popup header */
+    /* course/resort logo in popup header */
     .popup-brand{
       display:flex;
       align-items:center;
@@ -782,7 +808,7 @@
         website_url: pickFirst(normalized, ["website_url","website","url","course_website"], ""),
         thumbnail_url: pickFirst(normalized, ["thumbnail_url","thumbnail","image","image_url","photo_url"], ""),
 
-        /* NEW: from column header logo_url(linked) -> normalized key logo_urllinked */
+        /* logo_url(linked) -> normalized key logo_urllinked */
         logo_url: pickFirst(normalized, [
           "logo_urllinked",
           "logo_url",
@@ -964,7 +990,9 @@
             <div class="resort-meta">
               ${meta.slice(0,3).map(t => `<div class="resort-meta-item"><span class="meta-dot"></span>${escapeHtml(t)}</div>`).join("")}
             </div>
-            <button class="learn-more-btn" onclick="event.stopPropagation(); focusCourse('${escapeAttr(c.__id)}')">Zoom & Open</button>
+
+            <!-- UPDATED: button label -->
+            <button class="learn-more-btn" onclick="event.stopPropagation(); focusCourse('${escapeAttr(c.__id)}')">More Info</button>
           </div>
         </div>
       `;
