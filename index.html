@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Golf Atlas — Plan Your Ultimate Golf Trip</title>
+  <title>Golf Atlas — Map</title>
 
   <!-- Leaflet + MarkerCluster -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
@@ -31,92 +31,72 @@
     }
 
     *{margin:0;padding:0;box-sizing:border-box}
+    html, body{height:100%}
     body{
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
       background:#0a1f1a;
       color:var(--ga-text);
     }
 
-    /* Header */
-    header{
-      background:var(--ga-forest-2);
-      padding:18px 34px;
+    /* ====== APP LAYOUT (NO SITE HEADER) ====== */
+    .app{
+      min-height: 100vh;
       display:flex;
-      justify-content:space-between;
-      align-items:center;
-      border-bottom:1px solid rgba(183,196,189,.15);
-      position:sticky;
-      top:0;
-      z-index:2000;
-      backdrop-filter:saturate(1.2);
+      flex-direction:column;
     }
-    .logo{
-      font-size:28px;
-      font-weight:900;
-      letter-spacing:7px;
-      color:#fff;
-      user-select:none;
-    }
-    nav{display:flex;gap:28px;flex-wrap:wrap}
-    nav a{
-      color:#fff;
-      text-decoration:none;
-      font-size:12px;
-      font-weight:700;
-      letter-spacing:2px;
-      text-transform:uppercase;
-      transition:color .2s ease;
-      opacity:.95;
-    }
-    nav a:hover{color:var(--ga-gold)}
 
-    /* Hero */
+    /* Hero-like top area (search + map) */
     .hero{
       display:grid;
       grid-template-columns: 1fr 1.25fr;
-      min-height: calc(100vh - 70px);
+      min-height: 70vh;
       background:#0f2822;
+      border-bottom:1px solid rgba(183,196,189,.12);
     }
+
     .hero-content{
-      padding:70px 54px;
+      padding:46px 44px;
       display:flex;
       flex-direction:column;
       justify-content:center;
-      gap:20px;
+      gap:16px;
     }
+
     .hero h1{
-      font-size:54px;
+      font-size:44px;
       font-weight:300;
       line-height:1.12;
-      margin-bottom:10px;
+      margin-bottom:6px;
     }
     .hero .highlight{color:var(--ga-gold);font-weight:450}
+
     .hero-sub{
       color:var(--ga-cream);
       opacity:.9;
       line-height:1.55;
       max-width:520px;
-      font-size:15px;
+      font-size:14px;
     }
 
     .search-box{
       position:relative;
       width:100%;
       max-width:560px;
-      margin-top:10px;
+      margin-top:8px;
     }
     .search-box input{
       width:100%;
       padding:16px 96px 16px 18px;
       background:#fff;
       border:none;
-      border-radius:10px;
+      border-radius:12px;
       font-size:14px;
       color:var(--ga-forest-2);
       outline:none;
       box-shadow: var(--shadow);
     }
     .search-box input::placeholder{color:#6b8f7f}
+
     .search-actions{
       position:absolute;
       right:10px;
@@ -142,6 +122,7 @@
     .icon-btn:hover{transform:translateY(-1px);background:var(--ga-forest)}
     .icon-btn:active{transform:translateY(0px)}
     .icon-btn.secondary{background:var(--ga-moss)}
+
     .filter-toggle{
       display:inline-flex;
       align-items:center;
@@ -160,13 +141,14 @@
       border-color:rgba(212,175,55,.55);
     }
 
-    /* Map Container */
+    /* Map area */
     .map-container{
       position:relative;
       background:#1a2f28;
       border-left:1px solid rgba(183,196,189,.12);
     }
-    #map{width:100%;height:100%;min-height:600px}
+    #map{width:100%;height:100%;min-height:520px}
+
     .map-controls{
       position:absolute;
       top:18px;
@@ -178,7 +160,6 @@
       max-width: 420px;
     }
 
-    /* Overlay search (compact) */
     .map-search{
       background:rgba(5,45,31,.92);
       padding:11px 14px;
@@ -198,12 +179,8 @@
       outline:none;
     }
     .map-search input::placeholder{color:rgba(183,196,189,.75)}
-    .chip-row{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      align-items:center;
-    }
+
+    .chip-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
     .filter-chip{
       background:rgba(5,45,31,.92);
       padding:10px 14px;
@@ -244,28 +221,28 @@
       margin-top:8px;
     }
 
-    /* Resorts Section */
+    /* Cards section (kept, but no site header needed) */
     .resorts-section{
-      padding:72px 54px;
+      padding:56px 44px 72px;
       background:#0a1f1a;
     }
-    .section-header{text-align:center;margin-bottom:46px}
+    .section-header{text-align:center;margin-bottom:36px}
     .section-label{
       font-size:12px;
       letter-spacing:3px;
       color:var(--ga-muted2);
       text-transform:uppercase;
-      margin-bottom:14px;
+      margin-bottom:12px;
     }
     .section-title{
-      font-size:40px;
+      font-size:34px;
       font-weight:300;
-      margin-bottom:16px;
+      margin-bottom:12px;
     }
     .section-description{
-      font-size:15px;
+      font-size:14px;
       color:var(--ga-muted);
-      max-width:740px;
+      max-width:760px;
       margin:0 auto;
       line-height:1.65;
     }
@@ -274,10 +251,9 @@
       display:grid;
       grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
       gap:26px;
-      margin-top:34px;
+      margin-top:28px;
     }
 
-    /* Card */
     .resort-card{
       background:var(--ga-forest-2);
       border-radius:18px;
@@ -286,8 +262,6 @@
       cursor:pointer;
       border:1px solid rgba(183,196,189,.12);
       box-shadow: 0 12px 30px rgba(0,0,0,.25);
-
-      /* NEW: ensure consistent layout so buttons align */
       display:flex;
       flex-direction:column;
     }
@@ -300,15 +274,10 @@
       height:220px;
       object-fit:cover;
       display:block;
-
-      /* NEW: keep image from stretching in flex layout */
       flex:0 0 auto;
     }
-
     .resort-info{
       padding:20px 20px 22px;
-
-      /* NEW: stack + push button to bottom */
       flex:1 1 auto;
       display:flex;
       flex-direction:column;
@@ -350,9 +319,7 @@
       cursor:pointer;
       transition:filter .15s ease, transform .1s ease;
       width:100%;
-
-      /* NEW: align all buttons to same baseline */
-      margin-top:auto;
+      margin-top:auto; /* aligns buttons */
     }
     .learn-more-btn:hover{filter:brightness(1.06)}
     .learn-more-btn:active{transform:translateY(1px)}
@@ -458,19 +425,6 @@
       text-transform:uppercase;
       white-space:nowrap;
     }
-    .popup-logo{
-      font-weight:900;
-      letter-spacing:4px;
-      font-size:12px;
-      color: var(--ga-forest);
-      user-select:none;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      max-width: 190px;
-    }
-
-    /* course/resort logo in popup header */
     .popup-brand{
       display:flex;
       align-items:center;
@@ -483,7 +437,18 @@
       object-fit: contain;
       display:block;
     }
-
+    .popup-logo{
+      font-weight:900;
+      letter-spacing:4px;
+      font-size:12px;
+      color: var(--ga-forest);
+      user-select:none;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 190px;
+      display:block;
+    }
     .popup-body{padding:14px 14px 12px}
     .popup-title{
       font-size:16px;
@@ -558,93 +523,101 @@
     }
     .debug b{color:var(--ga-gold)}
 
+    /* Typeahead */
+    #typeahead{
+      display:none;
+      position:absolute;
+      left:0; right:0;
+      top:52px;
+      background:#fff;
+      border-radius:12px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      border:1px solid rgba(0,0,0,.08);
+      z-index:50;
+    }
+
     /* Responsive */
     @media (max-width: 1024px){
       .hero{grid-template-columns:1fr}
       .map-container{min-height:520px;border-left:none;border-top:1px solid rgba(183,196,189,.12)}
-      .hero-content{padding:56px 22px}
-      .resorts-section{padding:56px 22px}
+      .hero-content{padding:38px 18px}
+      .resorts-section{padding:48px 18px 64px}
       .map-search input{width:240px}
       .filter-chip{width: 220px}
-      nav{gap:16px}
-      header{padding:16px 18px}
-      .logo{letter-spacing:5px}
-      .debug { position: static; margin: 14px 22px 0; }
+      .debug { position: static; margin: 14px 18px 0; }
+    }
+
+    /* If you embed in an iframe with limited height, this helps */
+    @media (max-height: 780px){
+      .hero{min-height: 640px;}
+      #map{min-height: 520px;}
     }
   </style>
 </head>
 
 <body>
-<header>
-  <div class="logo">GOLF ATLAS</div>
-  <nav>
-    <a href="#map">MAP</a>
-    <a href="#resorts">RESORTS</a>
-    <a href="#planner" onclick="return false;">TRIP PLANNER</a>
-    <a href="#about" onclick="return false;">ABOUT</a>
-    <a href="#blog" onclick="return false;">BLOG</a>
-  </nav>
-</header>
-
-<div class="hero">
-  <div class="hero-content">
-    <h1>Plan Your <span class="highlight">Ultimate<br/>Golf Trip</span></h1>
-    <div class="hero-sub">
-      Explore courses across America, toggle the Top-100, and build the kind of buddy-trip map that turns into a tradition.
-    </div>
-
-    <div class="search-box">
-      <input id="searchInput" type="text" placeholder="Search courses, resorts, or destinations…" autocomplete="off" />
-      <div class="search-actions">
-        <button class="icon-btn" id="clearSearch" title="Clear">×</button>
-        <button class="icon-btn secondary" id="goSearch" title="Search">🔍</button>
-      </div>
-      <div id="typeahead" style="display:none; position:absolute; left:0; right:0; top:52px; background:#fff; border-radius:12px; box-shadow:var(--shadow); overflow:hidden; border:1px solid rgba(0,0,0,.08); z-index:50;"></div>
-    </div>
-
-    <button class="filter-toggle" id="filterToggle">⚙️ Filters</button>
-  </div>
-
-  <div class="map-container">
-    <div class="map-controls">
-      <div class="map-search">
-        <span style="opacity:.95">🔍</span>
-        <input id="mapSearch" type="text" placeholder="Search course, city, or state…" autocomplete="off" />
-        <button class="icon-btn" id="mapClear" style="width:30px;height:30px;border-radius:10px" title="Clear">×</button>
-      </div>
-
-      <div class="chip-row">
-        <div class="filter-chip" id="top100Chip" title="Toggle Top-100">
-          <input type="checkbox" id="top100Check"/>
-          <label for="top100Check">Show Top-100 Only</label>
-          <span style="opacity:.85">🏆</span>
+  <div class="app">
+    <div class="hero">
+      <div class="hero-content">
+        <h1>Explore the <span class="highlight">Golf Atlas</span></h1>
+        <div class="hero-sub">
+          Search courses, toggle Top-100, and click “More Info” to jump to the drill-in page.
         </div>
+
+        <div class="search-box">
+          <input id="searchInput" type="text" placeholder="Search courses, resorts, or destinations…" autocomplete="off" />
+          <div class="search-actions">
+            <button class="icon-btn" id="clearSearch" title="Clear">×</button>
+            <button class="icon-btn secondary" id="goSearch" title="Search">🔍</button>
+          </div>
+          <div id="typeahead"></div>
+        </div>
+
+        <button class="filter-toggle" id="filterToggle">⚙️ Filters</button>
       </div>
 
-      <div class="panel" id="filtersPanel">
-        <div style="display:flex; gap:10px; flex-wrap:wrap">
-          <button class="popup-btn ghost" id="fitUSA" style="flex:unset; padding:10px 12px;">Fit to USA</button>
-          <button class="popup-btn ghost" id="fitResults" style="flex:unset; padding:10px 12px;">Fit Results</button>
+      <div class="map-container">
+        <div class="map-controls">
+          <div class="map-search">
+            <span style="opacity:.95">🔍</span>
+            <input id="mapSearch" type="text" placeholder="Search course, city, or state…" autocomplete="off" />
+            <button class="icon-btn" id="mapClear" style="width:30px;height:30px;border-radius:10px" title="Clear">×</button>
+          </div>
+
+          <div class="chip-row">
+            <div class="filter-chip" id="top100Chip" title="Toggle Top-100">
+              <input type="checkbox" id="top100Check"/>
+              <label for="top100Check">Show Top-100 Only</label>
+              <span style="opacity:.85">🏆</span>
+            </div>
+          </div>
+
+          <div class="panel" id="filtersPanel">
+            <div style="display:flex; gap:10px; flex-wrap:wrap">
+              <button class="popup-btn ghost" id="fitUSA" style="flex:unset; padding:10px 12px;">Fit to USA</button>
+              <button class="popup-btn ghost" id="fitResults" style="flex:unset; padding:10px 12px;">Fit Results</button>
+            </div>
+            <div class="hint">Tip: Search + Top-100 together for a fast “where should we go next?” scan.</div>
+          </div>
         </div>
-        <div class="hint">Tip: Search + Top-100 together for a fast “where should we go next?” scan.</div>
+
+        <div id="map"></div>
+        <div class="debug" id="debugBox">Loading…</div>
       </div>
     </div>
 
-    <div id="map"></div>
-    <div class="debug" id="debugBox">Loading…</div>
+    <section class="resorts-section" id="resorts">
+      <div class="section-header">
+        <div class="section-label">Trip Inspiration</div>
+        <h2 class="section-title">Featured Resorts & Buddy-Trip Picks</h2>
+        <p class="section-description">
+          Pulled from your Google Sheet — Top-100 courses and “buddy trip hotspot” resorts float to the top.
+        </p>
+      </div>
+      <div class="resort-grid" id="resortGrid"></div>
+    </section>
   </div>
-</div>
-
-<section class="resorts-section" id="resorts">
-  <div class="section-header">
-    <div class="section-label">Trip Inspiration</div>
-    <h2 class="section-title">Featured Resorts & Buddy-Trip Picks</h2>
-    <p class="section-description">
-      A rotating set pulled straight from your sheet — Top-100 courses and “buddy-trip hotspot” resorts rise to the top automatically.
-    </p>
-  </div>
-  <div class="resort-grid" id="resortGrid"></div>
-</section>
 
 <script>
   /**********************
@@ -744,9 +717,7 @@
     clusterLayer.on("clustermouseover", (e) => {
       const cluster = e.layer;
       const children = cluster.getAllChildMarkers();
-      const names = children
-        .map(m => m?.options?.__courseName || "")
-        .filter(Boolean);
+      const names = children.map(m => m?.options?.__courseName || "").filter(Boolean);
 
       const unique = Array.from(new Set(names)).slice(0, 6);
       const extra = Math.max(0, names.length - unique.length);
@@ -778,7 +749,6 @@
     setDebug("Parsing CSV…");
     const parsed = Papa.parse(text, { header:true, skipEmptyLines:true });
     const rows = parsed.data || [];
-    const firstHeaders = parsed.meta?.fields || [];
 
     allCourses = rows.map((row) => {
       const normalized = {};
@@ -808,7 +778,6 @@
         website_url: pickFirst(normalized, ["website_url","website","url","course_website"], ""),
         thumbnail_url: pickFirst(normalized, ["thumbnail_url","thumbnail","image","image_url","photo_url"], ""),
 
-        /* logo_url(linked) -> normalized key logo_urllinked */
         logo_url: pickFirst(normalized, [
           "logo_urllinked",
           "logo_url",
@@ -836,8 +805,7 @@
     setDebug(`Loaded <b>${allCourses.length}</b> courses • Top-100: <b>${top100Count}</b>`);
 
     if (!allCourses.length){
-      console.warn("CSV fields:", firstHeaders);
-      setDebug(`Loaded <b>0</b> courses.<br/>Open console to see CSV headers (likely lat/lng field mismatch).`);
+      setDebug(`Loaded <b>0</b> courses.<br/>Likely a lat/lng header mismatch in the sheet.`);
     }
   }
 
@@ -851,6 +819,15 @@
       iconSize: [14,14],
       iconAnchor: [7,7]
     });
+  }
+
+  function pill(val, lab){
+    return `
+      <div class="popup-pill">
+        <div class="pill-val">${escapeHtml(String(val))}</div>
+        <div class="pill-lab">${escapeHtml(String(lab))}</div>
+      </div>
+    `;
   }
 
   function createPopupContent(c){
@@ -900,15 +877,6 @@
     `;
   }
 
-  function pill(val, lab){
-    return `
-      <div class="popup-pill">
-        <div class="pill-val">${escapeHtml(String(val))}</div>
-        <div class="pill-lab">${escapeHtml(String(lab))}</div>
-      </div>
-    `;
-  }
-
   function renderMarkers(){
     clusterLayer.clearLayers();
     markersById.clear();
@@ -933,15 +901,6 @@
         const el = m.getElement()?.querySelector(".pin");
         if (el) el.classList.remove("hovered");
         m.closeTooltip();
-      });
-
-      m.on("popupopen", () => {
-        const el = m.getElement()?.querySelector(".pin");
-        if (el) el.classList.add("hovered");
-      });
-      m.on("popupclose", () => {
-        const el = m.getElement()?.querySelector(".pin");
-        if (el) el.classList.remove("hovered");
       });
 
       clusterLayer.addLayer(m);
@@ -991,7 +950,6 @@
               ${meta.slice(0,3).map(t => `<div class="resort-meta-item"><span class="meta-dot"></span>${escapeHtml(t)}</div>`).join("")}
             </div>
 
-            <!-- UPDATED: button label -->
             <button class="learn-more-btn" onclick="event.stopPropagation(); focusCourse('${escapeAttr(c.__id)}')">More Info</button>
           </div>
         </div>
@@ -1019,9 +977,8 @@
       if (top100Only && !c.__isTop100) return false;
       if (!term) return true;
 
-      const hay = [
-        c.course_name, c.course_resort, c.city, c.state, c.region
-      ].filter(Boolean).join(" ").toLowerCase();
+      const hay = [c.course_name, c.course_resort, c.city, c.state, c.region]
+        .filter(Boolean).join(" ").toLowerCase();
 
       return hay.includes(term);
     });
@@ -1088,9 +1045,6 @@
     ta.innerHTML = "";
   }
 
-  /**********************
-   * Fit bounds helpers
-   **********************/
   function fitToCourses(list){
     if (!list.length) return;
     const latlngs = list.map(c => [c.latitude, c.longitude]);
@@ -1099,7 +1053,7 @@
   }
 
   /**********************
-   * Safety: escaping for HTML injection
+   * Escaping + Links
    **********************/
   function escapeHtml(str){
     return String(str ?? "")
@@ -1177,7 +1131,6 @@
       await loadCourses();
       applyFilters();
       renderResortCards();
-      // fitToCourses(allCourses); // optional
     }catch(err){
       console.error(err);
       setDebug(`Error: <b>${escapeHtml(err.message || String(err))}</b><br/>Open console for details.`);
