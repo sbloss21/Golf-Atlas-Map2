@@ -263,14 +263,6 @@ body{
 </svg>");
 }
 
-#top100Chip{
-  position: absolute !important;
-  left: 16px !important;
-  bottom: 16px !important;
-  top: auto !important;
-  right: auto !important;
-  z-index: 9999 !important;
-}
 
 #top100Chip{ z-index: 9999 !important; }
 
@@ -495,4 +487,25 @@ body{
 @media (max-height: 780px){
   .hero{min-height: 640px;}
   #map{min-height: 520px;}
+}
+
+/* Ensure map can host absolutely-positioned overlays */
+#map {
+  position: relative;
+}
+
+/* Dock container for the Top-100 toggle (bottom-left) */
+#ga-top100-dock {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 9999;
+  pointer-events: auto;
+}
+
+/* Optional: on mobile, lift it above iOS bottom bars / thumbs */
+@media (max-width: 768px) {
+  #ga-top100-dock {
+    bottom: 22px;
+  }
 }
