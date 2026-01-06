@@ -61,6 +61,20 @@ body{
   font-size:14px;
 }
 
+<div class="hero-logo">
+  <img
+    src="./assets/logos/golf-atlas-logo.png"
+    alt="Golf Atlas logo"
+  />
+</div>
+
+@media (max-width: 768px) {
+  .hero-logo img {
+    max-width: 110px;
+  }
+}
+
+
 .search-box{
   position:relative;
   width:100%;
