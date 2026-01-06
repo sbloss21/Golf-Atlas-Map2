@@ -514,18 +514,19 @@ function focusBestMatch(query) {
   return true;
 }
 
+function setSearchTerm(term){
+  lastSearchTerm = (term || "").trim();
+  document.getElementById("searchInput").value = lastSearchTerm;
+  document.getElementById("mapSearch").value = lastSearchTerm;
 
- function setSearchTerm(term, opts = {}) {
-  lastSearchTerm = term || "";
-
-  const si = document.getElementById("searchInput");
-  const ms = document.getElementById("mapSearch");
-  if (si) si.value = lastSearchTerm;
-  if (ms) ms.value = lastSearchTerm;
+  // Write to URL
+  setParam("q", lastSearchTerm || null);
 
   applyFilters();
   renderTypeahead();
+}
 
+ 
   // NEW: optionally focus after markers exist
   if (opts.focus) {
     // pick best match from the *current filtered set* first
