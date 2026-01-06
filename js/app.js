@@ -103,6 +103,26 @@ function setDebug(html) {
   box.innerHTML = html;
 }
 
+function updateMarkerScale() {
+  if (!map) return;
+
+  const zoom = map.getZoom();
+
+  // Base scale around zoom 6–7
+  // Grows gently as you zoom in
+  const scale =
+    zoom <= 6 ? 0.9 :
+    zoom <= 8 ? 1.0 :
+    zoom <= 10 ? 1.15 :
+    zoom <= 12 ? 1.3 :
+    1.45;
+
+  document.querySelectorAll(".ga-pin-wrap").forEach(el => {
+    el.style.transform = `scale(${scale})`;
+  });
+}
+
+
 /**********************
  * MAP INIT
  **********************/
@@ -376,6 +396,8 @@ function createPopupContent(c) {
 function renderMarkers() {
   clusterLayer.clearLayers();
   markersById.clear();
+  updateMarkerScale();
+
 
   filteredCourses.forEach((c) => {
     const m = L.marker([c.latitude, c.longitude], { icon: pinIcon(c.__isTop100) });
@@ -756,6 +778,8 @@ function wireUI() {
 (async function boot() {
   initMap();
   wireUI();
+  map.on("zoomend", updateMarkerScale);
+
 
   // Initialize state from URL
   lastSearchTerm = (getParam("q") || "").trim();
