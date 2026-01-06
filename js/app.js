@@ -909,10 +909,11 @@ function wireUI() {
     toggle.addEventListener("click", () => panel.classList.toggle("show"));
   }
 
- const resetBtn = document.getElementById("resetMap");
-if (resetBtn) {
-  resetBtn.addEventListener("click", () => resetMapExperience());
+  const fitUSA = document.getElementById("fitUSA");
+if (fitUSA) {
+  fitUSA.addEventListener("click", () => resetMapExperience());
 }
+
 
 const fitResults = document.getElementById("fitResults");
 if (fitResults) {
