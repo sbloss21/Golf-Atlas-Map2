@@ -69,9 +69,18 @@ const DEBUG_MODE = (() => {
   }
 
   function setDebug(html){
-    const box = document.getElementById("debugBox");
-    if (box) box.innerHTML = html;
+  const box = document.getElementById("debugBox");
+  if (!box) return;
+
+  if (!DEBUG_MODE) {
+    box.style.display = "none";
+    return;
   }
+
+  box.style.display = "";
+  box.innerHTML = html;
+}
+
 
   /**********************
    * MAP INIT (baseline-ish)
