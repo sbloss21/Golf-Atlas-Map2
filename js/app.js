@@ -451,6 +451,53 @@ const res = await fetch(csvFetchUrl, { cache: "no-store" });
     setDebug(`Loaded <b>${allCourses.length}</b> • Showing <b>${filteredCourses.length}</b>${lastTop100Only ? " • Top-100 only" : ""}`);
   }
 
+function findBestCourseMatch(query) {
+  const q = (query || "").trim().toLowerCase();
+  if (!q) return null;
+
+  // Prefer exact course name matches first
+  let exact = allCourses.find(c => (c.course_name || "").trim().toLowerCase() === q);
+  if (exact) return exact;
+
+  // Then exact resort name matches
+  exact = allCourses.find(c => (c.course_resort || "").trim().toLowerCase() === q);
+  if (exact) return exact;
+
+  // Then contains match (course name first, then resort/city/state)
+  const contains = allCourses.find(c => ((c.course_name || "").toLowerCase().includes(q)));
+  if (contains) return contains;
+
+  const broader = allCourses.find(c => {
+    const hay = [c.course_name, c.course_resort, c.city, c.state, c.region]
+      .filter(Boolean).join(" ").toLowerCase();
+    return hay.includes(q);
+  });
+
+  return broader || null;
+}
+
+function focusBestMatch(query) {
+  const match = findBestCourseMatch(query);
+  if (!match) return false;
+
+  // Make sure filters include it (in case Top-100 only is on)
+  if (lastTop100Only && !match.__isTop100) {
+    lastTop100Only = false;
+    const chk = document.getElementById("top100Check");
+    if (chk) chk.checked = false;
+    document.getElementById("top100Chip")?.classList.remove("active");
+    applyFilters();
+  }
+
+  // Ensure markers exist before focusing
+  setTimeout(() => {
+    focusCourse(match.__id);
+  }, 0);
+
+  return true;
+}
+
+
   function setSearchTerm(term){
     lastSearchTerm = term || "";
     document.getElementById("searchInput").value = lastSearchTerm;
