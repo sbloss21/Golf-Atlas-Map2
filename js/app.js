@@ -486,7 +486,6 @@ const res = await fetch(csvFetchUrl, { cache: "no-store" });
    **********************/
   function wireUI(){
     const searchInput = document.getElementById("searchInput");
-    const mapSearch = document.getElementById("mapSearch");
     const top100Check = document.getElementById("top100Check");
 
     searchInput.addEventListener("input", () => { renderTypeahead(); });
@@ -495,18 +494,9 @@ const res = await fetch(csvFetchUrl, { cache: "no-store" });
       if (e.key === "Escape") { setSearchTerm(""); hideTypeahead(); }
     });
 
-    mapSearch.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") setSearchTerm(mapSearch.value);
-      if (e.key === "Escape") setSearchTerm("");
-    });
-
     document.getElementById("goSearch").addEventListener("click", () => setSearchTerm(searchInput.value));
     document.getElementById("clearSearch").addEventListener("click", () => setSearchTerm(""));
-    document.getElementById("mapClear").addEventListener("click", () => setSearchTerm(""));
-
-    mapSearch.addEventListener("input", () => { searchInput.value = mapSearch.value; });
-    searchInput.addEventListener("input", () => { mapSearch.value = searchInput.value; });
-
+    
     top100Check.addEventListener("change", () => {
       lastTop100Only = top100Check.checked;
       document.getElementById("top100Chip").classList.toggle("active", lastTop100Only);
