@@ -329,10 +329,11 @@ body{
   min-width:0;
 }
 .popup-course-logo{
-  height: 26px;
-  max-width: 180px;
+  height: 44px;
+  max-width: 220px;
   object-fit: contain;
-  display:block;
+  display: block;
+  margin-bottom: 2px;
 }
 .popup-logo{
   font-weight:900;
@@ -343,7 +344,7 @@ body{
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-  max-width: 190px;
+  max-width: 220px;
   display:block;
 }
 .popup-body{padding:14px 14px 12px}
