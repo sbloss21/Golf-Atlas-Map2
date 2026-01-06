@@ -242,6 +242,17 @@ body{
   filter: drop-shadow(0 0 8px rgba(212,175,55,.45));
 }
 
+/* Move the custom Top-100 toggle control from top-left to bottom-left */
+.leaflet-top.leaflet-left .leaflet-control:has(#top100Chip),
+.leaflet-top.leaflet-left .leaflet-control:has(#top100Check),
+.leaflet-top.leaflet-left .leaflet-control:has(#top100Toggle) {
+  position: absolute !important;
+  top: auto !important;
+  bottom: 16px !important;
+  left: 16px !important;
+}
+
+
 /* Top-100 flag */
 .pin.top100 {
   background-image: url("data:image/svg+xml;utf8,\
