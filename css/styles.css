@@ -504,6 +504,17 @@
   min-height: 520px;  /* safety for smaller screens */
 }
 
+/* --- Keep GA controls from sitting under Leaflet zoom buttons --- */
+.map-controls {
+  padding-top: 56px;  /* clears the + / - control */
+}
+
+/* If your chip row is absolutely positioned instead of inside flow,
+   this will still help in most layouts */
+.chip-row {
+  margin-top: 8px;
+}
+
 
     /* Debug box */
     .debug {
