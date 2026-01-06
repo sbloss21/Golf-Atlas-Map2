@@ -2,7 +2,8 @@
  * CONFIG
  **********************/
 const DEFAULT_CSV_URL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-nZvG7m9sUkOu0spxVTVGcM311qlgGSjnFgRDQr-l6nfs1cPFNrGBXO0ZDzMIQg/pub?gid=1171293634&single=true&output=csv";
+  "https://docs.google.com/spreadsheets/d/1KKJMiDhjfJ9B5VZqv3bzfcGjOy7e2c-F/export?format=csv&gid=142030251";
+
 
 const DEFAULT_VIEW = { lat: 39.8283, lng: -98.5795, zoom: 5 };
 const MAX_ZOOM_BASELINE = 13;
