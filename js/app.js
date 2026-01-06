@@ -148,8 +148,12 @@ const DEBUG_MODE = (() => {
   async function loadCourses(){
     setDebug("Fetching <b>Google Sheets CSV</b>…");
     const v = getParam("v");
-const csvFetchUrl = v ? `${CSV_URL}${CSV_URL.includes("?") ? "&" : "?"}v=${encodeURIComponent(v)}` : CSV_URL;
-const res = await fetch(csvFetchUrl, { cache:"no-store" });
+const csvFetchUrl = v
+  ? `${CSV_URL}${CSV_URL.includes("?") ? "&" : "?"}v=${encodeURIComponent(v)}`
+  : CSV_URL;
+
+const res = await fetch(csvFetchUrl, { cache: "no-store" });
+
 
     if (!res.ok) throw new Error(`Could not fetch CSV (${res.status})`);
     const text = await res.text();
