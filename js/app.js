@@ -111,13 +111,38 @@ const DEBUG_MODE = (() => {
     });
 
     clusterLayer.on("clusterclick", (e) => {
-      const cluster = e.layer;
-      const bounds = cluster.getBounds();
-      map.fitBounds(bounds, { padding:[50,50] });
-      setTimeout(() => {
-        if (map.getZoom() >= 14) cluster.spiderfy();
-      }, 220);
-    });
+  const cluster = e.layer;
+  const bounds = cluster.getBounds();
+
+  // 1) Zoom to show everything in the cluster, but cap how far we zoom in.
+  //    This prevents the “zoom… zoom… zoom…” feeling.
+  map.fitBounds(bounds, {
+    padding: [60, 60],
+    maxZoom: 12,          // 👈 key: one-click zoom level (try 12 or 13)
+    animate: true
+  });
+
+  // 2) After the zoom finishes, if markers are still effectively on top
+  //    of each other (same resort/city), spiderfy immediately.
+  setTimeout(() => {
+    try {
+      const children = cluster.getAllChildMarkers();
+      if (children.length <= 1) return;
+
+      // If the cluster bounds are tiny, they’re basically on top of each other.
+      const b = cluster.getBounds();
+      const ne = b.getNorthEast();
+      const sw = b.getSouthWest();
+
+      const tiny =
+        Math.abs(ne.lat - sw.lat) < 0.002 &&   // ~200m latitude span
+        Math.abs(ne.lng - sw.lng) < 0.002;     // ~200m longitude span
+
+      if (tiny) cluster.spiderfy();
+    } catch {}
+  }, 320);
+});
+
 
     clusterLayer.on("clustermouseover", (e) => {
       const cluster = e.layer;
