@@ -537,7 +537,13 @@ function renderMarkers() {
     m.options.__courseId = c.__id;
     m.options.__courseName = c.name;
 
-    m.bindPopup(createPopupContent(c), { maxWidth: 320, closeButton: true });
+    m.bindPopup(createPopupContent(c), {
+  maxWidth: 320,
+  closeButton: true,
+  autoPan: true,
+  autoPanPadding: [16, 16],
+});
+
 
     m.on("mouseover", () => {
       const el = m.getElement()?.querySelector(".pin");
