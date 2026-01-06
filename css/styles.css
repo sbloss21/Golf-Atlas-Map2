@@ -487,6 +487,24 @@
     .popup-btn:hover{filter:brightness(1.06)}
     .popup-btn:active{transform:translateY(1px)}
 
+/* --- Golf Atlas: make the map area taller --- */
+.hero {
+  /* Makes the whole hero block taller */
+  min-height: 78vh;   /* try 72–85vh to taste */
+}
+
+.map-container {
+  /* Ensures the map column can actually grow */
+  min-height: 78vh;
+}
+
+#map {
+  /* This is the big one: map height */
+  height: 78vh;
+  min-height: 520px;  /* safety for smaller screens */
+}
+
+
     /* Debug box */
     .debug {
       position: absolute;
