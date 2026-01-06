@@ -261,6 +261,13 @@ body{
   z-index: 9999 !important;
 }
 
+#top100Chip{ z-index: 9999 !important; }
+
+
+.leaflet-top,
+.leaflet-bottom{
+  z-index: 500; /* keep Leaflet controls sane */
+}
 
 
 /* Custom “golf ball” cluster */
