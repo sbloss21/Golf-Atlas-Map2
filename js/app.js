@@ -1,7 +1,25 @@
 /**********************
    * CONFIG
    **********************/
-  const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-nZvG7m9sUkOu0spxVTVGcM311qlgGSjnFgRDQr-l6nfs1cPFNrGBXO0ZDzMIQg/pub?gid=1171293634&single=true&output=csv";
+  const DEFAULT_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-nZvG7m9sUkOu0spxVTVGcM311qlgGSjnFgRDQr-l6nfs1cPFNrGBXO0ZDzMIQg/pub?gid=1171293634&single=true&output=csv";
+
+function getParam(name) {
+  try {
+    return new URL(window.location.href).searchParams.get(name);
+  } catch {
+    return null;
+  }
+}
+
+// Allow ?csv= (URL-encoded is fine) to override the data source
+const CSV_URL = getParam("csv") || DEFAULT_CSV_URL;
+
+// Show debug box only when ?debug=1 (or true/yes)
+const DEBUG_MODE = (() => {
+  const v = (getParam("debug") || "").trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes" || v === "y";
+})();
+
   const DEFAULT_VIEW = { lat: 39.8283, lng: -98.5795, zoom: 5 };
   const MAX_ZOOM_BASELINE = 13;
 
