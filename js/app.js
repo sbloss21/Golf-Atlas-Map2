@@ -498,13 +498,35 @@ function focusBestMatch(query) {
 }
 
 
-  function setSearchTerm(term){
-    lastSearchTerm = term || "";
-    document.getElementById("searchInput").value = lastSearchTerm;
-    document.getElementById("mapSearch").value = lastSearchTerm;
-    applyFilters();
-    renderTypeahead();
+ function setSearchTerm(term, opts = {}) {
+  lastSearchTerm = term || "";
+
+  const si = document.getElementById("searchInput");
+  const ms = document.getElementById("mapSearch");
+  if (si) si.value = lastSearchTerm;
+  if (ms) ms.value = lastSearchTerm;
+
+  applyFilters();
+  renderTypeahead();
+
+  // NEW: optionally focus after markers exist
+  if (opts.focus) {
+    // pick best match from the *current filtered set* first
+    const q = lastSearchTerm.trim().toLowerCase();
+    const match =
+      filteredCourses.find(c => (c.course_name || "").trim().toLowerCase() === q) ||
+      filteredCourses.find(c => (c.course_resort || "").trim().toLowerCase() === q) ||
+      filteredCourses.find(c => ((c.course_name || "").toLowerCase().includes(q))) ||
+      filteredCourses[0] ||
+      null;
+
+    if (match) {
+      // Wait one tick so clusterLayer/markersById are updated
+      setTimeout(() => focusCourse(match.__id), 50);
+    }
   }
+}
+
 
   function renderTypeahead(){
     const ta = document.getElementById("typeahead");
