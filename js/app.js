@@ -531,6 +531,8 @@ const DEBUG_MODE = (() => {
   (async function boot(){
     initMap();
     wireUI();
+    setDebug("");
+
 
     try{
       await loadCourses();
