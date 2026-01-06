@@ -611,12 +611,15 @@ function focusBestMatch(query) {
     searchInput.addEventListener("input", () => { renderTypeahead(); });
     searchInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
-    const q = searchInput.value;
-    setSearchTerm(q);
-    focusBestMatch(q);   // <-- NEW
+    setSearchTerm(searchInput.value, { focus: true });
+    hideTypeahead();
   }
-  if (e.key === "Escape") { setSearchTerm(""); hideTypeahead(); }
+  if (e.key === "Escape") {
+    setSearchTerm("");
+    hideTypeahead();
+  }
 });
+
 
     document.getElementById("goSearch").addEventListener("click", () => setSearchTerm(searchInput.value));
     document.getElementById("clearSearch").addEventListener("click", () => setSearchTerm(""));
