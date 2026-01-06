@@ -252,14 +252,15 @@ body{
 </svg>");
 }
 
-#top100Chip {
-  position: absolute;
-  bottom: 16px;
-  left: 16px;
-  top: auto;
-  right: auto;
-  z-index: 1000;
+#top100Chip{
+  position: absolute !important;
+  left: 16px !important;
+  bottom: 16px !important;
+  top: auto !important;
+  right: auto !important;
+  z-index: 9999 !important;
 }
+
 
 
 /* Custom “golf ball” cluster */
