@@ -118,7 +118,7 @@ const DEBUG_MODE = (() => {
   //    This prevents the “zoom… zoom… zoom…” feeling.
   map.fitBounds(bounds, {
     padding: [60, 60],
-    maxZoom: 12,          // 👈 key: one-click zoom level (try 12 or 13)
+    maxZoom: 13,          // 👈 key: one-click zoom level (try 12 or 13)
     animate: true
   });
 
@@ -135,8 +135,8 @@ const DEBUG_MODE = (() => {
       const sw = b.getSouthWest();
 
       const tiny =
-        Math.abs(ne.lat - sw.lat) < 0.002 &&   // ~200m latitude span
-        Math.abs(ne.lng - sw.lng) < 0.002;     // ~200m longitude span
+        Math.abs(ne.lat - sw.lat) < 0.003 &&   // ~200m latitude span
+        Math.abs(ne.lng - sw.lng) < 0.003;     // ~200m longitude span
 
       if (tiny) cluster.spiderfy();
     } catch {}
