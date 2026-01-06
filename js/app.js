@@ -810,30 +810,6 @@ function openLink(url) {
   } catch (e) {}
 }
 
-function resetMapExperience() {
-  // 1) Clear search + URL param q (setSearchTerm already updates URL and rerenders)
-  setSearchTerm("");
-  hideTypeahead();
-
-  // 2) Turn off Top-100 (if on)
-  lastTop100Only = false;
-  const chk = document.getElementById("top100Check");
-  if (chk) chk.checked = false;
-  document.getElementById("top100Chip")?.classList.remove("active");
-  setParam("top100", null);
-
-  // 3) Close any open popup (safe)
-  try { map.closePopup(); } catch {}
-
-  // 4) Recenter
-  map.setView([DEFAULT_VIEW.lat, DEFAULT_VIEW.lng], DEFAULT_VIEW.zoom);
-
-  // 5) Optional: remove any csv override param (comment out if you want to keep it)
-  // setParam("csv", null);
-
-  // 6) Optional: clear cache-buster param so share links stay clean
-  // setParam("v", null);
-}
 
 function resetMapExperience() {
   // Clear search (also updates URL q and rerenders)
@@ -938,12 +914,11 @@ if (resetBtn) {
   resetBtn.addEventListener("click", () => resetMapExperience());
 }
 
+const fitResults = document.getElementById("fitResults");
+if (fitResults) {
+  fitResults.addEventListener("click", () => resetMapExperience());
+}
 
-
-  const fitResults = document.getElementById("fitResults");
-  if (fitResults) {
-    fitResults.addEventListener("click", () => fitToCourses(filteredCourses));
-  }
 
   document.addEventListener("click", (e) => {
     const ta = document.getElementById("typeahead");
