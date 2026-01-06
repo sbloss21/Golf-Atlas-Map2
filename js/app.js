@@ -11,6 +11,23 @@ function getParam(name) {
   }
 }
 
+function setParam(name, value) {
+  const url = new URL(window.location.href);
+  if (value === null || value === undefined || value === "") {
+    url.searchParams.delete(name);
+  } else {
+    url.searchParams.set(name, value);
+  }
+  // keep hash if any, and avoid full reload
+  window.history.replaceState({}, "", url.toString());
+}
+
+function getBoolParam(name) {
+  const v = (getParam(name) || "").trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes" || v === "y";
+}
+
+
 // Allow ?csv= (URL-encoded is fine) to override the data source
 const CSV_URL = getParam("csv") || DEFAULT_CSV_URL;
 
