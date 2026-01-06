@@ -110,38 +110,63 @@ const DEBUG_MODE = (() => {
       }
     });
 
-    clusterLayer.on("clusterclick", (e) => {
-  const cluster = e.layer;
-  const bounds = cluster.getBounds();
+   // Track last cluster click to support 2-click drill → spiderfy
+let __lastClusterKey = null;
+let __lastClusterClickAt = 0;
 
-  // 1) Zoom to show everything in the cluster, but cap how far we zoom in.
-  //    This prevents the “zoom… zoom… zoom…” feeling.
+function clusterKey(cluster) {
+  try {
+    const ll = cluster.getLatLng();
+    const c = cluster.getChildCount();
+    return `${c}|${ll.lat.toFixed(5)},${ll.lng.toFixed(5)}`;
+  } catch {
+    return String(Date.now());
+  }
+}
+
+clusterLayer.on("clusterclick", (e) => {
+  const cluster = e.layer;
+
+  const key = clusterKey(cluster);
+  const now = Date.now();
+  const isSecondClick =
+    __lastClusterKey === key &&
+    now - __lastClusterClickAt < 2500;
+
+  __lastClusterKey = key;
+  __lastClusterClickAt = now;
+
+  // SECOND click → spiderfy immediately
+  if (isSecondClick) {
+    cluster.spiderfy();
+    return;
+  }
+
+  const bounds = cluster.getBounds();
+  const currentZoom = map.getZoom();
+  const TARGET_DRILL_ZOOM = 13;
+
+  // If already zoomed in enough, spiderfy on first click
+  if (currentZoom >= TARGET_DRILL_ZOOM) {
+    cluster.spiderfy();
+    return;
+  }
+
+  // FIRST click → drill in once
   map.fitBounds(bounds, {
     padding: [60, 60],
-    maxZoom: 13,          // 👈 key: one-click zoom level (try 12 or 13)
+    maxZoom: TARGET_DRILL_ZOOM,
     animate: true
   });
 
-  // 2) After the zoom finishes, if markers are still effectively on top
-  //    of each other (same resort/city), spiderfy immediately.
+  // Auto-spiderfy if we hit target zoom
   setTimeout(() => {
-    try {
-      const children = cluster.getAllChildMarkers();
-      if (children.length <= 1) return;
-
-      // If the cluster bounds are tiny, they’re basically on top of each other.
-      const b = cluster.getBounds();
-      const ne = b.getNorthEast();
-      const sw = b.getSouthWest();
-
-      const tiny =
-        Math.abs(ne.lat - sw.lat) < 0.003 &&   // ~200m latitude span
-        Math.abs(ne.lng - sw.lng) < 0.003;     // ~200m longitude span
-
-      if (tiny) cluster.spiderfy();
-    } catch {}
-  }, 320);
+    if (map.getZoom() >= TARGET_DRILL_ZOOM) {
+      cluster.spiderfy();
+    }
+  }, 350);
 });
+
 
 
     clusterLayer.on("clustermouseover", (e) => {
