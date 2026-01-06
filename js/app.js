@@ -835,6 +835,27 @@ function resetMapExperience() {
   // setParam("v", null);
 }
 
+function resetMapExperience() {
+  // Clear search (also updates URL q and rerenders)
+  setSearchTerm("");
+  hideTypeahead();
+
+  // Clear all filters (current + future)
+  lastTop100Only = false;
+
+  // Top-100 UI + URL
+  const chk = document.getElementById("top100Check");
+  if (chk) chk.checked = false;
+  document.getElementById("top100Chip")?.classList.remove("active");
+  setParam("top100", null);
+
+  // Close any open popup
+  try { map.closePopup(); } catch {}
+
+  // Recenter
+  map.setView([DEFAULT_VIEW.lat, DEFAULT_VIEW.lng], DEFAULT_VIEW.zoom);
+}
+
 
 /**********************
  * UI WIRING
@@ -912,10 +933,11 @@ function wireUI() {
     toggle.addEventListener("click", () => panel.classList.toggle("show"));
   }
 
-  const fitUSA = document.getElementById("fitUSA");
-if (fitUSA) {
-  fitUSA.addEventListener("click", () => resetMapExperience());
+ const resetBtn = document.getElementById("resetMap");
+if (resetBtn) {
+  resetBtn.addEventListener("click", () => resetMapExperience());
 }
+
 
 
   const fitResults = document.getElementById("fitResults");
