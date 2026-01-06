@@ -139,7 +139,19 @@ function updateMarkerScale() {
  * MAP INIT
  **********************/
 function initMap() {
-  map = L.map("map", { zoomControl: true, scrollWheelZoom: true }).setView(
+ const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+map = L.map("map", {
+  zoomControl: true,
+  scrollWheelZoom: !isMobile,
+  tap: true,
+  inertia: true,
+  inertiaDeceleration: 3000,
+  worldCopyJump: true,
+  doubleClickZoom: !isMobile,
+  tapTolerance: 20,
+}).setView(
+
     [DEFAULT_VIEW.lat, DEFAULT_VIEW.lng],
     DEFAULT_VIEW.zoom
   );
