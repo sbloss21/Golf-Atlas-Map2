@@ -959,6 +959,13 @@ if (fitResults) {
   initMap();
   wireUI();
 
+  // Move Top-100 toggle to bottom-left after map/control DOM exists
+  setTimeout(dockTop100Toggle, 0);
+
+  ...
+})();
+
+
   // Initialize state from URL
   lastSearchTerm = (getParam("q") || "").trim();
   lastTop100Only = getBoolParam("top100");
