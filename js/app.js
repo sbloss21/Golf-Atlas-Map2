@@ -832,6 +832,30 @@ function resetMapExperience() {
   map.setView([DEFAULT_VIEW.lat, DEFAULT_VIEW.lng], DEFAULT_VIEW.zoom);
 }
 
+function dockTop100Toggle() {
+  const mapEl = document.getElementById("map");
+  if (!mapEl) return;
+
+  // Try to find the toggle container by id first, then by checkbox
+  let chip = document.getElementById("top100Chip");
+  if (!chip) {
+    const chk = document.getElementById("top100Check");
+    chip = chk ? chk.closest("#top100Chip") || chk.closest(".leaflet-control") || chk.parentElement : null;
+  }
+  if (!chip) return;
+
+  // Create (or reuse) dock container
+  let dock = document.getElementById("ga-top100-dock");
+  if (!dock) {
+    dock = document.createElement("div");
+    dock.id = "ga-top100-dock";
+    mapEl.appendChild(dock);
+  }
+
+  // Move the toggle into the dock
+  dock.appendChild(chip);
+}
+
 
 /**********************
  * UI WIRING
