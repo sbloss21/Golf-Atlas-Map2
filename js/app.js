@@ -4,7 +4,6 @@
 const DEFAULT_CSV_URL =
   "https://docs.google.com/spreadsheets/d/1KKJMiDhjfJ9B5VZqv3bzfcGjOy7e2c-F/export?format=csv&gid=142030251";
 
-
 const DEFAULT_VIEW = { lat: 39.8283, lng: -98.5795, zoom: 5 };
 const MAX_ZOOM_BASELINE = 13;
 
@@ -76,12 +75,23 @@ const toNum = (v) => {
 };
 
 function isTruthyYes(v) {
+  // supports "yes", "true", "1", 1, etc.
   const s = String(v || "").trim().toLowerCase();
   return s === "yes" || s === "y" || s === "true" || s === "1";
 }
 
-function makeId(course) {
-  const a = course.course_name || "";
+function isTop100Row(course) {
+  // New schema uses top100 (0/1). Also allow top100_rank as a fallback.
+  const t = Number(course?.top100 ?? 0);
+  if (Number.isFinite(t) && t === 1) return true;
+
+  const r = Number(course?.top100_rank ?? NaN);
+  return Number.isFinite(r) && r > 0 && r <= 100;
+}
+
+function makeFallbackId(course) {
+  // Only used when sheet doesn't provide "id"
+  const a = course.name || course.course_name || "";
   const b = course.city || "";
   const c = course.state || "";
   const d = (course.latitude ?? "") + "," + (course.longitude ?? "");
@@ -270,73 +280,131 @@ async function loadCourses() {
         pickFirst(normalized, ["longitude", "lng", "lon", "long", "course_longitude"], null)
       );
 
+      // NEW schema prefers: id, name, resort_name, top100, top100_rank, etc.
+      // Keep backward compatibility with old headers via pickFirst fallbacks.
       const course = {
-        course_name: pickFirst(
+        id: String(
+          pickFirst(normalized, ["id", "course_id", "ga_id"], "")
+        ).trim(),
+
+        name: pickFirst(
           normalized,
-          ["course_name", "course", "name", "golf_course", "coursefullname"],
+          ["name", "course_name", "course", "golf_course", "coursefullname"],
           ""
         ),
-        course_resort: pickFirst(
+
+        type: pickFirst(normalized, ["type"], "course"),
+
+        parent_resort_id: String(
+          pickFirst(normalized, ["parent_resort_id", "resort_id", "parent_id"], "")
+        ).trim(),
+
+        resort_name: pickFirst(
           normalized,
-          ["course_resort", "resort", "resort_name", "property", "destination"],
+          ["resort_name", "course_resort", "resort", "property", "destination"],
           ""
         ),
+
         city: pickFirst(normalized, ["city", "town"], ""),
         state: pickFirst(normalized, ["state", "st", "province"], ""),
         region: pickFirst(normalized, ["region"], ""),
+
         latitude,
         longitude,
+
+        website_url: pickFirst(normalized, ["website_url", "website", "url", "course_website"], ""),
+
+        // Top 100 (new)
+        top100: pickFirst(normalized, ["top100", "top_100", "top100_only"], "0"),
+        top100_rank: pickFirst(normalized, ["top100_rank", "top_100_ranking", "top100_ranking"], ""),
+
+        // Flags (new)
+        buddy_trip_hotspot: pickFirst(
+          normalized,
+          ["buddy_trip_hotspot", "buddies_trip_hotspot", "buddies_trip_hotspot_yes_no"],
+          "0"
+        ),
+
+        lodging_on_site: pickFirst(
+          normalized,
+          ["lodging_on_site", "lodging_on_siteyes_no", "lodging"],
+          "0"
+        ),
+
+        stay_and_play: pickFirst(
+          normalized,
+          ["stay_and_play", "stay_and_playyes_no"],
+          "0"
+        ),
+
+        // Pricing (new)
+        green_fee_low: pickFirst(normalized, ["green_fee_low"], ""),
+        green_fee_high: pickFirst(normalized, ["green_fee_high"], ""),
+        green_fee_notes: pickFirst(normalized, ["green_fee_notes"], ""),
+
+        // Property stats (new)
+        course_count: pickFirst(normalized, ["course_count", "courses_on_property", "number_of_courses"], ""),
+
+        // Legacy / optional extras (if still present)
         par: pickFirst(normalized, ["par"], ""),
         yardage_black_tees: pickFirst(
           normalized,
-          ["yardageblack_tees", "yardage_black_tees", "yardage_black", "yardage"],
+          ["yardage_black_tees", "yardage_black", "yardageblack_tees", "yardage"],
           ""
         ),
-        top_100_ranking: pickFirst(
-          normalized,
-          ["top_100_ranking", "top100_ranking", "top_100", "top100"],
-          ""
-        ),
-        avg_rating: pickFirst(
-          normalized,
-          ["player_reviews_avg_rating", "player_reviews_avg", "avg_rating", "rating"],
-          ""
-        ),
-        buddies_trip_hotspot: pickFirst(
-          normalized,
-          ["buddies_trip_hotspot_yes_no", "buddies_trip_hotspot", "buddy_trip_hotspot"],
-          ""
-        ),
-        lodging_on_site: pickFirst(normalized, ["lodging_on_siteyes_no", "lodging_on_site", "lodging"], ""),
+        architect: pickFirst(normalized, ["architect", "designer"], ""),
+        phone: pickFirst(normalized, ["phone", "phone_number", "contact_phone"], ""),
         best_time: pickFirst(
           normalized,
           ["peak_seasonbest_time_to_visit", "best_time_to_visit", "peak_season"],
           ""
         ),
-        cost_range: pickFirst(
+        thumbnail_url: pickFirst(
           normalized,
-          ["cost_per_coursegreen_fee_range", "green_fee_range", "cost_range", "price_range"],
+          ["thumbnail_url", "thumbnail", "image", "image_url", "photo_url"],
           ""
         ),
-        architect: pickFirst(normalized, ["architect", "designer"], ""),
-        phone: pickFirst(normalized, ["phone", "phone_number", "contact_phone"], ""),
-        website_url: pickFirst(normalized, ["website_url", "website", "url", "course_website"], ""),
-        thumbnail_url: pickFirst(normalized, ["thumbnail_url", "thumbnail", "image", "image_url", "photo_url"], ""),
         logo_url: pickFirst(
           normalized,
-          ["logo_urllinked", "logo_url", "course_logo_url", "course_logo", "logo", "logo_link", "course_logo_link"],
+          ["logo_urllinked", "logo_url", "logo", "logo_link", "course_logo_link"],
           ""
         ),
+
         __raw: normalized,
       };
 
-      course.__id = makeId(course);
-      course.__isTop100 = String(course.top_100_ranking || "").trim() !== "";
-      course.__isBuddyHotspot = isTruthyYes(course.buddies_trip_hotspot);
+      // Internal ID used for marker lookups
+      const stableId = course.id || "";
+      course.__id = stableId || makeFallbackId({ ...course, course_name: course.name });
+
+      // Backward-compatible alias (so existing code logic can be minimally changed)
+      course.course_name = course.name; // preserve old property name usage if any remains
+      course.course_resort = course.resort_name;
+
+      // Normalize top100 flags
+      course.__isTop100 = isTop100Row(course);
+
+      // Buddy hotspot: handle 0/1 or yes/no
+      course.__isBuddyHotspot = isTruthyYes(course.buddy_trip_hotspot);
+
+      // normalize top100_rank to number when possible
+      const tr = toNum(course.top100_rank);
+      course.top100_rank = tr !== null ? tr : "";
+
+      // Normalize green fee values (numbers if possible)
+      const gfl = toNum(course.green_fee_low);
+      const gfh = toNum(course.green_fee_high);
+      course.green_fee_low = gfl !== null ? gfl : "";
+      course.green_fee_high = gfh !== null ? gfh : "";
 
       return course;
     })
-    .filter((c) => Number.isFinite(c.latitude) && Number.isFinite(c.longitude) && c.course_name);
+    .filter(
+      (c) =>
+        Number.isFinite(c.latitude) &&
+        Number.isFinite(c.longitude) &&
+        String(c.name || "").trim() !== ""
+    );
 
   filteredCourses = [...allCourses];
 
@@ -371,6 +439,24 @@ function pill(val, lab) {
   `;
 }
 
+function formatCost(c) {
+  // Prefer new schema
+  const low = c.green_fee_low;
+  const high = c.green_fee_high;
+  const notes = String(c.green_fee_notes || "").trim();
+
+  if (low !== "" && high !== "") {
+    if (Number(low) === Number(high)) return `$${low}`;
+    return `$${low}-${high}`;
+  }
+  if (low !== "" && high === "") return `$${low}`;
+  if (notes) return notes;
+
+  // Legacy fallback
+  const legacy = String(c.cost_range || "").trim();
+  return legacy || "";
+}
+
 function createPopupContent(c) {
   const loc = [c.city, c.state].filter(Boolean).join(", ");
   const badge = c.__isTop100
@@ -380,13 +466,15 @@ function createPopupContent(c) {
   const pills = [];
   if (c.par) pills.push(pill(c.par, "Par"));
   if (c.yardage_black_tees) pills.push(pill(c.yardage_black_tees, "Yards"));
-  if (c.__isTop100) pills.push(pill("#" + String(c.top_100_ranking).trim(), "Top 100"));
-  if (c.avg_rating) pills.push(pill(c.avg_rating, "Rating"));
+  if (c.__isTop100 && c.top100_rank) pills.push(pill("#" + String(c.top100_rank).trim(), "Top 100"));
 
   const lines = [];
-  if (c.course_resort) lines.push(`🏨 ${escapeHtml(c.course_resort)}`);
+  if (c.resort_name) lines.push(`🏨 ${escapeHtml(c.resort_name)}`);
   if (c.architect) lines.push(`🏗️ ${escapeHtml(c.architect)}`);
-  if (c.cost_range) lines.push(`💰 ${escapeHtml(c.cost_range)}`);
+
+  const cost = formatCost(c);
+  if (cost) lines.push(`💰 ${escapeHtml(cost)}`);
+
   if (c.best_time) lines.push(`🗓️ Best: ${escapeHtml(c.best_time)}`);
 
   const btnWebsite = c.website_url
@@ -396,7 +484,7 @@ function createPopupContent(c) {
     ? `<button class="popup-btn ghost" onclick="openLink('tel:${escapeAttr(c.phone)}')">Call</button>`
     : "";
 
-  const brandText = escapeHtml(c.course_resort || c.course_name || "GOLF ATLAS");
+  const brandText = escapeHtml(c.resort_name || c.name || "GOLF ATLAS");
   const hasLogo = !!(c.logo_url && String(c.logo_url).trim());
 
   return `
@@ -415,7 +503,7 @@ function createPopupContent(c) {
       </div>
 
       <div class="popup-body">
-        <div class="popup-title">${escapeHtml(c.course_name || "Course")}</div>
+        <div class="popup-title">${escapeHtml(c.name || "Course")}</div>
         <div class="popup-sub">${escapeHtml(loc || c.region || "")}</div>
 
         ${pills.length ? `<div class="popup-grid">${pills.slice(0, 4).join("")}</div>` : ""}
@@ -435,7 +523,7 @@ function renderMarkers() {
   filteredCourses.forEach((c) => {
     const m = L.marker([c.latitude, c.longitude], { icon: pinIcon(c.__isTop100) });
     m.options.__courseId = c.__id;
-    m.options.__courseName = c.course_name;
+    m.options.__courseName = c.name;
 
     m.bindPopup(createPopupContent(c), { maxWidth: 320, closeButton: true });
 
@@ -443,7 +531,7 @@ function renderMarkers() {
       const el = m.getElement()?.querySelector(".pin");
       if (el) el.classList.add("hovered");
       m.bindTooltip(
-        `<div class="ga-tooltip"><b>${escapeHtml(c.course_name)}</b><div class="muted">${escapeHtml(
+        `<div class="ga-tooltip"><b>${escapeHtml(c.name)}</b><div class="muted">${escapeHtml(
           [c.city, c.state].filter(Boolean).join(", ")
         )}</div></div>`,
         { direction: "top", opacity: 1, sticky: true, className: "" }
@@ -478,8 +566,8 @@ function renderResortCards() {
       const aScore = (a.__isBuddyHotspot ? 2 : 0) + (a.__isTop100 ? 1 : 0);
       const bScore = (b.__isBuddyHotspot ? 2 : 0) + (b.__isTop100 ? 1 : 0);
       if (a.__isTop100 && b.__isTop100) {
-        const ar = toNum(a.top_100_ranking) ?? 9999;
-        const br = toNum(b.top_100_ranking) ?? 9999;
+        const ar = toNum(a.top100_rank) ?? 9999;
+        const br = toNum(b.top100_rank) ?? 9999;
         if (ar !== br) return ar - br;
       }
       return bScore - aScore;
@@ -492,17 +580,18 @@ function renderResortCards() {
   grid.innerHTML = featured
     .map((c) => {
       const img = c.thumbnail_url || fallbackImg;
-      const name = (c.course_resort || c.course_name || "").trim();
-      const sub = c.course_resort ? c.course_name : [c.city, c.state].filter(Boolean).join(", ") || "";
+      const name = (c.resort_name || c.name || "").trim();
+      const sub = c.resort_name ? c.name : [c.city, c.state].filter(Boolean).join(", ") || "";
       const meta = [];
       if (isTruthyYes(c.lodging_on_site)) meta.push("On-site lodging");
       if (c.best_time) meta.push("Best: " + c.best_time);
-      if (c.cost_range) meta.push(c.cost_range);
-      if (c.__isTop100) meta.unshift(`Top-100 (#${String(c.top_100_ranking).trim()})`);
+      const cost = formatCost(c);
+      if (cost) meta.push(cost);
+      if (c.__isTop100 && c.top100_rank) meta.unshift(`Top-100 (#${String(c.top100_rank).trim()})`);
 
       return `
         <div class="resort-card" onclick="focusCourse('${escapeAttr(c.__id)}')">
-          <img class="resort-image" src="${escapeAttr(img)}" alt="${escapeAttr(c.course_name)}"
+          <img class="resort-image" src="${escapeAttr(img)}" alt="${escapeAttr(c.name)}"
                onerror="this.src='${escapeAttr(fallbackImg)}'"/>
           <div class="resort-info">
             <div class="resort-name">${escapeHtml(name)}</div>
@@ -543,7 +632,7 @@ function applyFilters() {
     if (top100Only && !c.__isTop100) return false;
     if (!term) return true;
 
-    const hay = [c.course_name, c.course_resort, c.city, c.state, c.region]
+    const hay = [c.name, c.resort_name, c.city, c.state, c.region]
       .filter(Boolean)
       .join(" ")
       .toLowerCase();
@@ -565,17 +654,17 @@ function findBestCourseMatch(query) {
   const q = (query || "").trim().toLowerCase();
   if (!q) return null;
 
-  let exact = allCourses.find((c) => (c.course_name || "").trim().toLowerCase() === q);
+  let exact = allCourses.find((c) => (c.name || "").trim().toLowerCase() === q);
   if (exact) return exact;
 
-  exact = allCourses.find((c) => (c.course_resort || "").trim().toLowerCase() === q);
+  exact = allCourses.find((c) => (c.resort_name || "").trim().toLowerCase() === q);
   if (exact) return exact;
 
-  const contains = allCourses.find((c) => (c.course_name || "").toLowerCase().includes(q));
+  const contains = allCourses.find((c) => (c.name || "").toLowerCase().includes(q));
   if (contains) return contains;
 
   const broader = allCourses.find((c) => {
-    const hay = [c.course_name, c.course_resort, c.city, c.state, c.region]
+    const hay = [c.name, c.resort_name, c.city, c.state, c.region]
       .filter(Boolean)
       .join(" ")
       .toLowerCase();
@@ -630,8 +719,8 @@ function renderTypeahead() {
 
   const suggestions = [];
   for (const c of allCourses) {
-    const cn = c.course_name || "";
-    const rn = c.course_resort || "";
+    const cn = c.name || "";
+    const rn = c.resort_name || "";
     const cs = [c.city, c.state].filter(Boolean).join(", ");
 
     if (cn.toLowerCase().includes(q)) suggestions.push(cn);
