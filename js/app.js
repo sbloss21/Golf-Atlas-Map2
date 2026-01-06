@@ -63,11 +63,7 @@ const normKey = (k = "") =>
 
 const pickFirst = (obj, keys, fallback = "") => {
   for (const k of keys) {
-    if (
-      obj[k] !== undefined &&
-      obj[k] !== null &&
-      String(obj[k]).trim() !== ""
-    )
+    if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== "")
       return obj[k];
   }
   return fallback;
@@ -103,25 +99,30 @@ function setDebug(html) {
   box.innerHTML = html;
 }
 
+/**
+ * IMPORTANT:
+ * Leaflet positions marker icons using CSS transform translate3d(...).
+ * If we set transform on the Leaflet wrapper (.ga-pin-wrap), markers "fly away".
+ * So we ONLY scale the inner element (.ga-pin-wrap .pin).
+ */
 function updateMarkerScale() {
   if (!map) return;
 
   const zoom = map.getZoom();
 
-  // Base scale around zoom 6–7
-  // Grows gently as you zoom in
+  // gentle growth as you zoom in
   const scale =
-    zoom <= 6 ? 0.9 :
-    zoom <= 8 ? 1.0 :
-    zoom <= 10 ? 1.15 :
-    zoom <= 12 ? 1.3 :
+    zoom <= 6 ? 0.95 :
+    zoom <= 8 ? 1.05 :
+    zoom <= 10 ? 1.18 :
+    zoom <= 12 ? 1.32 :
     1.45;
 
-  document.querySelectorAll(".ga-pin-wrap").forEach(el => {
+  document.querySelectorAll(".ga-pin-wrap .pin").forEach((el) => {
     el.style.transform = `scale(${scale})`;
+    el.style.transformOrigin = "bottom center";
   });
 }
-
 
 /**********************
  * MAP INIT
@@ -211,9 +212,7 @@ function initMap() {
   clusterLayer.on("clustermouseover", (e) => {
     const cluster = e.layer;
     const children = cluster.getAllChildMarkers();
-    const names = children
-      .map((m) => m?.options?.__courseName || "")
-      .filter(Boolean);
+    const names = children.map((m) => m?.options?.__courseName || "").filter(Boolean);
 
     const unique = Array.from(new Set(names)).slice(0, 6);
     const extra = Math.max(0, names.length - unique.length);
@@ -235,6 +234,9 @@ function initMap() {
   });
 
   map.addLayer(clusterLayer);
+
+  // scale markers on zoom (safe: scales inner pin)
+  map.on("zoomend", updateMarkerScale);
 }
 
 /**********************
@@ -268,32 +270,62 @@ async function loadCourses() {
       );
 
       const course = {
-        course_name: pickFirst(normalized, ["course_name", "course", "name", "golf_course", "coursefullname"], ""),
-        course_resort: pickFirst(normalized, ["course_resort", "resort", "resort_name", "property", "destination"], ""),
+        course_name: pickFirst(
+          normalized,
+          ["course_name", "course", "name", "golf_course", "coursefullname"],
+          ""
+        ),
+        course_resort: pickFirst(
+          normalized,
+          ["course_resort", "resort", "resort_name", "property", "destination"],
+          ""
+        ),
         city: pickFirst(normalized, ["city", "town"], ""),
         state: pickFirst(normalized, ["state", "st", "province"], ""),
         region: pickFirst(normalized, ["region"], ""),
         latitude,
         longitude,
         par: pickFirst(normalized, ["par"], ""),
-        yardage_black_tees: pickFirst(normalized, ["yardageblack_tees", "yardage_black_tees", "yardage_black", "yardage"], ""),
-        top_100_ranking: pickFirst(normalized, ["top_100_ranking", "top100_ranking", "top_100", "top100"], ""),
-        avg_rating: pickFirst(normalized, ["player_reviews_avg_rating", "player_reviews_avg", "avg_rating", "rating"], ""),
-        buddies_trip_hotspot: pickFirst(normalized, ["buddies_trip_hotspot_yes_no", "buddies_trip_hotspot", "buddy_trip_hotspot"], ""),
+        yardage_black_tees: pickFirst(
+          normalized,
+          ["yardageblack_tees", "yardage_black_tees", "yardage_black", "yardage"],
+          ""
+        ),
+        top_100_ranking: pickFirst(
+          normalized,
+          ["top_100_ranking", "top100_ranking", "top_100", "top100"],
+          ""
+        ),
+        avg_rating: pickFirst(
+          normalized,
+          ["player_reviews_avg_rating", "player_reviews_avg", "avg_rating", "rating"],
+          ""
+        ),
+        buddies_trip_hotspot: pickFirst(
+          normalized,
+          ["buddies_trip_hotspot_yes_no", "buddies_trip_hotspot", "buddy_trip_hotspot"],
+          ""
+        ),
         lodging_on_site: pickFirst(normalized, ["lodging_on_siteyes_no", "lodging_on_site", "lodging"], ""),
-        best_time: pickFirst(normalized, ["peak_seasonbest_time_to_visit", "best_time_to_visit", "peak_season"], ""),
-        cost_range: pickFirst(normalized, ["cost_per_coursegreen_fee_range", "green_fee_range", "cost_range", "price_range"], ""),
+        best_time: pickFirst(
+          normalized,
+          ["peak_seasonbest_time_to_visit", "best_time_to_visit", "peak_season"],
+          ""
+        ),
+        cost_range: pickFirst(
+          normalized,
+          ["cost_per_coursegreen_fee_range", "green_fee_range", "cost_range", "price_range"],
+          ""
+        ),
         architect: pickFirst(normalized, ["architect", "designer"], ""),
         phone: pickFirst(normalized, ["phone", "phone_number", "contact_phone"], ""),
         website_url: pickFirst(normalized, ["website_url", "website", "url", "course_website"], ""),
         thumbnail_url: pickFirst(normalized, ["thumbnail_url", "thumbnail", "image", "image_url", "photo_url"], ""),
-
         logo_url: pickFirst(
           normalized,
           ["logo_urllinked", "logo_url", "course_logo_url", "course_logo", "logo", "logo_link", "course_logo_link"],
           ""
         ),
-
         __raw: normalized,
       };
 
@@ -319,11 +351,13 @@ async function loadCourses() {
  * MARKERS + POPUPS
  **********************/
 function pinIcon(isTop100) {
+  // NOTE: We keep Leaflet's wrapper (ga-pin-wrap) untouched (Leaflet uses transform to position).
+  // The inner ".pin" is what we style/scale in CSS + updateMarkerScale().
   return L.divIcon({
     className: "ga-pin-wrap",
     html: `<div class="pin ${isTop100 ? "top100" : ""}"></div>`,
     iconSize: [14, 14],
-    iconAnchor: [7, 7],
+    iconAnchor: [7, 14], // slightly more "bottom-anchored" for a flag
   });
 }
 
@@ -396,8 +430,6 @@ function createPopupContent(c) {
 function renderMarkers() {
   clusterLayer.clearLayers();
   markersById.clear();
-  updateMarkerScale();
-
 
   filteredCourses.forEach((c) => {
     const m = L.marker([c.latitude, c.longitude], { icon: pinIcon(c.__isTop100) });
@@ -427,10 +459,14 @@ function renderMarkers() {
     clusterLayer.addLayer(m);
     markersById.set(c.__id, m);
   });
+
+  // Wait a tick so Leaflet has inserted marker DOM nodes, then scale safely
+  setTimeout(updateMarkerScale, 0);
 }
 
 /**********************
  * RESORT CARDS
+ * (Kept harmless: if resortGrid isn't present, it returns immediately)
  **********************/
 function renderResortCards() {
   const grid = document.getElementById("resortGrid");
@@ -528,19 +564,15 @@ function findBestCourseMatch(query) {
   const q = (query || "").trim().toLowerCase();
   if (!q) return null;
 
-  // Exact course match
   let exact = allCourses.find((c) => (c.course_name || "").trim().toLowerCase() === q);
   if (exact) return exact;
 
-  // Exact resort match
   exact = allCourses.find((c) => (c.course_resort || "").trim().toLowerCase() === q);
   if (exact) return exact;
 
-  // Contains course match
   const contains = allCourses.find((c) => (c.course_name || "").toLowerCase().includes(q));
   if (contains) return contains;
 
-  // Broader contains
   const broader = allCourses.find((c) => {
     const hay = [c.course_name, c.course_resort, c.city, c.state, c.region]
       .filter(Boolean)
@@ -556,7 +588,6 @@ function focusBestMatch(query) {
   const match = findBestCourseMatch(query);
   if (!match) return false;
 
-  // If Top-100 only is hiding it, turn it off
   if (lastTop100Only && !match.__isTop100) {
     lastTop100Only = false;
     const chk = document.getElementById("top100Check");
@@ -566,7 +597,6 @@ function focusBestMatch(query) {
     applyFilters();
   }
 
-  // Focus next tick so markers exist
   setTimeout(() => focusCourse(match.__id), 0);
   return true;
 }
@@ -579,7 +609,6 @@ function setSearchTerm(term) {
   if (searchInput) searchInput.value = lastSearchTerm;
   if (mapSearch) mapSearch.value = lastSearchTerm;
 
-  // Shareable URL
   setParam("q", lastSearchTerm || null);
 
   applyFilters();
@@ -701,7 +730,6 @@ function wireUI() {
     });
   }
 
-  // If mapSearch exists in your HTML, keep it functional but synced
   if (mapSearch) {
     mapSearch.addEventListener("input", () => {
       if (searchInput) searchInput.value = mapSearch.value;
@@ -739,10 +767,7 @@ function wireUI() {
     top100Check.addEventListener("change", () => {
       lastTop100Only = top100Check.checked;
       document.getElementById("top100Chip")?.classList.toggle("active", lastTop100Only);
-
-      // Shareable URL
       setParam("top100", lastTop100Only ? "1" : null);
-
       applyFilters();
     });
   }
@@ -778,8 +803,6 @@ function wireUI() {
 (async function boot() {
   initMap();
   wireUI();
-  map.on("zoomend", updateMarkerScale);
-
 
   // Initialize state from URL
   lastSearchTerm = (getParam("q") || "").trim();
@@ -802,9 +825,12 @@ function wireUI() {
     applyFilters();
     renderResortCards();
 
+    // Ensure initial scale is applied once markers render
+    setTimeout(updateMarkerScale, 0);
+
     // If q is set, focus it once markers exist
     if (lastSearchTerm) {
-      setTimeout(() => focusBestMatch(lastSearchTerm), 50);
+      setTimeout(() => focusBestMatch(lastSearchTerm), 80);
     }
   } catch (err) {
     console.error(err);
