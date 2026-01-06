@@ -563,3 +563,45 @@
       .hero{min-height: 640px;}
       #map{min-height: 520px;}
     }
+
+/* =========================
+   MAP EMBED CLEANUP (Wix)
+   - Taller map
+   - Move Top-100 chip below Leaflet zoom control
+   ========================= */
+
+.map-container {
+  /* make the map area taller so there isn't a big blank gap below in Wix */
+  min-height: 78vh;
+}
+
+#map {
+  height: 78vh;
+  min-height: 560px; /* safety for small viewports/iframes */
+}
+
+/* If your .map-controls block is positioned at the top-left,
+   this pushes the chip row down so it doesn't sit behind the zoom buttons. */
+.map-controls .chip-row {
+  margin-top: 56px; /* clears Leaflet zoom control */
+}
+
+/* Optional: ensure the UI sits above the map tiles */
+.map-controls {
+  position: absolute;
+  z-index: 500;
+}
+
+/* Mobile tuning */
+@media (max-width: 768px) {
+  .map-container {
+    min-height: 72vh;
+  }
+  #map {
+    height: 72vh;
+    min-height: 480px;
+  }
+  .map-controls .chip-row {
+    margin-top: 52px;
+  }
+}
